@@ -837,6 +837,57 @@ error[AURA-R001]: division by zero (in function 'main')
    |           ^^^^^^^^^^^
 ```
 
+### Stack traces (next release)
+
+> **Not in AURA 0.1.0.** This is implemented on the `main` branch, and
+> will ship in the next release. To try it now, use
+> [Method C](#method-c-build-from-source) without checking out `v0.1.0`.
+
+When a runtime error happens inside a function called from `main`, AURA
+also prints the chain of calls that led there, innermost first. The
+error itself is unchanged; errors raised directly in `main` look exactly
+as before.
+
+``` aura
+fn main() -> Unit {
+    print(average(10, 0))
+}
+
+fn average(total: Int, count: Int) -> Int {
+    return divide(total, count)
+}
+
+fn divide(a: Int, b: Int) -> Int {
+    return a / b
+}
+```
+
+``` text
+$ aura run trace.aura
+error[AURA-R001]: division by zero (in function 'divide')
+   --> trace.aura:10:12
+    |
+ 10 |     return a / b
+    |            ^^^^^
+
+stack trace:
+  0: divide   trace.aura:10:12  return a / b
+  1: average  trace.aura:6:12   return divide(total, count)
+  2: main     trace.aura:2:11   print(average(10, 0))
+```
+
+Each line shows:
+
+-   the frame number;
+-   the function;
+-   where it was running, or where it made the call;
+-   that line of code.
+
+Deep recursion stays short: repeated identical calls merge into one line,
+such as `0-9998: deep  deep.aura:6:5  deep(n + 1)`. A trace never
+prints more than 20 frame lines; the rest are counted as
+`... N more frames not shown`.
+
 **Error code families.** The letter shows which stage found the
 problem:
 
@@ -871,8 +922,10 @@ AURA 0.1.0 is intentionally small.
 -   **Nesting:** limited to 10,000 levels of parentheses, blocks, or
     `else if` chains (`AURA-P014`).
 -   **Calls:** limited to 10,000 deep, including `main` (`AURA-R003`).
--   **Runtime errors** name the function they occurred in, but do not
-    show the chain of calls that led there.
+-   **In 0.1.0, runtime errors** name the function they occurred in, but
+    do not show the chain of calls that led there. Stack traces are
+    implemented on `main` for the next release; see
+    [Stack traces](#stack-traces-next-release).
 -   **Binaries** are not code-signed.
 
 ## Roadmap
@@ -883,7 +936,7 @@ repository:
 | Area | Status | Notes |
 |---|---|---|
 | Core language, compiler, VM, and CLI | **Implemented** | Released in 0.1.0. |
-| Runtime stack traces | **In progress** | Show every active call when a runtime error occurs. Designed and implemented on a development branch; not yet in a release. |
+| Runtime stack traces | **Implemented** (on `main`, not yet released) | Show every active call when a runtime error occurs. Merged into `main`, and ships in the next release. See [Stack traces](#stack-traces-next-release). |
 | Loops (`while`, then `for`) | **Planned** | The next language feature. They remove the need for recursion when repeating work. |
 | Collections (arrays, maps) | Under consideration | |
 | Generics, enums, and pattern matching | Under consideration | |
