@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/your-org/aura/internal/cli"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/cli"
 )
 
 func main() {

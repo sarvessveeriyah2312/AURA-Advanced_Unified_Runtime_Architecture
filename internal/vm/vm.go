@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/your-org/aura/internal/bytecode"
-	"github.com/your-org/aura/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/bytecode"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
 // Runtime error codes (docs/05 §5.9). They are the registry strings of

@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/your-org/aura/internal/checker"
-	"github.com/your-org/aura/internal/compiler"
-	"github.com/your-org/aura/internal/lexer"
-	"github.com/your-org/aura/internal/parser"
-	"github.com/your-org/aura/internal/source"
-	"github.com/your-org/aura/internal/vm"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/checker"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/compiler"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/lexer"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/parser"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/vm"
 )
 
 // FuzzCompileAndRun drives the whole pipeline with arbitrary source. Any

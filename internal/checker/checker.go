@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/your-org/aura/internal/ast"
-	"github.com/your-org/aura/internal/diagnostic"
-	"github.com/your-org/aura/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/ast"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
 // minIntMagnitude is the digit string of |math.MinInt64|. It is valid only

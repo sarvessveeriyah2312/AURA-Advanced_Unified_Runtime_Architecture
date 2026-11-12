@@ -2,14 +2,13 @@
 
 All notable changes to AURA are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-AURA uses [Semantic Versioning](https://semver.org/) (ADR-0007).
+AURA uses [Semantic Versioning](https://semver.org/).
 
 ## [0.1.0] - Unreleased
 
 The first version of AURA (Advanced Unified Runtime Architecture): a
 statically typed language with a bytecode compiler and a stack-based
-virtual machine. It has not been released yet; see
-`docs/14-release-checklist.md`.
+virtual machine. It has not been released yet.
 
 ### Language
 
@@ -72,10 +71,18 @@ virtual machine. It has not been released yet; see
 -   **Implementation.** A typed bytecode instruction set (46 opcodes),
     validated before execution.
 -   **Builds and CI.**
-    -   Reproducible release builds for macOS (amd64, arm64), Linux
-        (amd64, arm64), and Windows (amd64), with SHA-256 checksums
+    -   Reproducible release archives for macOS (amd64, arm64), Linux
+        (amd64, arm64), and Windows (amd64): `aura_<version>_<os>_<arch>`
+        as `.tar.gz` (`.zip` on Windows), with `SHA256SUMS`
         (`scripts/build-release.sh`).
-    -   CI on Linux, macOS, and Windows.
+    -   Each archive contains the `aura` executable, `LICENSE`,
+        `README.md`, `CHANGELOG.md`, and `THIRD_PARTY_NOTICES.txt` (the
+        Go runtime license).
+    -   CI on Linux, macOS, and Windows. Every release archive is also
+        run on its own platform (`scripts/smoke-release.sh`).
+-   **Installation.** From the release archives, or with
+    `go install github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/cmd/aura@latest`.
+-   **License.** MIT.
 
 ### Hardening (Phase 5)
 
@@ -83,7 +90,7 @@ virtual machine. It has not been released yet; see
     391,000 or more levels (parentheses, blocks, `else if` chains,
     operator chains, or unary operators) crashed the toolchain with a Go
     stack overflow and exit status 2. AURA now enforces a nesting limit
-    of 10,000 levels with diagnostic `AURA-P014` (ADR-0006).
+    of 10,000 levels with diagnostic `AURA-P014`.
 -   **Fixed: tests assumed Unix error messages and wall-clock timing.**
     They would have failed on Windows CI. Tests are now OS-independent
     and deterministic.
@@ -92,7 +99,10 @@ virtual machine. It has not been released yet; see
 
 ### Notes
 
--   AURA was developed under the codename NOVA (ADR-0005). There is no
+-   The name AURA is retained. It has not been cleared as a trademark,
+    the project claims no trademark rights in it, and it is not
+    affiliated with other products or projects named Aura.
+-   AURA was developed under the codename NOVA. There is no
     compatibility with the pre-release NOVA names (`.nova`, `NOVA-`
     codes, the `nova` command).
 -   Not included in 0.1.0: loops, collections, user-defined types,

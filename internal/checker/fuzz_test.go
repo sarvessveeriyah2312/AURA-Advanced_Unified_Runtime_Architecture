@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/your-org/aura/internal/lexer"
-	"github.com/your-org/aura/internal/parser"
-	"github.com/your-org/aura/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/lexer"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/parser"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
 // checkAny runs the whole frontend and the checker on arbitrary input,

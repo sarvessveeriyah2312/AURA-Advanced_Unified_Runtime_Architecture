@@ -1,8 +1,8 @@
 package checker
 
 import (
-	"github.com/your-org/aura/internal/ast"
-	"github.com/your-org/aura/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/ast"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
 // Type is an AURA MVP type.

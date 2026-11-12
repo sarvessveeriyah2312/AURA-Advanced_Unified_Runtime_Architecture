@@ -3,11 +3,11 @@ package compiler
 import (
 	"math"
 
-	"github.com/your-org/aura/internal/ast"
-	"github.com/your-org/aura/internal/bytecode"
-	"github.com/your-org/aura/internal/checker"
-	"github.com/your-org/aura/internal/diagnostic"
-	"github.com/your-org/aura/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/ast"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/bytecode"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/checker"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
 // Compile translates a checked program into a bytecode module (docs/05

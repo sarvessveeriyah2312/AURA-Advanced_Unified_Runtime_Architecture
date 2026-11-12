@@ -1,6 +1,6 @@
 package token
 
-import "github.com/your-org/aura/internal/source"
+import "github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 
 // Kind is the kind of a lexical token.
 type Kind int

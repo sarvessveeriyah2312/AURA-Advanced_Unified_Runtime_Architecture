@@ -1,4 +1,4 @@
-# AURA continuous integration (docs/13-mvp-hardening.md, "CI").
+# AURA continuous integration (CI). Release packaging: ADR-0008.
 #
 # The default branch is assumed to be `main` (the repository's configured
 # branch at the time this workflow was written).
@@ -31,10 +31,10 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Go (version from go.mod)
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -70,10 +70,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Go (version from go.mod)
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -87,9 +87,60 @@ jobs:
           DIST_DIR=dist-again bash scripts/build-release.sh
           diff dist/SHA256SUMS dist-again/SHA256SUMS
 
-      - name: Smoke-test the linux/amd64 binary
+      - name: Upload release archives
+        uses: actions/upload-artifact@v7
+        with:
+          name: aura-release
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  # Runs every release archive on its own operating system and CPU
+  # architecture (cross-compilation alone does not prove a binary runs).
+  release-smoke:
+    name: release smoke (${{ matrix.target }})
+    needs: release-build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: linux_amd64, os: ubuntu-latest, ext: tar.gz, exe: aura }
+          - { target: linux_arm64, os: ubuntu-24.04-arm, ext: tar.gz, exe: aura }
+          - { target: darwin_arm64, os: macos-latest, ext: tar.gz, exe: aura }
+          - { target: darwin_amd64, os: macos-15-intel, ext: tar.gz, exe: aura }
+          - { target: windows_amd64, os: windows-latest, ext: zip, exe: aura.exe }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download release archives
+        uses: actions/download-artifact@v8
+        with:
+          name: aura-release
+          path: dist
+
+      - name: Verify checksums
+        run: |
+          cd dist
+          if command -v sha256sum >/dev/null 2>&1; then sha256sum -c SHA256SUMS; else shasum -a 256 -c SHA256SUMS; fi
+
+      - name: Extract and smoke-test the binary
         run: |
           version=$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/cli/version.go)
-          bin="dist/aura-${version}-linux-amd64"
-          test "$("$bin" version)" = "aura ${version}"
-          test "$("$bin" run examples/hello.aura)" = "Hello, AURA!"
+          name="aura_${version}_${{ matrix.target }}"
+          mkdir -p extracted
+          if [ "${{ matrix.ext }}" = zip ]; then
+            # The documented Windows install step (README); `unzip` is not
+            # listed in the windows-latest runner image, PowerShell 7 is.
+            pwsh -NoProfile -Command "Expand-Archive -LiteralPath 'dist/${name}.zip' -DestinationPath 'extracted'"
+          else
+            tar -xzf "dist/${name}.tar.gz" -C extracted
+          fi
+          for f in LICENSE README.md CHANGELOG.md THIRD_PARTY_NOTICES.txt; do
+            test -f "extracted/${name}/$f"
+          done
+          bash scripts/smoke-release.sh "extracted/${name}/${{ matrix.exe }}" "$version"

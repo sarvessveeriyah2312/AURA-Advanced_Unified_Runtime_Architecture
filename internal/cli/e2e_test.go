@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/your-org/aura/internal/bytecode"
-	"github.com/your-org/aura/internal/diagnostic"
-	"github.com/your-org/aura/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/bytecode"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
 // update rewrites golden files. Golden changes must be reviewed before

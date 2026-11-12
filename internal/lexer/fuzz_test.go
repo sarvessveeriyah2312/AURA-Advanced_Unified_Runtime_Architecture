@@ -3,7 +3,7 @@ package lexer
 import (
 	"testing"
 
-	"github.com/your-org/aura/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
 // FuzzLex is required case L69 (docs/03 §3.4): arbitrary bytes never

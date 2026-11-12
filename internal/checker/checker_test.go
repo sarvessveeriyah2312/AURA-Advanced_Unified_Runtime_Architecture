@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/your-org/aura/internal/ast"
-	"github.com/your-org/aura/internal/diagnostic"
-	"github.com/your-org/aura/internal/lexer"
-	"github.com/your-org/aura/internal/parser"
-	"github.com/your-org/aura/internal/source"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/ast"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/lexer"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/parser"
+	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
 // prelude is available to every non-whole-program case: `u` is a Unit
