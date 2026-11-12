@@ -3,6 +3,7 @@ import { CLIShowcase } from "../components/sections/CLIShowcase";
 import { CodeShowcase } from "../components/sections/CodeShowcase";
 import { Community } from "../components/sections/Community";
 import { Documentation } from "../components/sections/Documentation";
+import { FAQ } from "../components/sections/FAQ";
 import { Downloads } from "../components/sections/Downloads";
 import { Features } from "../components/sections/Features";
 import { Hero } from "../components/sections/Hero";
@@ -20,6 +21,7 @@ export function Home() {
       <CLIShowcase />
       <Downloads />
       <Documentation />
+      <FAQ />
       <Roadmap />
       <Community />
     </>

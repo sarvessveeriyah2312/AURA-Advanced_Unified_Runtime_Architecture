@@ -3,30 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tread — A language for learning how languages work</title>
+    <title>Tread: a programming language for learning how languages work</title>
     <meta
       name="description"
-      content="Tread is a statically typed programming language for learning how languages work: its lexer, parser, type checker, bytecode compiler, and virtual machine are each small enough to read."
+      content="Tread is a small, statically typed programming language built to teach how languages work: a readable lexer, parser, type checker, compiler, and VM in Go."
     />
+    <link rel="canonical" href="https://treadlang.vercel.app/" />
     <meta name="theme-color" content="#f7f8fc" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <!-- Plain-text overview for AI assistants (llmstxt.org). -->
+    <link rel="alternate" type="text/plain" href="https://treadlang.vercel.app/llms.txt" title="llms.txt" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Tread" />
-    <meta property="og:title" content="Tread — A language for learning how languages work" />
-    <meta
-      property="og:description"
-      content="Tread is a statically typed programming language for learning how languages work: its lexer, parser, type checker, bytecode compiler, and virtual machine are each small enough to read."
-    />
+    <meta property="og:url" content="https://treadlang.vercel.app/" />
+    <meta property="og:title" content="Tread: a programming language for learning how languages work" />
+    <meta property="og:description" content="Tread is a small, statically typed programming language built to teach how languages work: a readable lexer, parser, type checker, compiler, and VM in Go." />
+    <meta property="og:image" content="https://treadlang.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Tread: a language for learning how languages work. A short Tread program printing Hello, Tread!" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Tread — A language for learning how languages work" />
-    <meta
-      name="twitter:description"
-      content="A statically typed language for learning how languages work, one readable stage at a time."
-    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tread: a programming language for learning how languages work" />
+    <meta name="twitter:description" content="Tread is a small, statically typed programming language built to teach how languages work: a readable lexer, parser, type checker, compiler, and VM in Go." />
+    <meta name="twitter:image" content="https://treadlang.vercel.app/og-image.png" />
+    <meta name="twitter:image:alt" content="Tread: a language for learning how languages work. A short Tread program printing Hello, Tread!" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -52,11 +57,16 @@
     </script>
   </head>
   <body>
+    <!-- The page is prerendered, so it reads fine without JavaScript. Scroll
+         animations start transparent; without JavaScript they never run, so
+         show that content as it is. -->
     <noscript>
-      <p style="padding: 1rem; font-family: sans-serif">
-        Tread's website needs JavaScript. You can read about Tread on
-        <a href="https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture">GitHub</a>.
-      </p>
+      <style>
+        #root [style*="opacity"] {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+      </style>
     </noscript>
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>

@@ -1,9 +1,10 @@
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { MouseEvent } from "react";
 import { Download, Menu, Moon, Sun, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NAV_LINKS, REPO_URL } from "../../data/site";
 import { useActiveSection } from "../../hooks/useActiveSection";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { useTheme } from "../../hooks/useTheme";
 import { cn } from "../../lib/cn";
 import { ButtonLink } from "../ui/Button";
@@ -12,7 +13,7 @@ import { Container } from "../ui/SectionHeading";
 
 // Track every section (not only those in the nav), so that no nav link is
 // highlighted while a section without one (CLI, Download, ...) is in view.
-const SECTION_IDS = ["overview", "features", "examples", "architecture", "cli", "download", "documentation", "roadmap", "community"];
+const SECTION_IDS = ["overview", "features", "examples", "architecture", "cli", "download", "documentation", "faq", "roadmap", "community"];
 
 function ThemeToggle() {
   const { theme, toggle } = useTheme();
@@ -36,7 +37,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const active = useActiveSection(SECTION_IDS);
   const menuButton = useRef<HTMLButtonElement>(null);
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = usePrefersReducedMotion();
 
   // A link in the mobile menu closes the menu first, then scrolls once
   // the menu has collapsed (see onExitComplete).

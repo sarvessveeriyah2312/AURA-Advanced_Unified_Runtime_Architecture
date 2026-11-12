@@ -14,3 +14,9 @@ coverage.*
 .DS_Store
 .idea/
 .vscode/
+
+# Local AI-assistant setup (kept on this machine, not published)
+CLAUDE.md
+.claude/
+.agents/
+skills-lock.json

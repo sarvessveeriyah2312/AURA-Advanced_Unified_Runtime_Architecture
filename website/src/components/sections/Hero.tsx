@@ -20,11 +20,10 @@ export function Hero() {
       />
 
       <Container className="relative grid grid-cols-1 items-center gap-14 pt-16 pb-20 sm:pt-24 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-12 lg:pt-28 lg:pb-28">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease }}
-        >
+        {/* No entrance animation here: this text is the Largest Contentful
+            Paint. It is in the prerendered HTML, so showing it immediately
+            lets it paint before any JavaScript runs. */}
+        <div>
           <a
             href={CHANGELOG_URL}
             target="_blank"
@@ -77,7 +76,7 @@ export function Hero() {
               macOS · Linux · Windows
             </li>
           </ul>
-        </motion.div>
+        </div>
 
         <motion.figure
           initial={{ opacity: 0, y: 20 }}

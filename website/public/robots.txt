@@ -1,0 +1,7 @@
+# Tread website. Every crawler is welcome, including search engines,
+# AI search and assistants. A single wildcard rule is deliberate: a list of
+# named bots would silently exclude ones not on the list.
+User-agent: *
+Allow: /
+
+Sitemap: https://treadlang.vercel.app/sitemap.xml

@@ -64,7 +64,7 @@ export function TreadCode({ code, className }: { code: string; className?: strin
       tabIndex={0}
       aria-label="Tread source code"
     >
-      <code className="grid min-w-max">
+      <code className="language-tread grid min-w-max" data-language="tread">
         {lines.map((line, n) => (
           <span key={n} className="flex">
             <span className="w-10 shrink-0 pr-4 text-right text-code-dim/60 select-none" aria-hidden>
@@ -94,7 +94,7 @@ export function TerminalText({ command, output, className }: { command?: string;
       className={cn("scrollbar-thin overflow-x-auto px-4 py-4 font-mono text-[13px] leading-6 text-code-fg", className)}
       tabIndex={0}
     >
-      <code className="block min-w-max">
+      <code className="language-console block min-w-max" data-language="console">
         {command && (
           <span className="block">
             <span className="text-[var(--tok-string)] select-none" aria-hidden>

@@ -1,6 +1,7 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowDown, ArrowRight, Pause, Play } from "lucide-react";
 import { useEffect, useState } from "react";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { cn } from "../../lib/cn";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
@@ -31,7 +32,7 @@ const GROUP_LABEL: Record<Stage["group"], string> = {
 };
 
 export function Architecture() {
-  const reduce = useReducedMotion();
+  const reduce = usePrefersReducedMotion();
   const [active, setActive] = useState(0);
   const [playing, setPlaying] = useState(!reduce);
 

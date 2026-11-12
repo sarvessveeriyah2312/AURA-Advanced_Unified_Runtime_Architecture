@@ -1,4 +1,4 @@
-import { CHANGELOG_URL, LICENSE_URL, MOTTO, README_URL, RELEASED, REPO_URL, VERSION } from "../../data/site";
+import { AUTHOR, CHANGELOG_URL, LICENSE_URL, MOTTO, README_URL, RELEASED, REPO_URL, UPDATED, VERSION } from "../../data/site";
 import { TreadMark } from "../ui/GitHubIcon";
 import { Container } from "../ui/SectionHeading";
 
@@ -8,6 +8,9 @@ const LINKS = [
   { label: "Downloads", href: "#download" },
   { label: "License", href: LICENSE_URL },
   { label: "Changelog", href: CHANGELOG_URL },
+  { label: "FAQ", href: "#faq" },
+  // Machine-readable overview for AI assistants (llmstxt.org).
+  { label: "llms.txt", href: "./llms.txt" },
 ];
 
 export function Footer() {
@@ -23,8 +26,12 @@ export function Footer() {
           </div>
           <p className="mt-3 text-sm text-muted italic">{MOTTO}</p>
           <p className="mt-6 text-xs text-subtle">
-            © 2026 Sarvess Veeriyah. Licensed under the MIT License. Version {VERSION}
-            {RELEASED ? "" : " (unreleased)"}.
+            Created by{" "}
+            <a href={AUTHOR.url} target="_blank" rel="noopener noreferrer author" className="underline-offset-2 hover:text-fg hover:underline">
+              {AUTHOR.name}
+            </a>
+            . © 2026 {AUTHOR.name}. Licensed under the MIT License. Version {VERSION}
+            {RELEASED ? "" : " (unreleased)"}. Last updated <time dateTime={UPDATED}>{UPDATED}</time>.
           </p>
           <p className="mt-2 text-xs text-subtle">
             A tread is one step of a staircase: Tread is learned one stage at a time, from lexer to parser, checker,

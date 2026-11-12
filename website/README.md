@@ -21,9 +21,46 @@ npm run verify:examples  # run every Tread example against a real tread binary
 named by `Tread=/path/to/tread`. Each example's output and exit code must
 match the text shown on the site exactly.
 
+## Search and AI visibility
+
+The page is **prerendered**. `npm run build` builds the client bundle,
+then a server bundle (`src/entry-server.tsx`), and then
+`scripts/prerender.mjs` does three things:
+
+1.  renders the whole page into `dist/index.html`, so crawlers and AI
+    agents that do not run JavaScript see the full content; the browser
+    then hydrates the same markup (`src/main.tsx`);
+2.  injects JSON-LD structured data (`src/lib/structuredData.ts`):
+    `WebSite`, `ComputerLanguage`, `SoftwareSourceCode`, `Person`, and
+    `FAQPage`, built from the same data as the visible text;
+3.  writes `dist/sitemap.xml`, with `<lastmod>` taken from `UPDATED` in
+    `src/data/site.ts`.
+
+Static discovery files live in `public/`:
+
+-   `robots.txt`: allows every crawler, and points to the sitemap;
+-   `llms.txt`: a plain-text overview for AI assistants (llmstxt.org),
+    linked from the footer and the page head;
+-   `og-image.png`: the 1200×630 social sharing card.
+
+**The domain appears in several places.** `https://treadlang.vercel.app/`
+is `SITE_URL` in `src/data/site.ts`, and it also appears as a literal in
+`index.html` (canonical, Open Graph, and Twitter tags), `public/robots.txt`,
+and `public/llms.txt`. Change them all together.
+
+**On release day**, besides setting `RELEASED = true`, update the status
+line in `public/llms.txt` ("0.3.0 is not published as a release yet").
+
+Components must not read `window`, `document`, or `localStorage` while
+rendering, because the page is rendered at build time. Read them in
+effects, or with `useSyncExternalStore` and a server snapshot, as
+`useTheme` and `usePrefersReducedMotion` do.
+
 ## Deploying
 
-`npm run build` writes a self-contained static site to `dist/`. Asset
+`npm run build` writes a self-contained static site to `dist/`.
+`vercel.json` gives the content-hashed files in `/assets/` a one-year
+immutable cache. Asset
 paths are relative (`base: "./"`), so `dist/` works from any URL path,
 including a GitHub Pages project site, with no server configuration.
 
