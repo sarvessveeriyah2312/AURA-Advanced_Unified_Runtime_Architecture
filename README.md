@@ -76,7 +76,7 @@ The design goals:
 | **Helpful errors** | Every error has a stable code (such as `TR-T001`), an exact line and column, and a pointer to the problem. |
 | **Small and understandable** | A compiler and runtime that one developer can read and extend. |
 
-> **Status: 0.3.0, not yet released.** A deliberately small language
+> **Status: 0.3.0, released 2026-11-12.** A deliberately small language
 > core, tested on Linux, macOS, and Windows. 0.3.0 gives the language its
 > name: the `tread` command, `.tr` source files, and `TR-` error codes.
 > Tread 0.x is experimental, and the language may change between minor
@@ -147,11 +147,6 @@ Choose one of three methods:
 | [C. Build from source](#method-c-build-from-source) | Contributors | Yes, Go 1.25 or later |
 
 ### Method A: Download a release (recommended)
-
-> **Tread 0.3.0 has not been published yet.** The archive names and links
-> below are those of the upcoming 0.3.0 release, and they will not work
-> until it is published. Until then, use
-> [Method C](#method-c-build-from-source).
 
 **A prebuilt Tread release does not need Go or any other software.** Each
 archive contains a single, self-contained `tread` executable.
@@ -256,7 +251,6 @@ the first time, because the binary is not code-signed.
 ### Method B: Install with Go
 
 This method needs **Go 1.25 or later**; `go.mod` declares `go 1.25.0`.
-The `@v0.3.0` tag below exists only once 0.3.0 is published.
 Go 1.21 or later can download the required toolchain automatically.
 
 ``` bash
@@ -285,9 +279,8 @@ go build -o ./bin/tread ./cmd/tread
 ./bin/tread run examples/hello.tr        # Hello, Tread!
 ```
 
-The source on the `main` branch may be ahead of the latest release. Once
-0.3.0 is published, run `git checkout v0.3.0` first to build exactly
-that release.
+The source on the `main` branch may be ahead of the latest release. To
+build exactly 0.3.0, run `git checkout v0.3.0` first.
 
 ## Quick start
 
@@ -941,7 +934,7 @@ repository:
 |---|---|---|
 | Core language, compiler, VM, and CLI | **Implemented** | Released in 0.1.0. |
 | Runtime stack traces | **Implemented** | Released in 0.2.0. See [Stack traces](#stack-traces). |
-| Rename to Tread (`tread`, `.tr`, `TR-` codes) | **Implemented** | In 0.3.0 (not yet released). |
+| Rename to Tread (`tread`, `.tr`, `TR-` codes) | **Implemented** | Released in 0.3.0. |
 | Loops (`while`, then `for`) | **Planned** | The next language feature. They remove the need for recursion when repeating work. |
 | Collections (arrays, maps) | Under consideration | |
 | Generics, enums, and pattern matching | Under consideration | |

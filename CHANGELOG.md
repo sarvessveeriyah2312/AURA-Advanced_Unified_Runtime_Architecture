@@ -5,7 +5,7 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 Tread uses [Semantic Versioning](https://semver.org/). Entries for 0.1.0
 and 0.2.0 are kept as written, under the language's name at the time.
 
-## [0.3.0] - Unreleased
+## [0.3.0] - 2026-11-12
 
 The language is renamed **Tread**: *a language for learning how
 languages work*. This is a breaking change, with no backward
