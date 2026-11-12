@@ -37,8 +37,9 @@
   </Package>
 
   <Fragment>
-    <!-- Per-user components use an HKCU value as their key path. -->
-    <Component Id="Executable" Directory="BinFolder">
+    <!-- Per-user components use an HKCU value as their key path, so WiX
+         cannot generate their GUIDs; these are fixed and must never change. -->
+    <Component Id="Executable" Guid="8c674c76-1464-49c9-bb09-366f1295c158" Directory="BinFolder">
       <File Id="TreadExe" Source="$(var.SourceDir)\bin\tread.exe" />
       <RegistryValue Root="HKCU" Key="Software\Tread\SDK" Name="Executable" Type="integer" Value="1" KeyPath="yes" />
       <Environment Id="PathEntry" Name="PATH" Value="[BinFolder]" Part="last" Action="set" System="no" Permanent="no" />
@@ -47,7 +48,7 @@
       <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
       <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
     </Component>
-    <Component Id="Docs" Directory="DocsFolder">
+    <Component Id="Docs" Guid="1b8b226f-6f40-4e06-8dc0-5a232af94faa" Directory="DocsFolder">
       <File Id="License" Source="$(var.SourceDir)\docs\LICENSE" />
       <File Id="Readme" Source="$(var.SourceDir)\docs\README.md" />
       <File Id="Changelog" Source="$(var.SourceDir)\docs\CHANGELOG.md" />
@@ -55,7 +56,7 @@
       <RegistryValue Root="HKCU" Key="Software\Tread\SDK" Name="Docs" Type="integer" Value="1" KeyPath="yes" />
       <RemoveFolder Id="RemoveDocsFolder" Directory="DocsFolder" On="uninstall" />
     </Component>
-    <Component Id="ReleaseInfo" Directory="INSTALLFOLDER">
+    <Component Id="ReleaseInfo" Guid="516c57d7-ecf6-4092-b8de-615382cb9c72" Directory="INSTALLFOLDER">
       <File Id="Release" Source="$(var.SourceDir)\release" />
       <RegistryValue Root="HKCU" Key="Software\Tread\SDK" Name="Release" Type="integer" Value="1" KeyPath="yes" />
     </Component>
