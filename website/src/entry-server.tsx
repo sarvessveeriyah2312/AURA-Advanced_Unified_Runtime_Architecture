@@ -3,17 +3,26 @@
 import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import App from "./App";
+import ChangelogApp from "./ChangelogApp";
 
-export { structuredData } from "./lib/structuredData";
+export { changelogStructuredData, structuredData } from "./lib/structuredData";
 export { SITE_URL, UPDATED } from "./data/site";
 
-// Build-time render of the whole page to static HTML (scripts/prerender.mjs).
+// Build-time render of each page to static HTML (scripts/prerender.mjs).
 // Crawlers and AI agents that do not run JavaScript then see the full
-// content; the browser hydrates the same markup (src/main.tsx).
+// content; the browser hydrates the same markup.
 export function render(): string {
   return renderToString(
     <StrictMode>
       <App />
+    </StrictMode>,
+  );
+}
+
+export function renderChangelog(): string {
+  return renderToString(
+    <StrictMode>
+      <ChangelogApp />
     </StrictMode>,
   );
 }

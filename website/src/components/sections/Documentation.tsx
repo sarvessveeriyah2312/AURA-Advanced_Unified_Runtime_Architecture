@@ -1,5 +1,5 @@
 import { ArrowUpRight, BookMarked, BookOpen, Bug, Code2, FileText, History, ListTree, Rocket, SquareTerminal } from "lucide-react";
-import { CHANGELOG_URL, ISSUES_URL, README_URL, SOURCE_URL, readmeSection } from "../../data/site";
+import { CHANGELOG_PAGE, ISSUES_URL, README_URL, SOURCE_URL, readmeSection } from "../../data/site";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
 
@@ -13,7 +13,7 @@ const DOCS = [
   { icon: ListTree, title: "Language reference", body: "Types, operators, keywords, and scope rules.", href: readmeSection("language-reference") },
   { icon: SquareTerminal, title: "CLI reference", body: "Commands, behaviour, and exit codes.", href: readmeSection("cli-reference") },
   { icon: FileText, title: "Errors and diagnostics", body: "Error format, code families, and stack traces.", href: readmeSection("errors-and-diagnostics") },
-  { icon: History, title: "Changelog", body: "Every user-visible change, release by release.", href: CHANGELOG_URL },
+  { icon: History, title: "Changelog", body: "Every user-visible change, release by release.", href: CHANGELOG_PAGE },
   { icon: Code2, title: "Source code", body: "Compiler, virtual machine, CLI, and tests, in Go.", href: SOURCE_URL },
   { icon: Bug, title: "Issues", body: "Bug reports and feature requests.", href: ISSUES_URL },
 ];
@@ -33,8 +33,7 @@ export function Documentation() {
             <Reveal delay={0.03 * (i % 3)} className="h-full">
               <a
                 href={d.href}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...(d.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="group flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-line-strong"
               >
                 <d.icon className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden />
@@ -47,7 +46,7 @@ export function Documentation() {
                     />
                   </span>
                   <span className="mt-1 block text-sm text-muted">{d.body}</span>
-                  <span className="sr-only">(opens on GitHub in a new tab)</span>
+                  {d.href.startsWith("http") && <span className="sr-only">(opens on GitHub in a new tab)</span>}
                 </span>
               </a>
             </Reveal>

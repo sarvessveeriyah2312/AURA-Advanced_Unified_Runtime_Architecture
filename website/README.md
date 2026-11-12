@@ -21,9 +21,25 @@ npm run verify:examples  # run every Tread example against a real tread binary
 named by `Tread=/path/to/tread`. Each example's output and exit code must
 match the text shown on the site exactly.
 
+## Pages
+
+-   `/` (`index.html`, `src/App.tsx`): the home page.
+-   `/changelog/` (`changelog/index.html`, `src/ChangelogApp.tsx`): the
+    changelog. It is generated at build time from the repository's
+    `../CHANGELOG.md` by `src/data/changelog.ts`, which parses exactly
+    the Markdown that file uses. Edit `CHANGELOG.md`, never the page.
+
+Both pages share `SiteShell` (navigation, footer). Navigation links use
+`/#section` hrefs, so they work from either page. The site is served from
+the root of its domain (`base: "/"` in `vite.config.ts`).
+
+The build reads `../CHANGELOG.md`, outside this folder. On Vercel, keep
+"Include files outside the root directory in the Build Step" enabled
+(the default).
+
 ## Search and AI visibility
 
-The page is **prerendered**. `npm run build` builds the client bundle,
+Every page is **prerendered**. `npm run build` builds the client bundle,
 then a server bundle (`src/entry-server.tsx`), and then
 `scripts/prerender.mjs` does three things:
 
@@ -33,8 +49,12 @@ then a server bundle (`src/entry-server.tsx`), and then
 2.  injects JSON-LD structured data (`src/lib/structuredData.ts`):
     `WebSite`, `ComputerLanguage`, `SoftwareSourceCode`, `Person`, and
     `FAQPage`, built from the same data as the visible text;
-3.  writes `dist/sitemap.xml`, with `<lastmod>` taken from `UPDATED` in
-    `src/data/site.ts`.
+3.  writes `dist/sitemap.xml`, listing both pages, with `<lastmod>`
+    taken from `UPDATED` in `src/data/site.ts`.
+
+The changelog page gets its own title, description, canonical URL, and
+`WebPage` and `BreadcrumbList` JSON-LD (`changelog/index.html`,
+`changelogStructuredData`).
 
 Static discovery files live in `public/`:
 

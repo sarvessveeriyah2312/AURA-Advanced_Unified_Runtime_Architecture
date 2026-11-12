@@ -33,7 +33,12 @@ export const BUILD_INFO_URL = `${DOWNLOAD_BASE}/BUILD-INFO.txt`;
 
 export const README_URL = `${REPO_URL}#readme`;
 export const readmeSection = (anchor: string) => `${REPO_URL}/blob/main/README.md#${anchor}`;
-export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
+export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`; // the source file on GitHub
+// The website's changelog page, generated from CHANGELOG.md at build time.
+export const CHANGELOG_PAGE = "/changelog/";
+export const releaseAnchor = (version: string) => `${CHANGELOG_PAGE}#v${version.replace(/[^0-9A-Za-z]+/g, "-")}`;
+
+export type PageId = "home" | "changelog";
 export const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 export const SOURCE_URL = `${REPO_URL}/tree/main`;
 export const ISSUES_URL = `${REPO_URL}/issues`;

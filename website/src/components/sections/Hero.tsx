@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Download, Monitor, Scale, Tag } from "lucide-react";
 import { HERO_EXAMPLE } from "../../data/examples";
-import { CHANGELOG_URL, MOTTO, RELEASED, REPO_URL, VERSION } from "../../data/site";
+import { MOTTO, RELEASED, REPO_URL, VERSION, releaseAnchor } from "../../data/site";
 import { ButtonLink } from "../ui/Button";
 import { TreadCode, CopyButton, TerminalText, WindowBar } from "../ui/CodeBlock";
 import { GitHubIcon } from "../ui/GitHubIcon";
@@ -25,15 +25,12 @@ export function Hero() {
             lets it paint before any JavaScript runs. */}
         <div>
           <a
-            href={CHANGELOG_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={releaseAnchor(VERSION)}
             className="group inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 py-1 pr-3 pl-1 text-xs text-muted transition-colors hover:border-line-strong hover:text-fg"
           >
             <span className="rounded-full bg-accent-soft px-2 py-0.5 font-medium text-accent">{VERSION}</span>
             The language now has its name: Tread
             <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
-            <span className="sr-only">(changelog opens in a new tab)</span>
           </a>
 
           <h1 id="hero-title" className="mt-7 text-5xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">

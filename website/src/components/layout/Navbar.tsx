@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { MouseEvent } from "react";
 import { Download, Menu, Moon, Sun, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { NAV_LINKS, REPO_URL } from "../../data/site";
+import { CHANGELOG_PAGE, NAV_LINKS, REPO_URL, type PageId } from "../../data/site";
 import { useActiveSection } from "../../hooks/useActiveSection";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { useTheme } from "../../hooks/useTheme";
@@ -31,7 +31,8 @@ function ThemeToggle() {
   );
 }
 
-export function Navbar() {
+export function Navbar({ page = "home" }: { page?: PageId }) {
+  const onHome = page === "home";
   const [open, setOpen] = useState(false);
   const pendingTarget = useRef<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -42,6 +43,10 @@ export function Navbar() {
   // A link in the mobile menu closes the menu first, then scrolls once
   // the menu has collapsed (see onExitComplete).
   const goFromMenu = (e: MouseEvent<HTMLAnchorElement>, id: string) => {
+    if (!onHome) {
+      setOpen(false); // a link to another page: let the browser navigate
+      return;
+    }
     e.preventDefault();
     pendingTarget.current = id;
     setOpen(false);
@@ -89,7 +94,7 @@ export function Navbar() {
       )}
     >
       <Container className="flex h-16 items-center justify-between gap-4">
-        <a href="#top" className="flex items-center gap-2.5 rounded-md" aria-label="Tread, back to top">
+        <a href={onHome ? "#top" : "/"} className="flex items-center gap-2.5 rounded-md" aria-label={onHome ? "Tread, back to top" : "Tread home"}>
           <TreadMark className="size-8" />
           <span className="text-[15px] font-semibold tracking-[0.12em]">Tread</span>
         </a>
@@ -99,17 +104,29 @@ export function Navbar() {
             {NAV_LINKS.map((link) => (
               <li key={link.id}>
                 <a
-                  href={`#${link.id}`}
-                  aria-current={active === link.id ? "location" : undefined}
+                  href={`/#${link.id}`}
+                  aria-current={onHome && active === link.id ? "location" : undefined}
                   className={cn(
                     "rounded-md px-3 py-2 text-sm transition-colors",
-                    active === link.id ? "text-fg" : "text-muted hover:text-fg",
+                    onHome && active === link.id ? "text-fg" : "text-muted hover:text-fg",
                   )}
                 >
                   {link.label}
                 </a>
               </li>
             ))}
+            <li>
+              <a
+                href={CHANGELOG_PAGE}
+                aria-current={page === "changelog" ? "page" : undefined}
+                className={cn(
+                  "rounded-md px-3 py-2 text-sm transition-colors",
+                  page === "changelog" ? "text-fg" : "text-muted hover:text-fg",
+                )}
+              >
+                Changelog
+              </a>
+            </li>
           </ul>
         </nav>
 
@@ -122,7 +139,7 @@ export function Navbar() {
               <GitHubIcon className="size-4" />
               GitHub
             </ButtonLink>
-            <ButtonLink href="#download" size="sm">
+            <ButtonLink href="/#download" size="sm">
               <Download className="size-4" aria-hidden />
               Download Tread
             </ButtonLink>
@@ -157,24 +174,37 @@ export function Navbar() {
                 {NAV_LINKS.map((link) => (
                   <li key={link.id}>
                     <a
-                      href={`#${link.id}`}
+                      href={`/#${link.id}`}
                       onClick={(e) => goFromMenu(e, link.id)}
                       className={cn(
                         "block rounded-lg px-3 py-3 text-[15px]",
-                        active === link.id ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
+                        onHome && active === link.id ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
                       )}
                     >
                       {link.label}
                     </a>
                   </li>
                 ))}
+                <li>
+                  <a
+                    href={CHANGELOG_PAGE}
+                    aria-current={page === "changelog" ? "page" : undefined}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "block rounded-lg px-3 py-3 text-[15px]",
+                      page === "changelog" ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
+                    )}
+                  >
+                    Changelog
+                  </a>
+                </li>
               </ul>
               <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3">
                 <ButtonLink href={REPO_URL} variant="secondary" onClick={() => setOpen(false)}>
                   <GitHubIcon className="size-4" />
                   GitHub
                 </ButtonLink>
-                <ButtonLink href="#download" onClick={(e) => goFromMenu(e, "download")}>
+                <ButtonLink href="/#download" onClick={(e) => goFromMenu(e, "download")}>
                   <Download className="size-4" aria-hidden />
                   Download
                 </ButtonLink>

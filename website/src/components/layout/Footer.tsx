@@ -1,16 +1,16 @@
-import { AUTHOR, CHANGELOG_URL, LICENSE_URL, MOTTO, README_URL, RELEASED, REPO_URL, UPDATED, VERSION } from "../../data/site";
+import { AUTHOR, CHANGELOG_PAGE, LICENSE_URL, MOTTO, README_URL, RELEASED, REPO_URL, UPDATED, VERSION } from "../../data/site";
 import { TreadMark } from "../ui/GitHubIcon";
 import { Container } from "../ui/SectionHeading";
 
 const LINKS = [
   { label: "GitHub", href: REPO_URL },
   { label: "Documentation", href: README_URL },
-  { label: "Downloads", href: "#download" },
+  { label: "Downloads", href: "/#download" },
   { label: "License", href: LICENSE_URL },
-  { label: "Changelog", href: CHANGELOG_URL },
-  { label: "FAQ", href: "#faq" },
+  { label: "Changelog", href: CHANGELOG_PAGE },
+  { label: "FAQ", href: "/#faq" },
   // Machine-readable overview for AI assistants (llmstxt.org).
-  { label: "llms.txt", href: "./llms.txt" },
+  { label: "llms.txt", href: "/llms.txt" },
 ];
 
 export function Footer() {

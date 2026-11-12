@@ -52,3 +52,30 @@ export function structuredData() {
     ],
   };
 }
+
+// JSON-LD for the changelog page: the page itself and its place in the site.
+export function changelogStructuredData() {
+  const url = `${SITE_URL}changelog/`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${url}#webpage`,
+        url,
+        name: "Changelog · Tread",
+        description: "Every user-visible change to Tread, release by release.",
+        isPartOf: { "@id": `${SITE_URL}#website` },
+        about: { "@id": `${SITE_URL}#language` },
+        inLanguage: "en",
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Tread", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name: "Changelog", item: url },
+        ],
+      },
+    ],
+  };
+}

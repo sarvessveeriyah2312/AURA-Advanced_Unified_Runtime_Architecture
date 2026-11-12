@@ -1,7 +1,6 @@
 import { CircleCheck, Clock, Download, ExternalLink, FileText, Laptop, Monitor, Server, ShieldCheck } from "lucide-react";
 import {
   BUILD_FROM_SOURCE,
-  CHANGELOG_URL,
   CHECKSUMS_URL,
   GO_INSTALL,
   PLATFORMS,
@@ -11,6 +10,7 @@ import {
   RELEASES_URL,
   VERSION,
   asset,
+  releaseAnchor,
   readmeSection,
   type Platform,
 } from "../../data/site";
@@ -151,14 +151,13 @@ export function Downloads() {
             )}
             <li>
               <a
-                href={RELEASED ? RELEASE_URL : CHANGELOG_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={RELEASED ? RELEASE_URL : releaseAnchor(VERSION)}
+                {...(RELEASED ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="inline-flex items-center gap-2 text-accent hover:underline"
               >
                 <ExternalLink className="size-4" aria-hidden />
                 {RELEASED ? "Release notes on GitHub" : `What's in ${VERSION} (changelog)`}
-                <span className="sr-only">(opens in a new tab)</span>
+                {RELEASED && <span className="sr-only">(opens in a new tab)</span>}
               </a>
             </li>
             <li>

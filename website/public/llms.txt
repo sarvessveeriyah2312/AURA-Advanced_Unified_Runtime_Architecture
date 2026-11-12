@@ -25,7 +25,7 @@ Key facts (updated 2026-11-12):
 
 ## Optional
 
-- [Changelog](https://github.com/sarvessveeriyah2312/Tread/blob/main/CHANGELOG.md): every user-visible change, by release
+- [Changelog](https://treadlang.vercel.app/changelog/): every user-visible change, by release ([source](https://github.com/sarvessveeriyah2312/Tread/blob/main/CHANGELOG.md))
 - [Source code](https://github.com/sarvessveeriyah2312/Tread/tree/main): compiler, virtual machine, CLI, and tests
 - [Issues](https://github.com/sarvessveeriyah2312/Tread/issues): bug reports and feature requests
 - [Website](https://treadlang.vercel.app/): overview, examples, architecture, and FAQ
