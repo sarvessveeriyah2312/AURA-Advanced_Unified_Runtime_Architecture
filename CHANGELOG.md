@@ -4,6 +4,21 @@ All notable changes to AURA are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 AURA uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+-   **Stack traces for runtime errors.** A runtime error raised inside a
+    function called from `main` is followed by a `stack trace:` block.
+    It lists every active call, innermost first, with the function,
+    location, and source line.
+    -   Consecutive identical frames (recursion) merge into one line with
+        an index range, such as `0-9998:`.
+    -   At most 20 frame lines are printed: the 10 innermost, a count of
+        the frames not shown, and the 10 outermost.
+    -   The error message itself, the exit codes, and the output for
+        errors raised in `main` are unchanged.
+
 ## [0.1.0] - 2026-11-12
 
 The first version of AURA (Advanced Unified Runtime Architecture): a

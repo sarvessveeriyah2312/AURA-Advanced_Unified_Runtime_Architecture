@@ -53,9 +53,11 @@ func build(file *source.File) (*bytecode.Module, []diagnostic.Diagnostic) {
 // runtimeFailure is an AURA runtime error converted to a diagnostic.
 // withSource is false for errors without a source location (bytecode
 // validation failures), which are rendered without a source excerpt.
+// trace is the call stack, innermost first (ADR-0009).
 type runtimeFailure struct {
 	diag       diagnostic.Diagnostic
 	withSource bool
+	trace      []diagnostic.TraceFrame
 }
 
 // execute runs a compiled module, writing program output to out. It
@@ -74,9 +76,14 @@ func execute(m *bytecode.Module, out io.Writer) (*runtimeFailure, error) {
 	if rt.Function != "" {
 		msg = fmt.Sprintf("%s (in function '%s')", rt.Message, rt.Function)
 	}
+	trace := make([]diagnostic.TraceFrame, len(rt.Trace))
+	for i, f := range rt.Trace {
+		trace[i] = diagnostic.TraceFrame{Function: f.Function, Span: f.Span}
+	}
 	return &runtimeFailure{
 		diag:       diagnostic.Errorf(diagnostic.Code(rt.Code), rt.Span, "%s", msg),
 		withSource: rt.HasSpan,
+		trace:      trace,
 	}, nil
 }
 

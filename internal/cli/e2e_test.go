@@ -62,8 +62,17 @@ var e2eCases = []e2eCase{
 	{name: "syntax_multiple", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{"error[AURA-L001]", "error[AURA-P002]"}},
 	{name: "no_main", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{"error[AURA-T013]", "no_main.aura:1:1"}},
 	{name: "calls", cmd: "run", exit: 0, stdout: str("fact(5) = 120\nfact(20) = 2432902008176640000\ntrue\n")},
-	{name: "runtime_in_callee", cmd: "run", exit: 1, stdout: str("5\n"), stderrs: []string{"error[AURA-R001]: division by zero (in function 'div')", "runtime_in_callee.aura:3:12", "a / b"}},
-	{name: "recursion", cmd: "run", exit: 1, stdout: str(""), stderrs: []string{"error[AURA-R003]", "forever(n + 1)"}},
+	{name: "runtime_in_callee", cmd: "run", exit: 1, stdout: str("5\n"), stderrs: []string{"error[AURA-R001]: division by zero (in function 'div')", "runtime_in_callee.aura:3:12", "a / b", "\n\nstack trace:\n  0: div ", "  1: main"}},
+	{name: "recursion", cmd: "run", exit: 1, stdout: str(""), stderrs: []string{"error[AURA-R003]", "forever(n + 1)", "\n\nstack trace:\n", "  0-9998: forever", "  9999:   main"}},
+
+	// ADR-0009: stack traces for runtime errors below main.
+	{name: "trace_nested", cmd: "run", exit: 1, stdout: str("start\n"), stderrs: []string{"error[AURA-R001]: division by zero (in function 'divide')", "\n\nstack trace:\n",
+		"  0: divide   trace_nested.aura:12:12  return a / b\n",
+		"  1: average  trace_nested.aura:8:12   return divide(total, count)\n",
+		"  2: main     trace_nested.aura:4:11   print(average(10, 0))\n"}},
+	{name: "trace_mutual", cmd: "run", exit: 1, stdout: str(""), stderrs: []string{"error[AURA-R003]", "stack trace:\n", "  ... 9980 more frames not shown\n", "  9999: main"}},
+	{name: "trace_overflow", cmd: "run", exit: 1, stdout: str(""), stderrs: []string{"error[AURA-R005]: integer overflow", "(in function 'double')", "stack trace:\n", "  0: double", "  1: main"}},
+	{name: "runtime_in_callee", cmd: "check", exit: 0, stdout: str("")}, // traces are runtime-only
 }
 
 func TestEndToEnd(t *testing.T) {
@@ -244,5 +253,39 @@ func TestDeepNestingDoesNotCrash(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// ADR-0009: an error in main prints no stack trace, so its output is
+// unchanged from 0.1.0; an error below main in a CRLF file reports the
+// same lines and columns as an LF file.
+func TestStackTraceOnlyBelowMainAndCRLF(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, src string) string {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	inMain := write("main.aura", "fn main() -> Unit {\n    let z = 0\n    print(1 / z)\n}\n")
+	_, stderr, code := invoke("run", inMain)
+	if code != ExitFailure || strings.Contains(stderr, "stack trace") || strings.HasSuffix(stderr, "\n\n") {
+		t.Errorf("error in main: exit %d, stderr:\n%s", code, stderr)
+	}
+
+	lf := "fn main() -> Unit {\n    print(f())\n}\n\nfn f() -> Int {\n    let z = 0\n    return 1 / z\n}\n"
+	_, lfErr, _ := invoke("run", write("t.aura", lf))
+	crlfPath := filepath.Join(dir, "crlf", "t.aura")
+	if err := os.MkdirAll(filepath.Dir(crlfPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(crlfPath, []byte(strings.ReplaceAll(lf, "\n", "\r\n")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, crlfErr, code := invoke("run", crlfPath)
+	crlfErr = strings.ReplaceAll(crlfErr, crlfPath, filepath.Join(dir, "t.aura"))
+	if code != ExitFailure || crlfErr != lfErr || !strings.Contains(lfErr, "stack trace:\n  0: f     ") {
+		t.Errorf("CRLF trace differs from LF:\n--- crlf\n%s\n--- lf\n%s", crlfErr, lfErr)
 	}
 }

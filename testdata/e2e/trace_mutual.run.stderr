@@ -1,0 +1,28 @@
+error[AURA-R003]: call depth limit of 10000 exceeded calling pong (in function 'ping')
+  --> trace_mutual.aura:7:12
+   |
+ 7 |     return pong(n + 1)
+   |            ^^^^^^^^^^^
+
+stack trace:
+  0:    ping  trace_mutual.aura:7:12   return pong(n + 1)
+  1:    pong  trace_mutual.aura:11:12  return ping(n + 1)
+  2:    ping  trace_mutual.aura:7:12   return pong(n + 1)
+  3:    pong  trace_mutual.aura:11:12  return ping(n + 1)
+  4:    ping  trace_mutual.aura:7:12   return pong(n + 1)
+  5:    pong  trace_mutual.aura:11:12  return ping(n + 1)
+  6:    ping  trace_mutual.aura:7:12   return pong(n + 1)
+  7:    pong  trace_mutual.aura:11:12  return ping(n + 1)
+  8:    ping  trace_mutual.aura:7:12   return pong(n + 1)
+  9:    pong  trace_mutual.aura:11:12  return ping(n + 1)
+  ... 9980 more frames not shown
+  9990: ping  trace_mutual.aura:7:12   return pong(n + 1)
+  9991: pong  trace_mutual.aura:11:12  return ping(n + 1)
+  9992: ping  trace_mutual.aura:7:12   return pong(n + 1)
+  9993: pong  trace_mutual.aura:11:12  return ping(n + 1)
+  9994: ping  trace_mutual.aura:7:12   return pong(n + 1)
+  9995: pong  trace_mutual.aura:11:12  return ping(n + 1)
+  9996: ping  trace_mutual.aura:7:12   return pong(n + 1)
+  9997: pong  trace_mutual.aura:11:12  return ping(n + 1)
+  9998: ping  trace_mutual.aura:7:12   return pong(n + 1)
+  9999: main  trace_mutual.aura:3:11   print(ping(0))

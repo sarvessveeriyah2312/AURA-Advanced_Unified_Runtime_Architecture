@@ -1,0 +1,12 @@
+// ADR-0009: mutual recursion never merges, so the trace is capped.
+fn main() -> Unit {
+    print(ping(0))
+}
+
+fn ping(n: Int) -> Int {
+    return pong(n + 1)
+}
+
+fn pong(n: Int) -> Int {
+    return ping(n + 1)
+}

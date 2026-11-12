@@ -144,6 +144,11 @@ func runProgram(file *source.File, stdout, stderr io.Writer) int {
 			src = nil
 		}
 		renderAll(stderr, src, []diagnostic.Diagnostic{failure.diag})
+		// ADR-0009: errors below main add a stack trace after a blank line.
+		if src != nil && len(failure.trace) >= 2 {
+			fmt.Fprintln(stderr)
+			_ = diagnostic.RenderTrace(stderr, src, failure.trace)
+		}
 		return exitCodeFor(failure.diag.Code)
 	}
 	return ExitOK
