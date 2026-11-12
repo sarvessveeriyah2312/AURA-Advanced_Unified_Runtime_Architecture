@@ -39,7 +39,7 @@ func TestBinary(t *testing.T) {
 		{args: []string{"run", "hello.nova"}, exit: 2, stdout: "", stderrHas: "is not an AURA source file: expected the .aura extension"},
 		{args: []string{"run"}, exit: 2, stdout: "", stderrHas: "run requires exactly one file argument"},
 		{args: []string{"frobnicate"}, exit: 2, stdout: "", stderrHas: `unknown command "frobnicate"`},
-		{args: []string{"version"}, exit: 0, stdout: "aura 0.1.0\n", stderrNone: true},
+		{args: []string{"version"}, exit: 0, stdout: "aura 0.2.0\n", stderrNone: true},
 	}
 	for _, tt := range tests {
 		cmd := exec.Command(bin, tt.args...)

@@ -14,7 +14,7 @@
 A small, statically typed, general-purpose programming language with a
 bytecode compiler and virtual machine, written in Go.
 
-**Version 0.1.0** · macOS · Linux · Windows ·
+**Version 0.2.0** · macOS · Linux · Windows ·
 [Repository](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture) ·
 [Latest release](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/latest)
 
@@ -72,15 +72,15 @@ The design goals:
 | **Helpful errors** | Every error has a stable code (such as `AURA-T001`), an exact line and column, and a pointer to the problem. |
 | **Small and understandable** | A compiler and runtime that one developer can read and extend. |
 
-> **Status: 0.1.0, released 2026-11-12.** This is the first public
-> version: a deliberately small language core, tested on Linux, macOS,
-> and Windows. AURA 0.x is experimental, and the language may change
+> **Status: 0.2.0, released 2026-11-12.** A deliberately small
+> language core, tested on Linux, macOS, and Windows. 0.2.0 adds stack
+> traces for runtime errors. AURA 0.x is experimental, and the language may change
 > between minor versions. Every change is recorded in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Key features
 
-All of the following are implemented in AURA 0.1.0:
+All of the following are implemented in AURA 0.2.0:
 
 -   **Static typing with inference:** `Int`, `Float`, `Bool`, `String`,
     and `Unit`, with no implicit conversions.
@@ -95,6 +95,8 @@ All of the following are implemented in AURA 0.1.0:
     expression.
 -   **Diagnostics:** 47 stable error codes, precise positions, underlined
     source excerpts, and several errors reported per run.
+-   **Stack traces:** a runtime error inside a function shows every
+    call that led to it.
 -   **A typed bytecode VM:** programs compile to validated, typed
     instructions that execute in a stack-based virtual machine.
 -   **Cross-platform:** prebuilt binaries for macOS, Linux, and Windows,
@@ -122,7 +124,7 @@ flowchart LR
 | Component | What it does |
 |---|---|
 | **AURA Compiler** | Turns source text into bytecode, in four stages. **Lexer:** splits the text into tokens. **Parser:** builds a syntax tree and checks the grammar. **Type checker:** resolves names and checks every type. **Bytecode compiler:** emits typed instructions. If any stage finds errors, they are reported and nothing runs. |
-| **AURA Bytecode** | A compact list of typed instructions, for example "add two `Int`s". It is validated before execution. In 0.1.0 it exists **only in memory**: there are no bytecode files. |
+| **AURA Bytecode** | A compact list of typed instructions, for example "add two `Int`s". It is validated before execution. It currently exists **only in memory**: there are no bytecode files. |
 | **AURA Virtual Machine** | A stack-based interpreter that executes the bytecode. It stops with a clear error on integer overflow, division by zero, or excessive call depth. |
 | **AURA CLI** | The `aura` command. `aura check` runs only the compiler; `aura run` runs the whole pipeline. |
 
@@ -145,15 +147,15 @@ Choose one of three methods:
 archive contains a single, self-contained `aura` executable.
 
 Download from the
-[v0.1.0 release page](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/tag/v0.1.0):
+[v0.2.0 release page](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/tag/v0.2.0):
 
 | Platform | Archive | Minimum OS |
 |---|---|---|
-| macOS, Apple silicon | `aura_0.1.0_darwin_arm64.tar.gz` | macOS 12 |
-| macOS, Intel | `aura_0.1.0_darwin_amd64.tar.gz` | macOS 12 |
-| Linux, x86-64 | `aura_0.1.0_linux_amd64.tar.gz` | kernel 3.2 (not WSL 1) |
-| Linux, ARM64 | `aura_0.1.0_linux_arm64.tar.gz` | kernel 3.2 |
-| Windows, x86-64 | `aura_0.1.0_windows_amd64.zip` | Windows 10 / Server 2016 |
+| macOS, Apple silicon | `aura_0.2.0_darwin_arm64.tar.gz` | macOS 12 |
+| macOS, Intel | `aura_0.2.0_darwin_amd64.tar.gz` | macOS 12 |
+| Linux, x86-64 | `aura_0.2.0_linux_amd64.tar.gz` | kernel 3.2 (not WSL 1) |
+| Linux, ARM64 | `aura_0.2.0_linux_arm64.tar.gz` | kernel 3.2 |
+| Windows, x86-64 | `aura_0.2.0_windows_amd64.zip` | Windows 10 / Server 2016 |
 
 Each archive unpacks to a folder containing:
 
@@ -169,9 +171,9 @@ The release also provides `SHA256SUMS`, to verify your download, and
 #### macOS
 
 ``` bash
-# Apple silicon. For an Intel Mac, use aura_0.1.0_darwin_amd64.tar.gz.
-ARCHIVE=aura_0.1.0_darwin_arm64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.1.0
+# Apple silicon. For an Intel Mac, use aura_0.2.0_darwin_amd64.tar.gz.
+ARCHIVE=aura_0.2.0_darwin_arm64.tar.gz
+BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.2.0
 
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
@@ -180,7 +182,7 @@ shasum -a 256 -c SHA256SUMS --ignore-missing      # expect: <archive>: OK
 tar -xzf "$ARCHIVE"
 sudo mkdir -p /usr/local/bin
 sudo install -m 0755 "${ARCHIVE%.tar.gz}/aura" /usr/local/bin/aura
-aura version                                      # aura 0.1.0
+aura version                                      # aura 0.2.0
 ```
 
 The binaries are not code-signed. Files downloaded with `curl` run
@@ -195,9 +197,9 @@ xattr -d com.apple.quarantine /usr/local/bin/aura
 #### Linux
 
 ``` bash
-# x86-64. For ARM64, use aura_0.1.0_linux_arm64.tar.gz.
-ARCHIVE=aura_0.1.0_linux_amd64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.1.0
+# x86-64. For ARM64, use aura_0.2.0_linux_arm64.tar.gz.
+ARCHIVE=aura_0.2.0_linux_amd64.tar.gz
+BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.2.0
 
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
@@ -205,7 +207,7 @@ sha256sum -c SHA256SUMS --ignore-missing           # expect: <archive>: OK
 
 tar -xzf "$ARCHIVE"
 sudo install -m 0755 "${ARCHIVE%.tar.gz}/aura" /usr/local/bin/aura
-aura version                                       # aura 0.1.0
+aura version                                       # aura 0.2.0
 ```
 
 The Linux binaries are statically linked and need no system libraries.
@@ -226,23 +228,23 @@ its full path.
 #### Windows (PowerShell)
 
 ``` powershell
-$Base = "https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.1.0"
-Invoke-WebRequest "$Base/aura_0.1.0_windows_amd64.zip" -OutFile aura_0.1.0_windows_amd64.zip
+$Base = "https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.2.0"
+Invoke-WebRequest "$Base/aura_0.2.0_windows_amd64.zip" -OutFile aura_0.2.0_windows_amd64.zip
 Invoke-WebRequest "$Base/SHA256SUMS" -OutFile SHA256SUMS
 
 # Verify: both lines must show the same hash.
 (Select-String -Path SHA256SUMS -Pattern "windows_amd64.zip").Line.Split(" ")[0]
-(Get-FileHash aura_0.1.0_windows_amd64.zip -Algorithm SHA256).Hash.ToLower()
+(Get-FileHash aura_0.2.0_windows_amd64.zip -Algorithm SHA256).Hash.ToLower()
 
-Expand-Archive aura_0.1.0_windows_amd64.zip -DestinationPath .
+Expand-Archive aura_0.2.0_windows_amd64.zip -DestinationPath .
 $Dest = "$env:LOCALAPPDATA\Programs\aura"
 New-Item -ItemType Directory -Force $Dest | Out-Null
-Copy-Item .\aura_0.1.0_windows_amd64\aura.exe $Dest
+Copy-Item .\aura_0.2.0_windows_amd64\aura.exe $Dest
 [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$Dest", "User")
 ```
 
 Open a **new** terminal, so that it picks up the updated `PATH`, then
-run `aura version`. It should print `aura 0.1.0`. SmartScreen may warn
+run `aura version`. It should print `aura 0.2.0`. SmartScreen may warn
 the first time, because the binary is not code-signed.
 
 ### Method B: Install with Go
@@ -251,7 +253,7 @@ This method needs **Go 1.25 or later**; `go.mod` declares `go 1.25.0`.
 Go 1.21 or later can download the required toolchain automatically.
 
 ``` bash
-go install github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/cmd/aura@v0.1.0
+go install github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/cmd/aura@v0.2.0
 ```
 
 Go installs `aura` into `$(go env GOBIN)`, or into
@@ -260,7 +262,7 @@ That directory must be on your `PATH`:
 
 ``` bash
 export PATH="$PATH:$(go env GOPATH)/bin"   # add this to your shell profile
-aura version                               # aura 0.1.0
+aura version                               # aura 0.2.0
 ```
 
 ### Method C: Build from source
@@ -272,12 +274,12 @@ dependencies.
 git clone https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture.git
 cd AURA-Advanced_Unified_Runtime_Architecture
 go build -o ./bin/aura ./cmd/aura
-./bin/aura version                       # aura 0.1.0
+./bin/aura version                       # aura 0.2.0
 ./bin/aura run examples/hello.aura       # Hello, AURA!
 ```
 
 The source on the `main` branch may be ahead of the latest release. To
-build exactly 0.1.0, run `git checkout v0.1.0` first.
+build exactly 0.2.0, run `git checkout v0.2.0` first.
 
 ## Quick start
 
@@ -286,7 +288,7 @@ build exactly 0.1.0, run `git checkout v0.1.0` first.
 
     ``` text
     $ aura version
-    aura 0.1.0
+    aura 0.2.0
     ```
 
 3.  **Create** a file named `hello.aura`:
@@ -316,7 +318,7 @@ Next, work through the [Language tutorial](#language-tutorial).
 ## Language tutorial
 
 Each lesson is a complete program. Save it as a `.aura` file and run it
-with `aura run`. The output shown is exactly what AURA 0.1.0 prints.
+with `aura run`. The output shown is exactly what AURA 0.2.0 prints.
 
 1.  [Program structure and comments](#1-program-structure-and-comments)
 2.  [Variables and mutability](#2-variables-and-mutability)
@@ -353,7 +355,8 @@ Hello from AURA
     may continue on the next line after an operator such as `+`, or
     inside parentheses.
 -   **`module`:** an optional `module` declaration may appear first. In
-    0.1.0, a program is a single file and the name has no other effect.
+    AURA 0.2.0, a program is a single file and the name has no other
+    effect.
 -   **Order:** functions may appear in any order.
 
 ### 2. Variables and mutability
@@ -577,7 +580,7 @@ Welcome to AURA
 
 ### 9. Recursion
 
-AURA 0.1.0 has no loops, so repetition uses recursion:
+AURA 0.2.0 has no loops, so repetition uses recursion:
 
 ``` aura
 fn main() -> Unit {
@@ -697,7 +700,7 @@ aura <command> [arguments]
 |---|---|---|---|
 | `aura run <file.aura>` | Check, compile, and run a program. It runs only if there are no compile-time errors. | Program output on stdout; errors on stderr | `0`, `1`, `2`, or `3` |
 | `aura check <file.aura>` | Check a program without running it. | Nothing on success; errors on stderr | `0`, `1`, or `2` |
-| `aura version` | Print the version. | `aura 0.1.0` on stdout | `0` |
+| `aura version` | Print the version. | `aura 0.2.0` on stdout | `0` |
 | `aura help` | Print usage. | Usage on stdout | `0` |
 
 Flags: `--version` is the same as `aura version`; `-h` and `--help` are
@@ -817,7 +820,8 @@ error[AURA-T004]: cannot assign twice to immutable variable 'limit'
 ```
 
 **Runtime errors** stop the program at the failing operation, and name
-the function it was in:
+the function it was in. An error inside a called function also prints a
+[stack trace](#stack-traces):
 
 ``` aura
 fn main() -> Unit {
@@ -837,16 +841,12 @@ error[AURA-R001]: division by zero (in function 'main')
    |           ^^^^^^^^^^^
 ```
 
-### Stack traces (next release)
+### Stack traces
 
-> **Not in AURA 0.1.0.** This is implemented on the `main` branch, and
-> will ship in the next release. To try it now, use
-> [Method C](#method-c-build-from-source) without checking out `v0.1.0`.
-
-When a runtime error happens inside a function called from `main`, AURA
+*New in 0.2.0.* When a runtime error happens inside a function called from `main`, AURA
 also prints the chain of calls that led there, innermost first. The
 error itself is unchanged; errors raised directly in `main` look exactly
-as before.
+as in 0.1.0.
 
 ``` aura
 fn main() -> Unit {
@@ -901,7 +901,7 @@ problem:
 
 ## Current limitations
 
-AURA 0.1.0 is intentionally small.
+AURA 0.2.0 is intentionally small.
 
 **Not yet in the language:**
 
@@ -922,10 +922,6 @@ AURA 0.1.0 is intentionally small.
 -   **Nesting:** limited to 10,000 levels of parentheses, blocks, or
     `else if` chains (`AURA-P014`).
 -   **Calls:** limited to 10,000 deep, including `main` (`AURA-R003`).
--   **In 0.1.0, runtime errors** name the function they occurred in, but
-    do not show the chain of calls that led there. Stack traces are
-    implemented on `main` for the next release; see
-    [Stack traces](#stack-traces-next-release).
 -   **Binaries** are not code-signed.
 
 ## Roadmap
@@ -936,7 +932,7 @@ repository:
 | Area | Status | Notes |
 |---|---|---|
 | Core language, compiler, VM, and CLI | **Implemented** | Released in 0.1.0. |
-| Runtime stack traces | **Implemented** (on `main`, not yet released) | Show every active call when a runtime error occurs. Merged into `main`, and ships in the next release. See [Stack traces](#stack-traces-next-release). |
+| Runtime stack traces | **Implemented** | Released in 0.2.0. See [Stack traces](#stack-traces). |
 | Loops (`while`, then `for`) | **Planned** | The next language feature. They remove the need for recursion when repeating work. |
 | Collections (arrays, maps) | Under consideration | |
 | Generics, enums, and pattern matching | Under consideration | |

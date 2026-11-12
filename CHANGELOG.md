@@ -4,7 +4,10 @@ All notable changes to AURA are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 AURA uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - 2026-11-12
+
+Runtime stack traces. There are no language changes, and no breaking
+changes.
 
 ### Added
 
