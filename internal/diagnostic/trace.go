@@ -33,9 +33,9 @@ const (
 // when there are fewer than two frames (an error in main) or no file.
 //
 //	stack trace:
-//	  0: divide   trace.aura:10:12  return a / b
-//	  1: average  trace.aura:6:12   return divide(total, count)
-//	  2: main     trace.aura:2:11   print(average(10, 0))
+//	  0: divide   trace.tr:10:12  return a / b
+//	  1: average  trace.tr:6:12   return divide(total, count)
+//	  2: main     trace.tr:2:11   print(average(10, 0))
 //
 // Consecutive identical frames (same function and location) merge into
 // one line labelled with their index range. After merging, at most 20

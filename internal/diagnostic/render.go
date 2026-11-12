@@ -12,8 +12,8 @@ import (
 
 // Render writes d in the human-readable format of docs/04 §4.4:
 //
-//	error[AURA-T001]: expected Int but found String
-//	  --> examples/main.aura:4:18
+//	error[TR-T001]: expected Int but found String
+//	  --> examples/main.tr:4:18
 //	   |
 //	 4 | let total: Int = "five"
 //	   |                  ^^^^^^

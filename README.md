@@ -1,44 +1,43 @@
 <div align="center">
 
-# AURA
+# Tread
 
-**Advanced Unified Runtime Architecture**
-
-*Give ideas the power to become reality.*
+*A language for learning how languages work.*
 
 [![CI](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/actions/workflows/ci.yml/badge.svg)](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture)](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture)](LICENSE)
 [![Go](https://img.shields.io/github/go-mod/go-version/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture)](go.mod)
 
-A small, statically typed, general-purpose programming language with a
-bytecode compiler and virtual machine, written in Go.
+A small, statically typed programming language whose whole toolchain
+(lexer, parser, type checker, bytecode compiler, and virtual machine) is
+built to be read, one stage at a time. Written in Go.
 
-**Version 0.2.0** · macOS · Linux · Windows ·
+**Version 0.3.0** · macOS · Linux · Windows ·
 [Repository](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture) ·
 [Latest release](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/latest)
 
 </div>
 
-``` aura
+``` tread
 fn main() -> Unit {
-    let name = "AURA"
+    let name = "Tread"
     print("Hello, ${name}!")
 }
 ```
 
 ``` text
-$ aura run hello.aura
-Hello, AURA!
+$ tread run hello.tr
+Hello, Tread!
 ```
 
 ------------------------------------------------------------------------
 
 ## Contents
 
--   [What is AURA?](#what-is-aura)
+-   [What is Tread?](#what-is-tread)
 -   [Key features](#key-features)
--   [How AURA works](#how-aura-works)
+-   [How Tread works](#how-tread-works)
 -   [Installation](#installation)
 -   [Quick start](#quick-start)
 -   [Language tutorial](#language-tutorial)
@@ -50,16 +49,20 @@ Hello, AURA!
 -   [Repository structure](#repository-structure)
 -   [Development](#development)
 -   [Contributing](#contributing)
--   [The AURA name](#the-aura-name)
+-   [The Tread name](#the-tread-name)
 -   [License](#license)
 
-## What is AURA?
+## What is Tread?
 
-AURA is a small, statically typed, general-purpose programming language.
+Tread is a small, statically typed, general-purpose programming language,
+and **a language for learning how languages work**. Every stage that turns
+source code into a running program is a separate, readable Go package, so
+you can follow a program from text to tokens, to a syntax tree, to checked
+types, to bytecode, to execution, one step at a time.
 
--   You write programs in `.aura` files.
--   The `aura` command checks a program for mistakes before running it,
-    compiles it to bytecode, and executes that bytecode on the AURA
+-   You write programs in `.tr` files.
+-   The `tread` command checks a program for mistakes before running it,
+    compiles it to bytecode, and executes that bytecode on the Tread
     Virtual Machine.
 
 The design goals:
@@ -69,18 +72,19 @@ The design goals:
 | **Readable** | Clean syntax with no semicolons: a new line ends a statement. |
 | **Predictable** | Every type, operator, and error is specified. Integer overflow is an error, never a silent wrap-around. |
 | **Safe before running** | Type errors are found before any code executes. |
-| **Helpful errors** | Every error has a stable code (such as `AURA-T001`), an exact line and column, and a pointer to the problem. |
+| **Helpful errors** | Every error has a stable code (such as `TR-T001`), an exact line and column, and a pointer to the problem. |
 | **Small and understandable** | A compiler and runtime that one developer can read and extend. |
 
-> **Status: 0.2.0, released 2026-11-12.** A deliberately small
-> language core, tested on Linux, macOS, and Windows. 0.2.0 adds stack
-> traces for runtime errors. AURA 0.x is experimental, and the language may change
-> between minor versions. Every change is recorded in
+> **Status: 0.3.0, not yet released.** A deliberately small language
+> core, tested on Linux, macOS, and Windows. 0.3.0 gives the language its
+> name: the `tread` command, `.tr` source files, and `TR-` error codes.
+> Tread 0.x is experimental, and the language may change between minor
+> versions. Every change is recorded in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Key features
 
-All of the following are implemented in AURA 0.2.0:
+All of the following are implemented in Tread 0.3.0:
 
 -   **Static typing with inference:** `Int`, `Float`, `Bool`, `String`,
     and `Unit`, with no implicit conversions.
@@ -102,18 +106,18 @@ All of the following are implemented in AURA 0.2.0:
 -   **Cross-platform:** prebuilt binaries for macOS, Linux, and Windows,
     with no dependencies.
 
-## How AURA works
+## How Tread works
 
 ``` mermaid
 flowchart LR
-    A["Source code<br/>hello.aura"] --> B[Lexer]
+    A["Source code<br/>hello.tr"] --> B[Lexer]
     B --> C["Parser<br/>(syntax tree)"]
     C --> D[Type checker]
     D --> E[Bytecode compiler]
-    E --> F[["AURA Bytecode<br/>(in memory)"]]
-    F --> G[AURA Virtual Machine]
+    E --> F[["Tread Bytecode<br/>(in memory)"]]
+    F --> G[Tread Virtual Machine]
     G --> H[Program output]
-    subgraph compiler [AURA Compiler]
+    subgraph compiler [Tread Compiler]
         B
         C
         D
@@ -123,12 +127,12 @@ flowchart LR
 
 | Component | What it does |
 |---|---|
-| **AURA Compiler** | Turns source text into bytecode, in four stages. **Lexer:** splits the text into tokens. **Parser:** builds a syntax tree and checks the grammar. **Type checker:** resolves names and checks every type. **Bytecode compiler:** emits typed instructions. If any stage finds errors, they are reported and nothing runs. |
-| **AURA Bytecode** | A compact list of typed instructions, for example "add two `Int`s". It is validated before execution. It currently exists **only in memory**: there are no bytecode files. |
-| **AURA Virtual Machine** | A stack-based interpreter that executes the bytecode. It stops with a clear error on integer overflow, division by zero, or excessive call depth. |
-| **AURA CLI** | The `aura` command. `aura check` runs only the compiler; `aura run` runs the whole pipeline. |
+| **Tread Compiler** | Turns source text into bytecode, in four stages. **Lexer:** splits the text into tokens. **Parser:** builds a syntax tree and checks the grammar. **Type checker:** resolves names and checks every type. **Bytecode compiler:** emits typed instructions. If any stage finds errors, they are reported and nothing runs. |
+| **Tread Bytecode** | A compact list of typed instructions, for example "add two `Int`s". It is validated before execution. It currently exists **only in memory**: there are no bytecode files. |
+| **Tread Virtual Machine** | A stack-based interpreter that executes the bytecode. It stops with a clear error on integer overflow, division by zero, or excessive call depth. |
+| **Tread CLI** | The `tread` command. `tread check` runs only the compiler; `tread run` runs the whole pipeline. |
 
-AURA does **not** compile to native machine code. `aura run` compiles and
+Tread does **not** compile to native machine code. `tread run` compiles and
 executes a program each time.
 
 ## Installation
@@ -137,29 +141,34 @@ Choose one of three methods:
 
 | Method | Best for | Requires Go? |
 |---|---|---|
-| [A. Download a release](#method-a-download-a-release-recommended) (recommended) | Using AURA | **No** |
+| [A. Download a release](#method-a-download-a-release-recommended) (recommended) | Using Tread | **No** |
 | [B. Install with Go](#method-b-install-with-go) | Go developers | Yes, Go 1.25 or later |
 | [C. Build from source](#method-c-build-from-source) | Contributors | Yes, Go 1.25 or later |
 
 ### Method A: Download a release (recommended)
 
-**A prebuilt AURA release does not need Go or any other software.** Each
-archive contains a single, self-contained `aura` executable.
+> **Tread 0.3.0 has not been published yet.** The archive names and links
+> below are those of the upcoming 0.3.0 release, and they will not work
+> until it is published. Until then, use
+> [Method C](#method-c-build-from-source).
+
+**A prebuilt Tread release does not need Go or any other software.** Each
+archive contains a single, self-contained `tread` executable.
 
 Download from the
-[v0.2.0 release page](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/tag/v0.2.0):
+[v0.3.0 release page](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/tag/v0.3.0):
 
 | Platform | Archive | Minimum OS |
 |---|---|---|
-| macOS, Apple silicon | `aura_0.2.0_darwin_arm64.tar.gz` | macOS 12 |
-| macOS, Intel | `aura_0.2.0_darwin_amd64.tar.gz` | macOS 12 |
-| Linux, x86-64 | `aura_0.2.0_linux_amd64.tar.gz` | kernel 3.2 (not WSL 1) |
-| Linux, ARM64 | `aura_0.2.0_linux_arm64.tar.gz` | kernel 3.2 |
-| Windows, x86-64 | `aura_0.2.0_windows_amd64.zip` | Windows 10 / Server 2016 |
+| macOS, Apple silicon | `tread_0.3.0_darwin_arm64.tar.gz` | macOS 12 |
+| macOS, Intel | `tread_0.3.0_darwin_amd64.tar.gz` | macOS 12 |
+| Linux, x86-64 | `tread_0.3.0_linux_amd64.tar.gz` | kernel 3.2 (not WSL 1) |
+| Linux, ARM64 | `tread_0.3.0_linux_arm64.tar.gz` | kernel 3.2 |
+| Windows, x86-64 | `tread_0.3.0_windows_amd64.zip` | Windows 10 / Server 2016 |
 
 Each archive unpacks to a folder containing:
 
--   `aura` (`aura.exe` on Windows);
+-   `tread` (`tread.exe` on Windows);
 -   `LICENSE`;
 -   `README.md`;
 -   `CHANGELOG.md`;
@@ -171,9 +180,9 @@ The release also provides `SHA256SUMS`, to verify your download, and
 #### macOS
 
 ``` bash
-# Apple silicon. For an Intel Mac, use aura_0.2.0_darwin_amd64.tar.gz.
-ARCHIVE=aura_0.2.0_darwin_arm64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.2.0
+# Apple silicon. For an Intel Mac, use tread_0.3.0_darwin_amd64.tar.gz.
+ARCHIVE=tread_0.3.0_darwin_arm64.tar.gz
+BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.3.0
 
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
@@ -181,33 +190,33 @@ shasum -a 256 -c SHA256SUMS --ignore-missing      # expect: <archive>: OK
 
 tar -xzf "$ARCHIVE"
 sudo mkdir -p /usr/local/bin
-sudo install -m 0755 "${ARCHIVE%.tar.gz}/aura" /usr/local/bin/aura
-aura version                                      # aura 0.2.0
+sudo install -m 0755 "${ARCHIVE%.tar.gz}/tread" /usr/local/bin/tread
+tread version                                     # tread 0.3.0
 ```
 
 The binaries are not code-signed. Files downloaded with `curl` run
 normally. If you download the archive in a **browser**, macOS Gatekeeper
-may block `aura`. After verifying the checksum, remove the quarantine
+may block `tread`. After verifying the checksum, remove the quarantine
 flag:
 
 ``` bash
-xattr -d com.apple.quarantine /usr/local/bin/aura
+xattr -d com.apple.quarantine /usr/local/bin/tread
 ```
 
 #### Linux
 
 ``` bash
-# x86-64. For ARM64, use aura_0.2.0_linux_arm64.tar.gz.
-ARCHIVE=aura_0.2.0_linux_amd64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.2.0
+# x86-64. For ARM64, use tread_0.3.0_linux_arm64.tar.gz.
+ARCHIVE=tread_0.3.0_linux_amd64.tar.gz
+BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.3.0
 
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
 sha256sum -c SHA256SUMS --ignore-missing           # expect: <archive>: OK
 
 tar -xzf "$ARCHIVE"
-sudo install -m 0755 "${ARCHIVE%.tar.gz}/aura" /usr/local/bin/aura
-aura version                                       # aura 0.2.0
+sudo install -m 0755 "${ARCHIVE%.tar.gz}/tread" /usr/local/bin/tread
+tread version                                      # tread 0.3.0
 ```
 
 The Linux binaries are statically linked and need no system libraries.
@@ -217,85 +226,83 @@ that directory is on your `PATH`:
 
 ``` bash
 mkdir -p ~/.local/bin
-install -m 0755 "${ARCHIVE%.tar.gz}/aura" ~/.local/bin/aura
+install -m 0755 "${ARCHIVE%.tar.gz}/tread" ~/.local/bin/tread
 ```
 
-**Arch Linux users:** the AUR package manager `aura` (`fosskers/aura`)
-installs a command with the same name. If you use it, install this
-`aura` under a different file name, such as `aura-lang`, or run it by
-its full path.
 
 #### Windows (PowerShell)
 
 ``` powershell
-$Base = "https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.2.0"
-Invoke-WebRequest "$Base/aura_0.2.0_windows_amd64.zip" -OutFile aura_0.2.0_windows_amd64.zip
+$Base = "https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.3.0"
+Invoke-WebRequest "$Base/tread_0.3.0_windows_amd64.zip" -OutFile tread_0.3.0_windows_amd64.zip
 Invoke-WebRequest "$Base/SHA256SUMS" -OutFile SHA256SUMS
 
 # Verify: both lines must show the same hash.
 (Select-String -Path SHA256SUMS -Pattern "windows_amd64.zip").Line.Split(" ")[0]
-(Get-FileHash aura_0.2.0_windows_amd64.zip -Algorithm SHA256).Hash.ToLower()
+(Get-FileHash tread_0.3.0_windows_amd64.zip -Algorithm SHA256).Hash.ToLower()
 
-Expand-Archive aura_0.2.0_windows_amd64.zip -DestinationPath .
-$Dest = "$env:LOCALAPPDATA\Programs\aura"
+Expand-Archive tread_0.3.0_windows_amd64.zip -DestinationPath .
+$Dest = "$env:LOCALAPPDATA\Programs\tread"
 New-Item -ItemType Directory -Force $Dest | Out-Null
-Copy-Item .\aura_0.2.0_windows_amd64\aura.exe $Dest
+Copy-Item .\tread_0.3.0_windows_amd64\tread.exe $Dest
 [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$Dest", "User")
 ```
 
 Open a **new** terminal, so that it picks up the updated `PATH`, then
-run `aura version`. It should print `aura 0.2.0`. SmartScreen may warn
+run `tread version`. It should print `tread 0.3.0`. SmartScreen may warn
 the first time, because the binary is not code-signed.
 
 ### Method B: Install with Go
 
 This method needs **Go 1.25 or later**; `go.mod` declares `go 1.25.0`.
+The `@v0.3.0` tag below exists only once 0.3.0 is published.
 Go 1.21 or later can download the required toolchain automatically.
 
 ``` bash
-go install github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/cmd/aura@v0.2.0
+go install github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/cmd/tread@v0.3.0
 ```
 
-Go installs `aura` into `$(go env GOBIN)`, or into
+Go installs `tread` into `$(go env GOBIN)`, or into
 `$(go env GOPATH)/bin` (usually `~/go/bin`) when `GOBIN` is not set.
 That directory must be on your `PATH`:
 
 ``` bash
 export PATH="$PATH:$(go env GOPATH)/bin"   # add this to your shell profile
-aura version                               # aura 0.2.0
+tread version                              # tread 0.3.0
 ```
 
 ### Method C: Build from source
 
-This method needs **Go 1.25 or later** and Git. AURA has no other
+This method needs **Go 1.25 or later** and Git. Tread has no other
 dependencies.
 
 ``` bash
 git clone https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture.git
 cd AURA-Advanced_Unified_Runtime_Architecture
-go build -o ./bin/aura ./cmd/aura
-./bin/aura version                       # aura 0.2.0
-./bin/aura run examples/hello.aura       # Hello, AURA!
+go build -o ./bin/tread ./cmd/tread
+./bin/tread version                      # tread 0.3.0
+./bin/tread run examples/hello.tr        # Hello, Tread!
 ```
 
-The source on the `main` branch may be ahead of the latest release. To
-build exactly 0.2.0, run `git checkout v0.2.0` first.
+The source on the `main` branch may be ahead of the latest release. Once
+0.3.0 is published, run `git checkout v0.3.0` first to build exactly
+that release.
 
 ## Quick start
 
-1.  **Install AURA** with [Method A](#method-a-download-a-release-recommended).
+1.  **Install Tread** with [Method A](#method-a-download-a-release-recommended).
 2.  **Check the installation:**
 
     ``` text
-    $ aura version
-    aura 0.2.0
+    $ tread version
+    tread 0.3.0
     ```
 
-3.  **Create** a file named `hello.aura`:
+3.  **Create** a file named `hello.tr`:
 
-    ``` aura
+    ``` tread
     fn main() -> Unit {
-        let name = "AURA"
+        let name = "Tread"
         print("Hello, ${name}!")
     }
     ```
@@ -303,22 +310,22 @@ build exactly 0.2.0, run `git checkout v0.2.0` first.
 4.  **Check it** for errors. No output means no errors:
 
     ``` text
-    $ aura check hello.aura
+    $ tread check hello.tr
     ```
 
 5.  **Run it:**
 
     ``` text
-    $ aura run hello.aura
-    Hello, AURA!
+    $ tread run hello.tr
+    Hello, Tread!
     ```
 
 Next, work through the [Language tutorial](#language-tutorial).
 
 ## Language tutorial
 
-Each lesson is a complete program. Save it as a `.aura` file and run it
-with `aura run`. The output shown is exactly what AURA 0.2.0 prints.
+Each lesson is a complete program. Save it as a `.tr` file and run it
+with `tread run`. The output shown is exactly what Tread 0.3.0 prints.
 
 1.  [Program structure and comments](#1-program-structure-and-comments)
 2.  [Variables and mutability](#2-variables-and-mutability)
@@ -334,19 +341,19 @@ with `aura run`. The output shown is exactly what AURA 0.2.0 prints.
 
 ### 1. Program structure and comments
 
-``` aura
-// hello.aura: every program starts in main.
+``` tread
+// hello.tr: every program starts in main.
 /* Block comments
    can span several lines. */
 module hello
 
 fn main() -> Unit {
-    print("Hello from AURA")   // prints one line
+    print("Hello from Tread")   // prints one line
 }
 ```
 
 ``` text
-Hello from AURA
+Hello from Tread
 ```
 
 -   **`main` is required:** every program has exactly one
@@ -355,15 +362,15 @@ Hello from AURA
     may continue on the next line after an operator such as `+`, or
     inside parentheses.
 -   **`module`:** an optional `module` declaration may appear first. In
-    AURA 0.2.0, a program is a single file and the name has no other
+    Tread 0.3.0, a program is a single file and the name has no other
     effect.
 -   **Order:** functions may appear in any order.
 
 ### 2. Variables and mutability
 
-``` aura
+``` tread
 fn main() -> Unit {
-    let language = "AURA"        // immutable
+    let language = "Tread"        // immutable
     let mut visits = 0           // mutable
     visits = visits + 1
     visits = visits + 1
@@ -373,17 +380,17 @@ fn main() -> Unit {
 ```
 
 ``` text
-AURA
+Tread
 2
 ```
 
 `let` creates a binding that cannot be reassigned. Use `let mut` when
 the value needs to change. Assigning to a `let` binding is a
-compile-time error (`AURA-T004`).
+compile-time error (`TR-T004`).
 
 ### 3. Static types and type inference
 
-``` aura
+``` tread
 fn main() -> Unit {
     let count: Int = 3
     let price: Float = 2.5
@@ -406,7 +413,7 @@ fn main() -> Unit {
 -   **No implicit conversions:** `Int` and `Float` never mix, so this
     is rejected before the program runs:
 
-``` aura
+``` tread
 fn main() -> Unit {
     let count = 3
     let price = 2.5
@@ -415,9 +422,9 @@ fn main() -> Unit {
 ```
 
 ``` text
-$ aura check mixed.aura
-error[AURA-T007]: operator '*' cannot be applied to Int and Float
-  --> mixed.aura:4:11
+$ tread check mixed.tr
+error[TR-T007]: operator '*' cannot be applied to Int and Float
+  --> mixed.tr:4:11
    |
  4 |     print(count * price)
    |           ^^^^^^^^^^^^^
@@ -425,7 +432,7 @@ error[AURA-T007]: operator '*' cannot be applied to Int and Float
 
 ### 4. Arithmetic and operators
 
-``` aura
+``` tread
 fn main() -> Unit {
     print(7 / 2)                 // Int division truncates
     print(7 % 2)
@@ -433,7 +440,7 @@ fn main() -> Unit {
     print(7.0 / 2.0)             // Float division
     print(2 + 3 * 4)             // precedence: * before +
     print((2 + 3) * 4)
-    print("AU" + "RA")           // String concatenation
+    print("Tr" + "ead")          // String concatenation
     print("count: " + toString(42))
 }
 ```
@@ -445,12 +452,12 @@ fn main() -> Unit {
 3.5
 14
 20
-AURA
+Tread
 count: 42
 ```
 
--   **`Int` arithmetic is checked.** Overflow (`AURA-R005`), and
-    division or remainder by zero (`AURA-R001`), stop the program with
+-   **`Int` arithmetic is checked.** Overflow (`TR-R005`), and
+    division or remainder by zero (`TR-R001`), stop the program with
     an error.
 -   **`Int` division** rounds toward zero, and `%` takes the sign of
     the left operand.
@@ -459,7 +466,7 @@ count: 42
 
 ### 5. Boolean expressions
 
-``` aura
+``` tread
 fn main() -> Unit {
     let age = 20
     let member = false
@@ -487,7 +494,7 @@ true
 
 ### 6. Conditional statements
 
-``` aura
+``` tread
 fn main() -> Unit {
     grade(91)
     grade(72)
@@ -518,14 +525,14 @@ fn grade(score: Int) -> Unit {
 
 ### 7. Strings and interpolation
 
-``` aura
+``` tread
 fn main() -> Unit {
     let item = "coffee"
     let price = 4
     let qty = 3
     print("${qty} x ${item} = ${price * qty}")
     print("Tab:\tdone")
-    print("Quote: \"AURA\"")
+    print("Quote: \"Tread\"")
     print("Literal: \${not interpolated}")
 }
 ```
@@ -533,7 +540,7 @@ fn main() -> Unit {
 ``` text
 3 x coffee = 12
 Tab:	done
-Quote: "AURA"
+Quote: "Tread"
 Literal: ${not interpolated}
 ```
 
@@ -545,11 +552,11 @@ Literal: ${not interpolated}
 
 ### 8. Functions and return values
 
-``` aura
+``` tread
 fn main() -> Unit {
     print(square(9))
     print(greet("Ada"))
-    announce("AURA")
+    announce("Tread")
 }
 
 fn square(n: Int) -> Int {
@@ -568,21 +575,21 @@ fn announce(name: String) -> Unit {
 ``` text
 81
 Hello, Ada!
-Welcome to AURA
+Welcome to Tread
 ```
 
 -   **Signatures:** every parameter has a type, and every function
     declares its return type after `->`.
 -   **Returning a value:** such a function must `return` one on every
-    path (`AURA-T008`).
+    path (`TR-T008`).
 -   **`Unit` functions** return nothing, and may use a bare `return` to
     stop early.
 
 ### 9. Recursion
 
-AURA 0.2.0 has no loops, so repetition uses recursion:
+Tread 0.3.0 has no loops, so repetition uses recursion:
 
-``` aura
+``` tread
 fn main() -> Unit {
     countdown(3)
     print(sum(100))
@@ -614,11 +621,11 @@ Liftoff!
 ```
 
 Calls may nest up to 10,000 deep, including `main`. Deeper recursion
-stops with `AURA-R003`.
+stops with `TR-R003`.
 
 ### 10. Built-in functions
 
-``` aura
+``` tread
 fn main() -> Unit {
     print(42)
     print(3.0)
@@ -649,7 +656,7 @@ redefined.
 
 ### 11. Putting it together: FizzBuzz
 
-``` aura
+``` tread
 // FizzBuzz from 1 to 15, using recursion instead of a loop.
 fn main() -> Unit {
     fizzbuzz(1, 15)
@@ -693,22 +700,22 @@ FizzBuzz
 ## CLI reference
 
 ``` text
-aura <command> [arguments]
+tread <command> [arguments]
 ```
 
 | Command | Purpose | Output | Exit code |
 |---|---|---|---|
-| `aura run <file.aura>` | Check, compile, and run a program. It runs only if there are no compile-time errors. | Program output on stdout; errors on stderr | `0`, `1`, `2`, or `3` |
-| `aura check <file.aura>` | Check a program without running it. | Nothing on success; errors on stderr | `0`, `1`, or `2` |
-| `aura version` | Print the version. | `aura 0.2.0` on stdout | `0` |
-| `aura help` | Print usage. | Usage on stdout | `0` |
+| `tread run <file.tr>` | Check, compile, and run a program. It runs only if there are no compile-time errors. | Program output on stdout; errors on stderr | `0`, `1`, `2`, or `3` |
+| `tread check <file.tr>` | Check a program without running it. | Nothing on success; errors on stderr | `0`, `1`, or `2` |
+| `tread version` | Print the version. | `tread 0.3.0` on stdout | `0` |
+| `tread help` | Print usage. | Usage on stdout | `0` |
 
-Flags: `--version` is the same as `aura version`; `-h` and `--help` are
-the same as `aura help`.
+Flags: `--version` is the same as `tread version`; `-h` and `--help` are
+the same as `tread help`.
 
 **Behaviour:**
 
--   **The file must end in `.aura`,** in lower case. Any other name is
+-   **The file must end in `.tr`,** in lower case. Any other name is
     rejected with exit code `2`, before the file is read.
 -   **Wrong usage exits with `2`** and prints usage on stderr. That
     covers no command, an unknown command, a missing file argument, and
@@ -724,13 +731,13 @@ the same as `aura help`.
 |---|---|
 | `0` | Success. |
 | `1` | The program has errors, found by the compiler or at run time. |
-| `2` | Usage error: a wrong command or arguments, a file not ending in `.aura`, or an unreadable file. |
+| `2` | Usage error: a wrong command or arguments, a file not ending in `.tr`, or an unreadable file. |
 | `3` | Internal failure, such as failing to write program output, or an internal compiler or VM error. |
 
-Exit codes make `aura` easy to script:
+Exit codes make `tread` easy to script:
 
 ``` bash
-aura check app.aura && aura run app.aura
+tread check app.tr && tread run app.tr
 ```
 
 ## Language reference
@@ -794,7 +801,7 @@ Every error shows:
 **Compile-time errors** stop the program before it runs. All of them
 are reported together:
 
-``` aura
+``` tread
 fn main() -> Unit {
     let total: Int = "ten"
     let limit = 5
@@ -803,27 +810,27 @@ fn main() -> Unit {
 ```
 
 ``` text
-$ aura check mistakes.aura
-error[AURA-T001]: expected Int but found String
-  --> mistakes.aura:2:22
+$ tread check mistakes.tr
+error[TR-T001]: expected Int but found String
+  --> mistakes.tr:2:22
    |
  2 |     let total: Int = "ten"
    |                      ^^^^^
 
-error[AURA-T004]: cannot assign twice to immutable variable 'limit'
-  --> mistakes.aura:4:5
+error[TR-T004]: cannot assign twice to immutable variable 'limit'
+  --> mistakes.tr:4:5
    |
  4 |     limit = 6
    |     ^^^^^^^^^
    = help: declare it with 'let mut' to allow assignment
-   = note: variable declared here (mistakes.aura:3:9)
+   = note: variable declared here (mistakes.tr:3:9)
 ```
 
 **Runtime errors** stop the program at the failing operation, and name
 the function it was in. An error inside a called function also prints a
 [stack trace](#stack-traces):
 
-``` aura
+``` tread
 fn main() -> Unit {
     let items = 0
     print("Splitting the bill...")
@@ -832,10 +839,10 @@ fn main() -> Unit {
 ```
 
 ``` text
-$ aura run crash.aura
+$ tread run crash.tr
 Splitting the bill...
-error[AURA-R001]: division by zero (in function 'main')
-  --> crash.aura:4:11
+error[TR-R001]: division by zero (in function 'main')
+  --> crash.tr:4:11
    |
  4 |     print(100 / items)
    |           ^^^^^^^^^^^
@@ -843,12 +850,12 @@ error[AURA-R001]: division by zero (in function 'main')
 
 ### Stack traces
 
-*New in 0.2.0.* When a runtime error happens inside a function called from `main`, AURA
+*New in 0.2.0.* When a runtime error happens inside a function called from `main`, Tread
 also prints the chain of calls that led there, innermost first. The
 error itself is unchanged; errors raised directly in `main` look exactly
 as in 0.1.0.
 
-``` aura
+``` tread
 fn main() -> Unit {
     print(average(10, 0))
 }
@@ -863,17 +870,17 @@ fn divide(a: Int, b: Int) -> Int {
 ```
 
 ``` text
-$ aura run trace.aura
-error[AURA-R001]: division by zero (in function 'divide')
-   --> trace.aura:10:12
+$ tread run trace.tr
+error[TR-R001]: division by zero (in function 'divide')
+   --> trace.tr:10:12
     |
  10 |     return a / b
     |            ^^^^^
 
 stack trace:
-  0: divide   trace.aura:10:12  return a / b
-  1: average  trace.aura:6:12   return divide(total, count)
-  2: main     trace.aura:2:11   print(average(10, 0))
+  0: divide   trace.tr:10:12  return a / b
+  1: average  trace.tr:6:12   return divide(total, count)
+  2: main     trace.tr:2:11   print(average(10, 0))
 ```
 
 Each line shows:
@@ -884,7 +891,7 @@ Each line shows:
 -   that line of code.
 
 Deep recursion stays short: repeated identical calls merge into one line,
-such as `0-9998: deep  deep.aura:6:5  deep(n + 1)`. A trace never
+such as `0-9998: deep  deep.tr:6:5  deep(n + 1)`. A trace never
 prints more than 20 frame lines; the rest are counted as
 `... N more frames not shown`.
 
@@ -893,15 +900,15 @@ problem:
 
 | Code | Stage | Examples |
 |---|---|---|
-| `AURA-Lnnn` | Lexer | invalid character, bad escape, unterminated string, malformed number |
-| `AURA-Pnnn` | Parser | unexpected token, missing brace, nesting too deep |
-| `AURA-Tnnn` | Type checker | type mismatch, undefined name, assignment to immutable, missing return |
-| `AURA-Rnnn` | Runtime | division by zero, integer overflow, call depth exceeded |
-| `AURA-Cnnn` | Compiler internal | indicates a bug in AURA; please [report it](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/issues) |
+| `TR-Lnnn` | Lexer | invalid character, bad escape, unterminated string, malformed number |
+| `TR-Pnnn` | Parser | unexpected token, missing brace, nesting too deep |
+| `TR-Tnnn` | Type checker | type mismatch, undefined name, assignment to immutable, missing return |
+| `TR-Rnnn` | Runtime | division by zero, integer overflow, call depth exceeded |
+| `TR-Cnnn` | Compiler internal | indicates a bug in Tread; please [report it](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/issues) |
 
 ## Current limitations
 
-AURA 0.2.0 is intentionally small.
+Tread 0.3.0 is intentionally small.
 
 **Not yet in the language:**
 
@@ -920,8 +927,8 @@ AURA 0.2.0 is intentionally small.
 **Implementation limits:**
 
 -   **Nesting:** limited to 10,000 levels of parentheses, blocks, or
-    `else if` chains (`AURA-P014`).
--   **Calls:** limited to 10,000 deep, including `main` (`AURA-R003`).
+    `else if` chains (`TR-P014`).
+-   **Calls:** limited to 10,000 deep, including `main` (`TR-R003`).
 -   **Binaries** are not code-signed.
 
 ## Roadmap
@@ -933,6 +940,7 @@ repository:
 |---|---|---|
 | Core language, compiler, VM, and CLI | **Implemented** | Released in 0.1.0. |
 | Runtime stack traces | **Implemented** | Released in 0.2.0. See [Stack traces](#stack-traces). |
+| Rename to Tread (`tread`, `.tr`, `TR-` codes) | **Implemented** | In 0.3.0 (not yet released). |
 | Loops (`while`, then `for`) | **Planned** | The next language feature. They remove the need for recursion when repeating work. |
 | Collections (arrays, maps) | Under consideration | |
 | Generics, enums, and pattern matching | Under consideration | |
@@ -945,7 +953,7 @@ repository:
 ## Repository structure
 
 ``` text
-cmd/aura/                the aura executable (entry point only)
+cmd/tread/               the tread executable (entry point only)
 internal/
   source/                source files, spans, line and column mapping
   token/                 token kinds
@@ -953,9 +961,9 @@ internal/
   ast/                   syntax tree
   parser/                tokens -> syntax tree
   checker/               name resolution and type checking
-  compiler/              checked program -> AURA Bytecode
+  compiler/              checked program -> Tread Bytecode
   bytecode/              instruction set, values, validation
-  vm/                    the AURA Virtual Machine
+  vm/                    the Tread Virtual Machine
   diagnostic/            error codes and rendering
   cli/                   commands, pipeline, exit codes
 examples/                example programs
@@ -983,7 +991,7 @@ program.
 Development needs **Go 1.25 or later**, and no other dependencies.
 
 ``` bash
-go build -o ./bin/aura ./cmd/aura      # build the CLI
+go build -o ./bin/tread ./cmd/tread    # build the CLI
 go test ./...                          # run all tests
 go vet ./...                           # static analysis
 scripts/verify.sh                      # full gate: gofmt check, vet, tests, build, smoke test
@@ -1021,7 +1029,7 @@ push and pull request to `main`, in three jobs:
 
 ``` bash
 scripts/build-release.sh               # writes dist/: 5 archives, SHA256SUMS, BUILD-INFO.txt
-scripts/smoke-release.sh ./bin/aura    # 10 CLI checks against a built binary
+scripts/smoke-release.sh ./bin/tread   # 10 CLI checks against a built binary
 ```
 
 Release builds are reproducible: the same commit produces byte-identical
@@ -1045,27 +1053,25 @@ Contributions are welcome.
 5.  **Record user-visible changes** under "Unreleased" in
     [`CHANGELOG.md`](CHANGELOG.md).
 
-## The AURA name
+## The Tread name
 
-AURA is the project's chosen name, and the project has decided to keep
-it. The name has **not** been cleared as a trademark. The project claims
-no trademark rights in it, and trademark clearance remains an open legal
-question.
+A *tread* is one step of a staircase. Tread is learned the same way, one
+stage at a time:
 
-AURA is an independent open-source project. It is not affiliated with
-or endorsed by:
+``` text
+lexer → parser → checker → compiler → VM
+```
 
--   Salesforce (Aura Components);
--   the Arch Linux `aura` package manager;
--   Neo4j (Aura);
--   any other product or project named Aura.
+Each step is small enough to read in a sitting, and each one builds on
+the step below it. The name has not been checked for trademarks, and the
+project claims no trademark rights in it.
 
 ## License
 
-AURA is released under the [MIT License](LICENSE).
+Tread is released under the [MIT License](LICENSE).
 Copyright (c) 2026 Sarvess Veeriyah.
 
 Release binaries include the Go runtime and standard library, which are
 distributed under Go's BSD-style license. The notice is in
-`THIRD_PARTY_NOTICES.txt` in each release archive. AURA has no other
+`THIRD_PARTY_NOTICES.txt` in each release archive. Tread has no other
 dependencies.

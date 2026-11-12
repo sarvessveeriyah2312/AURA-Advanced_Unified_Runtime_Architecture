@@ -16,7 +16,7 @@ import (
 func writeInputs(t *testing.T) (dir string, specs []string) {
 	t.Helper()
 	dir = t.TempDir()
-	files := map[string]string{"aura": "binary\x00data", "LICENSE": "MIT\n", "README.md": "# AURA\n"}
+	files := map[string]string{"tread": "binary\x00data", "LICENSE": "MIT\n", "README.md": "# Tread\n"}
 	for name, body := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
 			t.Fatal(err)
@@ -25,7 +25,7 @@ func writeInputs(t *testing.T) (dir string, specs []string) {
 	// Deliberately unsorted: the archive must sort entries itself.
 	specs = []string{
 		"644:README.md=" + filepath.Join(dir, "README.md"),
-		"755:aura=" + filepath.Join(dir, "aura"),
+		"755:tread=" + filepath.Join(dir, "tread"),
 		"644:LICENSE=" + filepath.Join(dir, "LICENSE"),
 	}
 	return dir, specs
@@ -33,7 +33,7 @@ func writeInputs(t *testing.T) (dir string, specs []string) {
 
 func build(t *testing.T, out string, specs []string) []byte {
 	t.Helper()
-	args := append([]string{"-o", out, "-dir", "aura_1.2.3_os_arch"}, specs...)
+	args := append([]string{"-o", out, "-dir", "tread_1.2.3_os_arch"}, specs...)
 	if err := run(args); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -76,10 +76,10 @@ func TestTarGzIsReproducibleAndCorrect(t *testing.T) {
 		got = append(got, h.Name+" "+os.FileMode(h.Mode).String()+" "+string(body))
 	}
 	want := []string{
-		"aura_1.2.3_os_arch/ -rwxr-xr-x ",
-		"aura_1.2.3_os_arch/LICENSE -rw-r--r-- MIT\n",
-		"aura_1.2.3_os_arch/README.md -rw-r--r-- # AURA\n",
-		"aura_1.2.3_os_arch/aura -rwxr-xr-x binary\x00data",
+		"tread_1.2.3_os_arch/ -rwxr-xr-x ",
+		"tread_1.2.3_os_arch/LICENSE -rw-r--r-- MIT\n",
+		"tread_1.2.3_os_arch/README.md -rw-r--r-- # Tread\n",
+		"tread_1.2.3_os_arch/tread -rwxr-xr-x binary\x00data",
 	}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Errorf("entries:\n got %q\nwant %q", got, want)
@@ -108,10 +108,10 @@ func TestZipIsReproducibleAndCorrect(t *testing.T) {
 		got = append(got, f.Name+" "+f.Mode().String()+" "+string(body))
 	}
 	want := []string{
-		"aura_1.2.3_os_arch/ drwxr-xr-x ",
-		"aura_1.2.3_os_arch/LICENSE -rw-r--r-- MIT\n",
-		"aura_1.2.3_os_arch/README.md -rw-r--r-- # AURA\n",
-		"aura_1.2.3_os_arch/aura -rwxr-xr-x binary\x00data",
+		"tread_1.2.3_os_arch/ drwxr-xr-x ",
+		"tread_1.2.3_os_arch/LICENSE -rw-r--r-- MIT\n",
+		"tread_1.2.3_os_arch/README.md -rw-r--r-- # Tread\n",
+		"tread_1.2.3_os_arch/tread -rwxr-xr-x binary\x00data",
 	}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Errorf("entries:\n got %q\nwant %q", got, want)

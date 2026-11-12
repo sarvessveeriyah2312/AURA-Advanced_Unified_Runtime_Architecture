@@ -50,7 +50,7 @@ func build(file *source.File) (*bytecode.Module, []diagnostic.Diagnostic) {
 	return compiler.Compile(checked)
 }
 
-// runtimeFailure is an AURA runtime error converted to a diagnostic.
+// runtimeFailure is a Tread runtime error converted to a diagnostic.
 // withSource is false for errors without a source location (bytecode
 // validation failures), which are rendered without a source excerpt.
 // trace is the call stack, innermost first (ADR-0009).
@@ -61,7 +61,7 @@ type runtimeFailure struct {
 }
 
 // execute runs a compiled module, writing program output to out. It
-// returns a runtimeFailure for an AURA runtime error, or a plain error if
+// returns a runtimeFailure for a Tread runtime error, or a plain error if
 // writing program output failed.
 func execute(m *bytecode.Module, out io.Writer) (*runtimeFailure, error) {
 	err := vm.Run(m, out, vm.Config{})

@@ -1,4 +1,4 @@
-// Command aura is the AURA language toolchain.
+// Command tread is the Tread language toolchain.
 package main
 
 import (

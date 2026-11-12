@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
-# Reproducible AURA release build (ADR-0007, packaging: ADR-0008).
+# Reproducible Tread release build (ADR-0007, packaging: ADR-0008).
 #
-# Builds the `aura` executable for every supported target and packages
+# Builds the `tread` executable for every supported target and packages
 # each one into an archive with LICENSE, README.md, CHANGELOG.md and
 # THIRD_PARTY_NOTICES.txt, then writes SHA256SUMS and BUILD-INFO.txt.
 # Nothing is tagged, uploaded or published.
@@ -11,11 +11,11 @@
 #
 # Environment:
 #   DIST_DIR      output directory (default: dist); it is recreated.
-#   AURA_VERSION  version to embed (default: from internal/cli/version.go).
+#   TREAD_VERSION  version to embed (default: from internal/cli/version.go).
 #
 # Output (DIST_DIR):
-#   aura_<version>_<os>_<arch>.tar.gz   (macOS, Linux)
-#   aura_<version>_windows_amd64.zip    (Windows)
+#   tread_<version>_<os>_<arch>.tar.gz   (macOS, Linux)
+#   tread_<version>_windows_amd64.zip    (Windows)
 #   SHA256SUMS, BUILD-INFO.txt
 set -eu
 
@@ -23,7 +23,7 @@ cd "$(dirname "$0")/.."
 
 MODULE=$(sed -n 's/^module //p' go.mod)
 DEFAULT_VERSION=$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/cli/version.go)
-VERSION=${AURA_VERSION:-$DEFAULT_VERSION}
+VERSION=${TREAD_VERSION:-$DEFAULT_VERSION}
 DIST_DIR=${DIST_DIR:-dist}
 TARGETS="darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 windows/amd64"
 
@@ -59,7 +59,7 @@ rm -rf "$DIST_DIR"
 WORK="${DIST_DIR}/.work"
 mkdir -p "$WORK"
 
-echo "==> AURA ${VERSION} ($(go version))"
+echo "==> Tread ${VERSION} ($(go version))"
 
 # The archive writer runs on the build machine (ADR-0008).
 go build -o "${WORK}/package" ./scripts/package
@@ -67,7 +67,7 @@ go build -o "${WORK}/package" ./scripts/package
 # The binaries statically link the Go runtime and standard library,
 # whose BSD-3-Clause license requires its notice in binary distributions.
 {
-	echo "AURA release binaries include the Go runtime and standard library,"
+	echo "Tread release binaries include the Go runtime and standard library,"
 	echo "built with $(go env GOVERSION). They are distributed under this license:"
 	echo
 	cat "$(go env GOROOT)/LICENSE"
@@ -76,17 +76,17 @@ go build -o "${WORK}/package" ./scripts/package
 for target in $TARGETS; do
 	goos=${target%/*}
 	goarch=${target#*/}
-	name="aura_${VERSION}_${goos}_${goarch}"
-	exe=aura
+	name="tread_${VERSION}_${goos}_${goarch}"
+	exe=tread
 	archive="${name}.tar.gz"
 	if [ "$goos" = "windows" ]; then
-		exe=aura.exe
+		exe=tread.exe
 		archive="${name}.zip"
 	fi
 	echo "==> ${goos}/${goarch} -> ${DIST_DIR}/${archive}"
 	mkdir -p "${WORK}/${name}"
 	CGO_ENABLED=0 GOOS=$goos GOARCH=$goarch \
-		go build $FLAGS -ldflags "$LDFLAGS" -o "${WORK}/${name}/${exe}" ./cmd/aura
+		go build $FLAGS -ldflags "$LDFLAGS" -o "${WORK}/${name}/${exe}" ./cmd/tread
 	"${WORK}/package" -o "${DIST_DIR}/${archive}" -dir "$name" \
 		"755:${exe}=${WORK}/${name}/${exe}" \
 		"644:LICENSE=LICENSE" \
@@ -100,7 +100,7 @@ rm -rf "$WORK"
 (
 	cd "$DIST_DIR"
 	# Sorted, stable list of artifacts; LC_ALL=C makes the order locale-independent.
-	files=$(LC_ALL=C ls aura_* | LC_ALL=C sort)
+	files=$(LC_ALL=C ls tread_* | LC_ALL=C sort)
 	# shellcheck disable=SC2086
 	sha256 $files > SHA256SUMS
 )
@@ -113,7 +113,7 @@ env:       CGO_ENABLED=0
 flags:     ${FLAGS}
 ldflags:   ${LDFLAGS}
 targets:   ${TARGETS}
-archives:  aura(.exe), LICENSE, README.md, CHANGELOG.md, THIRD_PARTY_NOTICES.txt
+archives:  tread(.exe), LICENSE, README.md, CHANGELOG.md, THIRD_PARTY_NOTICES.txt
 EOF
 
 echo "==> checksums (${DIST_DIR}/SHA256SUMS)"

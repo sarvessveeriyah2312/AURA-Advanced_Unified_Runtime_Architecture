@@ -12,19 +12,19 @@ interface Stage {
 }
 
 const STAGES: Stage[] = [
-  { name: "Source code", group: "input", detail: "A single .aura file, read as UTF-8 text. Line endings may be LF, CRLF, or CR." },
+  { name: "Source code", group: "input", detail: "A single .tr file, read as UTF-8 text. Line endings may be LF, CRLF, or CR." },
   { name: "Lexer", group: "compiler", detail: "Splits the text into tokens: keywords, names, literals, operators, and newlines, each with its exact source position." },
   { name: "Parser / AST", group: "compiler", detail: "Checks the grammar, decides which newlines end a statement, and builds an abstract syntax tree. It recovers so that several syntax errors are reported at once." },
   { name: "Type checker", group: "compiler", detail: "Resolves every name and checks every type, call, return path, and assignment. Any error stops the pipeline here." },
   { name: "Bytecode compiler", group: "compiler", detail: "Translates the checked program into typed instructions; for example, Int addition and Float addition are different opcodes." },
-  { name: "AURA Bytecode", group: "bytecode", detail: "A compact list of typed instructions, validated before execution. It exists only in memory; AURA does not write bytecode files." },
-  { name: "AURA Virtual Machine", group: "runtime", detail: "A stack-based interpreter. It reports overflow, division by zero, and excessive call depth as runtime errors, with stack traces." },
+  { name: "Tread Bytecode", group: "bytecode", detail: "A compact list of typed instructions, validated before execution. It exists only in memory; Tread does not write bytecode files." },
+  { name: "Tread Virtual Machine", group: "runtime", detail: "A stack-based interpreter. It reports overflow, division by zero, and excessive call depth as runtime errors, with stack traces." },
   { name: "Program output", group: "output", detail: "Output from print goes to stdout as the program runs; diagnostics go to stderr, with a documented exit code." },
 ];
 
 const GROUP_LABEL: Record<Stage["group"], string> = {
   input: "Input",
-  compiler: "AURA Compiler",
+  compiler: "Tread Compiler",
   bytecode: "Intermediate form",
   runtime: "Runtime",
   output: "Result",
@@ -138,9 +138,9 @@ export function Architecture() {
         </div>
 
         <p className="mt-6 text-sm text-muted">
-          AURA does <strong className="font-semibold text-fg">not</strong> compile to native machine code:{" "}
-          <code className="font-mono text-[13px]">aura run</code> compiles to in-memory bytecode and executes it on
-          the AURA Virtual Machine each time.
+          Tread does <strong className="font-semibold text-fg">not</strong> compile to native machine code:{" "}
+          <code className="font-mono text-[13px]">tread run</code> compiles to in-memory bytecode and executes it on
+          the Tread Virtual Machine each time.
         </p>
       </Reveal>
     </Section>

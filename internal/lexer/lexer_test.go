@@ -148,7 +148,7 @@ func describeTokens(toks []token.Token) string {
 
 func describeDiag(f *source.File, d diagnostic.Diagnostic, withSpan bool) string {
 	p := f.Position(d.Span.Start)
-	s := fmt.Sprintf("%s@%d:%d", strings.TrimPrefix(string(d.Code), "AURA-"), p.Line, p.Column)
+	s := fmt.Sprintf("%s@%d:%d", strings.TrimPrefix(string(d.Code), "TR-"), p.Line, p.Column)
 	if withSpan {
 		s += fmt.Sprintf("[%d,%d)", d.Span.Start, d.Span.End)
 	}
@@ -158,7 +158,7 @@ func describeDiag(f *source.File, d diagnostic.Diagnostic, withSpan bool) string
 func TestLexRequiredCases(t *testing.T) {
 	for _, tc := range lexCases {
 		t.Run(tc.id, func(t *testing.T) {
-			f := source.NewFile(1, "t.aura", []byte(tc.src))
+			f := source.NewFile(1, "t.tr", []byte(tc.src))
 			toks, diags := Lex(f)
 			checkInvariants(t, f, toks, diags)
 

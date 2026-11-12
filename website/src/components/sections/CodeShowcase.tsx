@@ -4,7 +4,7 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import { EXAMPLES } from "../../data/examples";
 import { VERSION } from "../../data/site";
 import { cn } from "../../lib/cn";
-import { AuraCode, CopyButton, TerminalText, WindowBar } from "../ui/CodeBlock";
+import { TreadCode, CopyButton, TerminalText, WindowBar } from "../ui/CodeBlock";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
 
@@ -33,15 +33,15 @@ export function CodeShowcase() {
     <Section id="examples" labelledBy="examples-title">
       <SectionHeading
         id="examples-title"
-        eyebrow="AURA in action"
+        eyebrow="Tread in action"
         title="Read it once, and you know what it does."
-        description="Real AURA programs, each shown with the exact output of the aura command."
+        description="Real Tread programs, each shown with the exact output of the tread command."
       />
 
       <Reveal className="mt-10">
         <div
           role="tablist"
-          aria-label="AURA examples"
+          aria-label="Tread examples"
           onKeyDown={onKeyDown}
           className="scrollbar-thin -mx-4 flex gap-1 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0"
         >
@@ -89,14 +89,14 @@ export function CodeShowcase() {
                 <WindowBar title={example.file}>
                   <CopyButton text={example.code} label={`Copy ${example.file} source`} />
                 </WindowBar>
-                <AuraCode code={example.code} />
+                <TreadCode code={example.code} />
               </div>
               <div className="flex min-w-0 flex-col border-t border-code-line lg:border-t-0">
                 <div className="flex h-11 items-center justify-between border-b border-code-line bg-code-bar px-4">
                   <span className="font-mono text-xs text-code-dim">Output</span>
                   <span className="font-mono text-xs text-code-dim">exit code {example.exitCode}</span>
                 </div>
-                <TerminalText command={`aura ${example.command} ${example.file}`} output={example.output} className="flex-1" />
+                <TerminalText command={`tread ${example.command} ${example.file}`} output={example.output} className="flex-1" />
                 <p className="border-t border-code-line px-4 py-3 text-xs leading-relaxed text-code-dim">{example.summary}</p>
               </div>
             </motion.div>
@@ -105,7 +105,7 @@ export function CodeShowcase() {
 
         <p className="mt-4 flex items-start gap-2 text-xs text-subtle">
           <Info className="mt-px size-3.5 shrink-0" aria-hidden />
-          Example output, recorded from AURA {VERSION}. Nothing is executed in your browser. Install AURA to run these
+          Example output, recorded from Tread {VERSION}. Nothing is executed in your browser. Install Tread to run these
           programs yourself.
         </p>
       </Reveal>

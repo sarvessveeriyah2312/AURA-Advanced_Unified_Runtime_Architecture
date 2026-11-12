@@ -180,7 +180,7 @@ var parseCases = []parseCase{
 // AST, the parser diagnostics and the lexer diagnostics.
 func run(t *testing.T, m mode, src string) (string, []string, []string, *ast.Program) {
 	t.Helper()
-	f := source.NewFile(1, "t.aura", []byte(src))
+	f := source.NewFile(1, "t.tr", []byte(src))
 	toks, lexDiags := lexer.Lex(f)
 	var out string
 	var prog *ast.Program
@@ -212,7 +212,7 @@ func describeAll(f *source.File, diags []diagnostic.Diagnostic) []string {
 	var out []string
 	for _, d := range diags {
 		p := f.Position(d.Span.Start)
-		out = append(out, fmt.Sprintf("%s@%d:%d", strings.TrimPrefix(string(d.Code), "AURA-"), p.Line, p.Column))
+		out = append(out, fmt.Sprintf("%s@%d:%d", strings.TrimPrefix(string(d.Code), "TR-"), p.Line, p.Column))
 	}
 	return out
 }
@@ -375,7 +375,7 @@ fn add(a: Int, b: Int) -> Int {
 }
 
 fn main() {
-    let name = "AURA"
+    let name = "Tread"
     let mut total: Int = add(2,
                              3)
     total = total +
@@ -391,7 +391,7 @@ fn main() {
 `
 	got, diags, lexDiags, _ := run(t, program, src)
 	want := `(program (module main) (fn add (a:Int b:Int) -> Int (block (return (+ a b)))) ` +
-		`(fn main () (block (let name "AURA") (let mut total:Int (call add 2 3)) (assign total (+ total 1)) ` +
+		`(fn main () (block (let name "Tread") (let mut total:Int (call add 2 3)) (assign total (+ total 1)) ` +
 		`(if (>= total 6) (block (call print (interp "Hello, " name "! total=" total))) ` +
 		`else (if (< total 0) (block (call print "negative")) else (block (call print (- 9223372036854775808))))))))`
 	if got != want || len(diags)+len(lexDiags) != 0 {
@@ -404,7 +404,7 @@ func TestEveryParserCodeIsTested(t *testing.T) {
 	seen := map[string]bool{}
 	for _, tc := range parseCases {
 		for _, d := range tc.diags {
-			seen["AURA-"+strings.SplitN(d, "@", 2)[0]] = true
+			seen["TR-"+strings.SplitN(d, "@", 2)[0]] = true
 		}
 	}
 	var missing []string

@@ -15,11 +15,11 @@ import (
 // docs/04 §4.4.3; this package may not import internal/diagnostic
 // (ADR-0001), so the CLI converts them.
 const (
-	CodeDivisionByZero   = "AURA-R001"
-	CodeInvalidBytecode  = "AURA-R002"
-	CodeCallDepth        = "AURA-R003"
-	CodeInstructionLimit = "AURA-R004"
-	CodeIntegerOverflow  = "AURA-R005"
+	CodeDivisionByZero   = "TR-R001"
+	CodeInvalidBytecode  = "TR-R002"
+	CodeCallDepth        = "TR-R003"
+	CodeInstructionLimit = "TR-R004"
+	CodeIntegerOverflow  = "TR-R005"
 )
 
 // Error is a structured runtime error. HasSpan is false for errors found
@@ -67,7 +67,7 @@ func Execute(m *bytecode.Module, out io.Writer) error {
 }
 
 // Run validates and executes m. It returns nil on success, a *Error for
-// an AURA runtime error or invalid bytecode, or the writer's error if
+// a Tread runtime error or invalid bytecode, or the writer's error if
 // output fails. It never panics.
 func Run(m *bytecode.Module, out io.Writer, cfg Config) error {
 	if m == nil {

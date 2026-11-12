@@ -9,13 +9,13 @@ import (
 	"testing"
 )
 
-// TestBinary builds the real aura executable and runs it as a subprocess,
+// TestBinary builds the real tread executable and runs it as a subprocess,
 // checking stdout, stderr and the process exit code (docs/10 §10.8).
 func TestBinary(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds the binary")
 	}
-	bin := filepath.Join(t.TempDir(), "aura")
+	bin := filepath.Join(t.TempDir(), "tread")
 	if runtime.GOOS == "windows" {
 		bin += ".exe"
 	}
@@ -30,16 +30,16 @@ func TestBinary(t *testing.T) {
 		stderrHas  string
 		stderrNone bool
 	}{
-		{args: []string{"run", filepath.Join(root, "examples", "hello.aura")}, exit: 0, stdout: "Hello, AURA!\n", stderrNone: true},
-		{args: []string{"check", filepath.Join(root, "examples", "hello.aura")}, exit: 0, stdout: "", stderrNone: true},
-		{args: []string{"run", filepath.Join(root, "testdata", "e2e", "D3.aura")}, exit: 1, stdout: "", stderrHas: "error[AURA-T001]: expected Int but found String"},
-		{args: []string{"run", filepath.Join(root, "testdata", "e2e", "D4.aura")}, exit: 1, stdout: "before\n", stderrHas: "error[AURA-R001]"},
-		{args: []string{"run", filepath.Join(root, "testdata", "e2e", "D6.aura")}, exit: 0, stdout: "B\n", stderrNone: true},
-		{args: []string{"run", "missing.aura"}, exit: 2, stdout: "", stderrHas: "cannot read missing.aura"},
-		{args: []string{"run", "hello.nova"}, exit: 2, stdout: "", stderrHas: "is not an AURA source file: expected the .aura extension"},
+		{args: []string{"run", filepath.Join(root, "examples", "hello.tr")}, exit: 0, stdout: "Hello, Tread!\n", stderrNone: true},
+		{args: []string{"check", filepath.Join(root, "examples", "hello.tr")}, exit: 0, stdout: "", stderrNone: true},
+		{args: []string{"run", filepath.Join(root, "testdata", "e2e", "D3.tr")}, exit: 1, stdout: "", stderrHas: "error[TR-T001]: expected Int but found String"},
+		{args: []string{"run", filepath.Join(root, "testdata", "e2e", "D4.tr")}, exit: 1, stdout: "before\n", stderrHas: "error[TR-R001]"},
+		{args: []string{"run", filepath.Join(root, "testdata", "e2e", "D6.tr")}, exit: 0, stdout: "B\n", stderrNone: true},
+		{args: []string{"run", "missing.tr"}, exit: 2, stdout: "", stderrHas: "cannot read missing.tr"},
+		{args: []string{"run", "hello.nova"}, exit: 2, stdout: "", stderrHas: "is not a Tread source file: expected the .tr extension"},
 		{args: []string{"run"}, exit: 2, stdout: "", stderrHas: "run requires exactly one file argument"},
 		{args: []string{"frobnicate"}, exit: 2, stdout: "", stderrHas: `unknown command "frobnicate"`},
-		{args: []string{"version"}, exit: 0, stdout: "aura 0.2.0\n", stderrNone: true},
+		{args: []string{"version"}, exit: 0, stdout: "tread 0.3.0\n", stderrNone: true},
 	}
 	for _, tt := range tests {
 		cmd := exec.Command(bin, tt.args...)

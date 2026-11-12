@@ -34,7 +34,7 @@ func TestPosition(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			f := NewFile(1, "test.aura", []byte(tt.src))
+			f := NewFile(1, "test.tr", []byte(tt.src))
 			offset := len(tt.src)
 			if tt.target != "" {
 				offset = strings.LastIndex(tt.src, tt.target)

@@ -1,4 +1,4 @@
-// D4: output before a runtime error is kept (AURA-R001).
+// D4: output before a runtime error is kept (TR-R001).
 fn main() -> Unit {
     print("before")
     let z = 0

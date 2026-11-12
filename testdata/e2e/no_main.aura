@@ -1,2 +1,0 @@
-// A program without main (AURA-T013).
-fn helper() -> Unit { }

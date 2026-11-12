@@ -449,7 +449,7 @@ func (l *lexer) invalidCharacter(size int) {
 	d := diagnostic.Errorf(diagnostic.InvalidCharacter, l.span(start, l.pos), "%s", msg)
 	switch {
 	case r == ';':
-		d = d.WithHelp("AURA does not use semicolons; end statements with a newline")
+		d = d.WithHelp("Tread does not use semicolons; end statements with a newline")
 	case r == 0xFEFF:
 		d = d.WithHelp("a byte order mark is only allowed at the start of the file")
 	case r >= utf8.RuneSelf:

@@ -1,4 +1,4 @@
-// A small, dependency-free highlighter for AURA 0.x source. It knows the
+// A small, dependency-free highlighter for Tread 0.x source. It knows the
 // language's real keywords, built-in types and functions, comments,
 // numbers, and strings with ${...} interpolation (highlighted recursively).
 
@@ -84,7 +84,7 @@ export function highlight(src: string): Token[] {
 
 // scanString highlights a string literal starting at src[start] === '"'
 // and returns the index just past it. Interpolated expressions are
-// highlighted as code; strings are single-line in AURA.
+// highlighted as code; strings are single-line in Tread.
 function scanString(src: string, start: number, push: (k: TokenKind, t: string) => void): number {
   let i = start + 1;
   let chunk = '"';

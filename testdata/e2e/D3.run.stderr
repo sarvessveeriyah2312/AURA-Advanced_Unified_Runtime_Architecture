@@ -1,5 +1,5 @@
-error[AURA-T001]: expected Int but found String
-  --> D3.aura:4:18
+error[TR-T001]: expected Int but found String
+  --> D3.tr:4:18
    |
  4 | let total: Int = "five"
    |                  ^^^^^^

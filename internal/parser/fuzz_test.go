@@ -15,7 +15,7 @@ import (
 // speed (docs/13 §E).
 func parseAll(t *testing.T, data []byte) {
 	t.Helper()
-	f := source.NewFile(1, "fuzz.aura", data)
+	f := source.NewFile(1, "fuzz.tr", data)
 	toks, _ := lexer.Lex(f)
 	_, diags := Parse(toks)
 	for _, d := range diags {
@@ -37,7 +37,7 @@ func FuzzParse(f *testing.F) {
 }
 
 // TestParseRandomTokenStreams exercises S86 on every `go test` run with
-// random sequences of AURA fragments.
+// random sequences of Tread fragments.
 func TestParseRandomTokenStreams(t *testing.T) {
 	frags := []string{
 		"fn", "main", "(", ")", "{", "}", "let", "mut", "x", "=", "1", "9abc", "1.5",

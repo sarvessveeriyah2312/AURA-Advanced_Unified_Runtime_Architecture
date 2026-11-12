@@ -1,12 +1,16 @@
-// Single source of truth for AURA facts shown on the site. Every value
+// Single source of truth for Tread facts shown on the site. Every value
 // here was verified against the repository and the published GitHub
 // release (see the README in this folder). To move the site to a new
 // release, update VERSION and confirm the asset list still matches.
 
-export const VERSION = "0.2.0";
-export const RELEASE_DATE = "2026-11-12";
-export const TAGLINE = "Give ideas the power to become reality.";
-export const FULL_NAME = "Advanced Unified Runtime Architecture";
+export const VERSION = "0.3.0";
+// RELEASED is false until the v0.3.0 GitHub release exists. While false,
+// the site shows the upcoming archive names without download links and
+// points visitors at building from source instead. Set it to true (and
+// RELEASE_DATE) on release day.
+export const RELEASED = false;
+export const RELEASE_DATE: string | null = null;
+export const MOTTO = "A language for learning how languages work.";
 
 export const OWNER = "sarvessveeriyah2312";
 export const REPO_NAME = "AURA-Advanced_Unified_Runtime_Architecture";
@@ -28,7 +32,15 @@ export const ISSUES_URL = `${REPO_URL}/issues`;
 export const NEW_ISSUE_URL = `${REPO_URL}/issues/new`;
 export const CI_URL = `${REPO_URL}/actions/workflows/ci.yml`;
 
-export const GO_INSTALL = `go install ${MODULE_PATH}/cmd/aura@v${VERSION}`;
+export const GO_INSTALL = `go install ${MODULE_PATH}/cmd/tread@v${VERSION}`;
+
+// Building from source works before and after a release.
+export const BUILD_FROM_SOURCE = [
+  `git clone ${REPO_URL}.git`,
+  `cd ${REPO_NAME}`,
+  "go build -o ./bin/tread ./cmd/tread",
+  "./bin/tread run examples/hello.tr",
+].join("\n");
 
 export const asset = (name: string) => `${DOWNLOAD_BASE}/${name}`;
 
@@ -52,8 +64,8 @@ export const PLATFORMS: Platform[] = [
     name: "macOS",
     requirement: "macOS 12 or later",
     builds: [
-      { label: "Apple Silicon", arch: "ARM64", file: `aura_${VERSION}_darwin_arm64.tar.gz` },
-      { label: "Intel", arch: "AMD64", file: `aura_${VERSION}_darwin_amd64.tar.gz` },
+      { label: "Apple Silicon", arch: "ARM64", file: `tread_${VERSION}_darwin_arm64.tar.gz` },
+      { label: "Intel", arch: "AMD64", file: `tread_${VERSION}_darwin_amd64.tar.gz` },
     ],
     verify: "shasum -a 256 -c SHA256SUMS --ignore-missing",
   },
@@ -62,8 +74,8 @@ export const PLATFORMS: Platform[] = [
     name: "Linux",
     requirement: "Kernel 3.2 or later · static binary",
     builds: [
-      { label: "x86-64", arch: "AMD64", file: `aura_${VERSION}_linux_amd64.tar.gz` },
-      { label: "ARM64", arch: "ARM64", file: `aura_${VERSION}_linux_arm64.tar.gz` },
+      { label: "x86-64", arch: "AMD64", file: `tread_${VERSION}_linux_amd64.tar.gz` },
+      { label: "ARM64", arch: "ARM64", file: `tread_${VERSION}_linux_arm64.tar.gz` },
     ],
     verify: "sha256sum -c SHA256SUMS --ignore-missing",
   },
@@ -71,8 +83,8 @@ export const PLATFORMS: Platform[] = [
     id: "windows",
     name: "Windows",
     requirement: "Windows 10 / Server 2016 or later",
-    builds: [{ label: "x86-64", arch: "AMD64", file: `aura_${VERSION}_windows_amd64.zip` }],
-    verify: "Get-FileHash .\\aura_" + VERSION + "_windows_amd64.zip -Algorithm SHA256",
+    builds: [{ label: "x86-64", arch: "AMD64", file: `tread_${VERSION}_windows_amd64.zip` }],
+    verify: "Get-FileHash .\\tread_" + VERSION + "_windows_amd64.zip -Algorithm SHA256",
   },
 ];
 

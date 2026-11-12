@@ -1,0 +1,4 @@
+// D1: lexer error (TR-L001). Semicolons are not Tread syntax.
+fn main() -> Unit {
+    print(1);
+}

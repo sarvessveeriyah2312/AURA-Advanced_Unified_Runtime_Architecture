@@ -1,5 +1,5 @@
-// Package token defines AURA token kinds and the Token structure,
+// Package token defines Tread token kinds and the Token structure,
 // each carrying a source span.
 //
-// Allowed AURA imports: source.
+// Allowed Tread imports: source.
 package token

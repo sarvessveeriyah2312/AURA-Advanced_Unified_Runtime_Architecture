@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 
 export type Theme = "dark" | "light";
 
-const STORAGE_KEY = "aura-theme";
+const STORAGE_KEY = "tread-theme";
 
 // The inline script in index.html applies the saved theme before first
 // paint; this hook reads that state and keeps the DOM, the browser's

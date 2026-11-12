@@ -22,8 +22,8 @@ func osReadError(t *testing.T, path string) string {
 }
 
 func TestRun(t *testing.T) {
-	versionLine := "aura " + Version + "\n"
-	missing := "error: cannot read does-not-exist.aura: " + osReadError(t, "does-not-exist.aura") + "\n"
+	versionLine := "tread " + Version + "\n"
+	missing := "error: cannot read does-not-exist.tr: " + osReadError(t, "does-not-exist.tr") + "\n"
 
 	tests := []struct {
 		name       string
@@ -76,13 +76,13 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name:       "run nonexistent file",
-			args:       []string{"run", "does-not-exist.aura"},
+			args:       []string{"run", "does-not-exist.tr"},
 			wantCode:   ExitUsage,
 			wantStderr: missing,
 		},
 		{
 			name:       "check nonexistent file",
-			args:       []string{"check", "does-not-exist.aura"},
+			args:       []string{"check", "does-not-exist.tr"},
 			wantCode:   ExitUsage,
 			wantStderr: missing,
 		},
@@ -90,25 +90,25 @@ func TestRun(t *testing.T) {
 			name:       "run rejects the old .nova extension",
 			args:       []string{"run", "hello.nova"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: hello.nova is not an AURA source file: expected the .aura extension\n",
+			wantStderr: "error: hello.nova is not a Tread source file: expected the .tr extension\n",
 		},
 		{
 			name:       "check rejects other extensions",
 			args:       []string{"check", "notes.txt"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: notes.txt is not an AURA source file: expected the .aura extension\n",
+			wantStderr: "error: notes.txt is not a Tread source file: expected the .tr extension\n",
 		},
 		{
 			name:       "run rejects a missing extension",
 			args:       []string{"run", "program"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: program is not an AURA source file: expected the .aura extension\n",
+			wantStderr: "error: program is not a Tread source file: expected the .tr extension\n",
 		},
 		{
 			name:       "extension match is case-sensitive",
-			args:       []string{"run", "HELLO.AURA"},
+			args:       []string{"run", "HELLO.TR"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: HELLO.AURA is not an AURA source file: expected the .aura extension\n",
+			wantStderr: "error: HELLO.TR is not a Tread source file: expected the .tr extension\n",
 		},
 		{
 			name:       "run without file",
@@ -124,13 +124,13 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name:       "run with two files",
-			args:       []string{"run", "a.aura", "b.aura"},
+			args:       []string{"run", "a.tr", "b.tr"},
 			wantCode:   ExitUsage,
 			wantStderr: "error: run requires exactly one file argument\n\n" + usage,
 		},
 		{
 			name:       "build is not implemented",
-			args:       []string{"build", "a.aura"},
+			args:       []string{"build", "a.tr"},
 			wantCode:   ExitUsage,
 			wantStderr: "error: unknown command \"build\"\n\n" + usage,
 		},
