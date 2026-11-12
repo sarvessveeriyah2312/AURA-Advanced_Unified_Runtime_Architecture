@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+/* Class-based dark mode. Light is the default; the `dark` class on <html>
+   is set before first paint by the inline script in index.html when the
+   visitor chose dark, then managed by useTheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------
+   Design tokens. Components use the semantic names (bg-surface,
+   text-muted, border-line, ...) so both themes stay consistent.
+   ------------------------------------------------------------------- */
+:root {
+  --bg: #f7f8fc;
+  --surface: #ffffff;
+  --surface-2: #f0f2f9;
+  --line: #e2e5f0;
+  --line-strong: #cdd2e3;
+  --fg: #0b1020;
+  --muted: #475070;
+  --subtle: #6b7392;
+  --accent: #6a55e8;
+  --accent-2: #4f46e5;
+  --electric: #0284c7;
+  --accent-soft: rgba(106, 85, 232, 0.08);
+  --ring: rgba(106, 85, 232, 0.45);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #06080f;
+  --surface: #0c1020;
+  --surface-2: #11162a;
+  --line: #1b2140;
+  --line-strong: #2a3159;
+  --fg: #e8eaf6;
+  --muted: #a1a8c8;
+  --subtle: #6e7596;
+  --accent: #9b8cff;
+  --accent-2: #7c83ff;
+  --electric: #5cc8ff;
+  --accent-soft: rgba(155, 140, 255, 0.1);
+  --ring: rgba(155, 140, 255, 0.5);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+/* Code panels stay dark in both themes: they imitate an editor. */
+:root {
+  --code-bg: #0a0d1a;
+  --code-bar: #0f1324;
+  --code-line: #1c2240;
+  --code-fg: #d9dcf0;
+  --code-dim: #6b7294;
+  --tok-keyword: #b39dff;
+  --tok-type: #7dd3fc;
+  --tok-string: #a5e3b5;
+  --tok-interp: #f0c674;
+  --tok-number: #f6a77a;
+  --tok-comment: #5d6487;
+  --tok-function: #8fb4ff;
+  --tok-builtin: #f78fb3;
+  --tok-error: #ff8a8a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-electric: var(--electric);
+  --color-accent-soft: var(--accent-soft);
+  --color-code-bg: var(--code-bg);
+  --color-code-bar: var(--code-bar);
+  --color-code-line: var(--code-line);
+  --color-code-fg: var(--code-fg);
+  --color-code-dim: var(--code-dim);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --shadow-card: var(--shadow);
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  /* Anchor targets clear the sticky navigation bar. */
+  section[id] {
+    scroll-margin-top: 5rem;
+  }
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--fg);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Code shows exactly the characters a user types: no ligatures, so "->"
+   is never drawn as an arrow glyph. */
+code,
+pre,
+.font-mono {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+/* Syntax tokens (lib/highlight.ts). */
+.tok-keyword { color: var(--tok-keyword); }
+.tok-type { color: var(--tok-type); }
+.tok-string { color: var(--tok-string); }
+.tok-interp { color: var(--tok-interp); }
+.tok-number { color: var(--tok-number); }
+.tok-comment { color: var(--tok-comment); font-style: italic; }
+.tok-function { color: var(--tok-function); }
+.tok-builtin { color: var(--tok-builtin); }
+.tok-punct { color: var(--code-dim); }
+
+/* Subtle grid backdrop used behind the hero. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%);
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--code-line) transparent;
+}

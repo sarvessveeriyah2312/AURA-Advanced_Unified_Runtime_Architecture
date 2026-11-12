@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AURA — Advanced Unified Runtime Architecture</title>
+    <meta
+      name="description"
+      content="Discover AURA, an independently developed statically typed programming language with its own compiler, bytecode instruction set, and stack-based virtual machine."
+    />
+    <meta name="theme-color" content="#f7f8fc" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="AURA" />
+    <meta property="og:title" content="AURA — Advanced Unified Runtime Architecture" />
+    <meta
+      property="og:description"
+      content="Discover AURA, an independently developed statically typed programming language with its own compiler, bytecode instruction set, and stack-based virtual machine."
+    />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="AURA — Advanced Unified Runtime Architecture" />
+    <meta
+      name="twitter:description"
+      content="An independently developed, statically typed programming language with its own compiler, bytecode, and virtual machine."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Apply the saved theme before first paint, so there is no flash.
+         Light is the default; only "light" and "dark" are valid values. -->
+    <script>
+      (function () {
+        var theme = "light";
+        try {
+          if (localStorage.getItem("aura-theme") === "dark") theme = "dark";
+        } catch (e) {}
+        var root = document.documentElement;
+        root.classList.toggle("dark", theme === "dark");
+        root.style.colorScheme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", theme === "dark" ? "#06080f" : "#f7f8fc");
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>
+      <p style="padding: 1rem; font-family: sans-serif">
+        AURA's website needs JavaScript. You can read about AURA on
+        <a href="https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture">GitHub</a>.
+      </p>
+    </noscript>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
