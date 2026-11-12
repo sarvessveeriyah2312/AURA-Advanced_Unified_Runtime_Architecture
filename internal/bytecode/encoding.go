@@ -1,0 +1,355 @@
+package bytecode
+
+import (
+	"encoding/binary"
+	"fmt"
+	"hash/crc32"
+	"math"
+	"unicode/utf8"
+
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
+)
+
+// This file implements the Tread bytecode file format (.tbc), format
+// version 1, specified in docs/05 §5.10 and ADR-0011. The encoding is
+// written field by field; it never depends on Go type layouts.
+
+const (
+	// Extension is the file extension of Tread bytecode files.
+	Extension = ".tbc"
+	// Magic is the first four bytes of every bytecode file.
+	Magic = "TRBC"
+	// FormatVersion is the only bytecode format version this build reads
+	// and writes. It changes whenever the encoding, the opcode numbering,
+	// an opcode's semantics, or the value kinds change (ADR-0011).
+	FormatVersion = 1
+
+	headerLen   = len(Magic) + 2 + 2
+	checksumLen = 4
+	// maxCount bounds every count and operand, so decoded values always
+	// fit in an int on every platform.
+	maxCount = math.MaxInt32
+)
+
+// SourceFileID is the file ID of every span in a decoded module. The CLI
+// gives the embedded source this ID when it renders diagnostics.
+const SourceFileID source.FileID = 1
+
+// File is the content of a bytecode file: a module, the source text it
+// was compiled from (for runtime error excerpts), and who produced it.
+type File struct {
+	// Producer names the compiler, e.g. "tread 0.4.0". Informational:
+	// it is never used to accept or reject a file.
+	Producer   string
+	SourceName string
+	Source     []byte
+	Module     *Module
+}
+
+// FormatError reports a bytecode file that cannot be loaded. Its message
+// is suitable for users (TR-R006).
+type FormatError struct {
+	Msg string
+}
+
+func (e *FormatError) Error() string { return e.Msg }
+
+func formatErr(format string, args ...any) *FormatError {
+	return &FormatError{Msg: fmt.Sprintf(format, args...)}
+}
+
+// Encode serializes f. The module must pass Validate; spans must lie
+// within the embedded source.
+func Encode(f *File) ([]byte, error) {
+	if f == nil || f.Module == nil {
+		return nil, fmt.Errorf("encode: no module")
+	}
+	m := f.Module
+	if err := m.Validate(); err != nil {
+		return nil, fmt.Errorf("encode: %w", err)
+	}
+	if err := checkSpans(m, len(f.Source)); err != nil {
+		return nil, fmt.Errorf("encode: %w", err)
+	}
+
+	b := make([]byte, 0, 256+len(f.Source))
+	b = append(b, Magic...)
+	b = binary.LittleEndian.AppendUint16(b, FormatVersion)
+	b = binary.LittleEndian.AppendUint16(b, 0) // flags
+	b = appendString(b, f.Producer)
+	b = appendString(b, f.SourceName)
+	b = appendBytes(b, f.Source)
+
+	b = binary.AppendUvarint(b, uint64(len(m.Constants)))
+	for _, c := range m.Constants {
+		b = append(b, byte(c.Kind))
+		switch c.Kind {
+		case KindInt:
+			b = binary.AppendVarint(b, c.Int)
+		case KindFloat:
+			b = binary.LittleEndian.AppendUint64(b, math.Float64bits(c.Float))
+		case KindBool:
+			if c.Bool {
+				b = append(b, 1)
+			} else {
+				b = append(b, 0)
+			}
+		case KindString:
+			b = appendString(b, c.Str)
+		case KindUnit:
+		default:
+			return nil, fmt.Errorf("encode: constant of unknown kind %d", c.Kind)
+		}
+	}
+
+	b = binary.AppendUvarint(b, uint64(len(m.Functions)))
+	for _, fn := range m.Functions {
+		b = appendString(b, fn.Name)
+		b = binary.AppendUvarint(b, uint64(fn.NumParams))
+		b = binary.AppendUvarint(b, uint64(fn.NumLocals))
+		b = append(b, byte(fn.Result))
+		b = binary.AppendUvarint(b, uint64(len(fn.Code)))
+		for pc, in := range fn.Code {
+			b = append(b, byte(in.Op))
+			b = binary.AppendUvarint(b, uint64(in.A)) // non-negative after Validate
+			b = binary.AppendUvarint(b, uint64(fn.Spans[pc].Start))
+			b = binary.AppendUvarint(b, uint64(fn.Spans[pc].End))
+		}
+	}
+	b = binary.AppendUvarint(b, uint64(m.Main))
+	b = binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
+	return b, nil
+}
+
+func appendString(b []byte, s string) []byte {
+	b = binary.AppendUvarint(b, uint64(len(s)))
+	return append(b, s...)
+}
+
+func appendBytes(b []byte, p []byte) []byte {
+	b = binary.AppendUvarint(b, uint64(len(p)))
+	return append(b, p...)
+}
+
+// Decode parses and fully checks a bytecode file: header, checksum,
+// structure, Validate and Verify. It never panics; every rejection is a
+// *FormatError.
+func Decode(data []byte) (*File, error) {
+	if len(data) < len(Magic) || string(data[:len(Magic)]) != Magic {
+		return nil, formatErr("not a Tread bytecode file (missing the %q header)", Magic)
+	}
+	if len(data) < headerLen+checksumLen {
+		return nil, formatErr("truncated bytecode file (%d bytes)", len(data))
+	}
+	if v := binary.LittleEndian.Uint16(data[4:]); v != FormatVersion {
+		return nil, formatErr("unsupported bytecode format version %d: this runtime supports version %d; rebuild the program with `tread build` from the same Tread release", v, FormatVersion)
+	}
+	if flags := binary.LittleEndian.Uint16(data[6:]); flags != 0 {
+		return nil, formatErr("unsupported bytecode flags %#04x", flags)
+	}
+	body, sum := data[:len(data)-checksumLen], binary.LittleEndian.Uint32(data[len(data)-checksumLen:])
+	if crc32.ChecksumIEEE(body) != sum {
+		return nil, formatErr("bytecode file is corrupted or truncated (checksum mismatch)")
+	}
+
+	r := &reader{b: body, off: headerLen}
+	f := &File{}
+	f.Producer = r.str("producer")
+	f.SourceName = r.str("source name")
+	f.Source = r.bytes("source text")
+	m := &Module{}
+	f.Module = m
+
+	nConst := r.count("constant", 1)
+	if r.err == nil {
+		m.Constants = make([]Value, nConst)
+	}
+	for i := 0; i < nConst && r.err == nil; i++ {
+		m.Constants[i] = r.value(i)
+	}
+
+	// A function needs at least 5 bytes: name length, params, locals,
+	// result and instruction count.
+	nFunc := r.count("function", 5)
+	if r.err == nil {
+		m.Functions = make([]Function, nFunc)
+	}
+	for i := 0; i < nFunc && r.err == nil; i++ {
+		fn := &m.Functions[i]
+		fn.Name = r.str("function name")
+		fn.NumParams = r.int("parameter count")
+		fn.NumLocals = r.int("local count")
+		fn.Result = r.kind()
+		// An instruction needs at least 4 bytes.
+		n := r.count("instruction", 4)
+		if r.err != nil {
+			break
+		}
+		fn.Code = make([]Instr, n)
+		fn.Spans = make([]source.Span, n)
+		for pc := 0; pc < n && r.err == nil; pc++ {
+			fn.Code[pc] = Instr{Op: Opcode(r.u8()), A: r.int("operand")}
+			start := r.int("span start")
+			end := r.int("span end")
+			fn.Spans[pc] = source.Span{File: SourceFileID, Start: start, End: end}
+		}
+	}
+	m.Main = r.int("main index")
+	if r.err != nil {
+		return nil, r.err
+	}
+	if r.off != len(body) {
+		return nil, formatErr("bytecode file has %d unexpected trailing bytes", len(body)-r.off)
+	}
+	if err := checkSpans(m, len(f.Source)); err != nil {
+		return nil, formatErr("invalid bytecode: %v", err)
+	}
+	if err := m.Verify(); err != nil {
+		return nil, formatErr("invalid bytecode: %v", err)
+	}
+	return f, nil
+}
+
+// checkSpans requires every span to lie within a source of n bytes, so
+// the diagnostic renderer can trust decoded spans.
+func checkSpans(m *Module, n int) error {
+	for _, fn := range m.Functions {
+		for pc, s := range fn.Spans {
+			if s.Start < 0 || s.Start > s.End || s.End > n {
+				return &ValidationError{Function: fn.Name, PC: pc, Msg: fmt.Sprintf("source span [%d,%d) outside the %d-byte source", s.Start, s.End, n)}
+			}
+		}
+	}
+	return nil
+}
+
+// reader decodes the body. After the first error every method returns a
+// zero value, so callers check r.err once per loop.
+type reader struct {
+	b   []byte
+	off int
+	err *FormatError
+}
+
+func (r *reader) fail(format string, args ...any) {
+	if r.err == nil {
+		r.err = formatErr("malformed bytecode file at byte %d: %s", r.off, fmt.Sprintf(format, args...))
+	}
+}
+
+func (r *reader) remaining() int { return len(r.b) - r.off }
+
+func (r *reader) u8() byte {
+	if r.err != nil {
+		return 0
+	}
+	if r.remaining() < 1 {
+		r.fail("unexpected end of data")
+		return 0
+	}
+	v := r.b[r.off]
+	r.off++
+	return v
+}
+
+func (r *reader) uvarint(what string) uint64 {
+	if r.err != nil {
+		return 0
+	}
+	v, n := binary.Uvarint(r.b[r.off:])
+	if n <= 0 {
+		r.fail("invalid %s", what)
+		return 0
+	}
+	r.off += n
+	return v
+}
+
+// int reads a uvarint that must fit in [0, maxCount].
+func (r *reader) int(what string) int {
+	v := r.uvarint(what)
+	if v > maxCount {
+		r.fail("%s %d is too large", what, v)
+		return 0
+	}
+	return int(v)
+}
+
+// count reads an element count and rejects counts that the remaining
+// input cannot hold, so a malicious count cannot force a huge allocation.
+func (r *reader) count(what string, minSize int) int {
+	n := r.int(what + " count")
+	if r.err == nil && n > r.remaining()/minSize {
+		r.fail("%s count %d exceeds the remaining %d bytes", what, n, r.remaining())
+		return 0
+	}
+	return n
+}
+
+func (r *reader) bytes(what string) []byte {
+	n := r.int(what + " length")
+	if r.err != nil {
+		return nil
+	}
+	if n > r.remaining() {
+		r.fail("%s length %d exceeds the remaining %d bytes", what, n, r.remaining())
+		return nil
+	}
+	p := r.b[r.off : r.off+n : r.off+n]
+	r.off += n
+	return p
+}
+
+func (r *reader) str(what string) string {
+	p := r.bytes(what)
+	if r.err == nil && !utf8.Valid(p) {
+		r.fail("%s is not valid UTF-8", what)
+		return ""
+	}
+	return string(p)
+}
+
+func (r *reader) kind() Kind {
+	k := Kind(r.u8())
+	if r.err == nil && k > KindString {
+		r.fail("unknown value kind %d", k)
+	}
+	return k
+}
+
+func (r *reader) value(i int) Value {
+	k := r.kind()
+	if r.err != nil {
+		return Value{}
+	}
+	switch k {
+	case KindInt:
+		v, n := binary.Varint(r.b[r.off:])
+		if n <= 0 {
+			r.fail("invalid Int constant %d", i)
+			return Value{}
+		}
+		r.off += n
+		return IntValue(v)
+	case KindFloat:
+		if r.remaining() < 8 {
+			r.fail("unexpected end of data in Float constant %d", i)
+			return Value{}
+		}
+		v := math.Float64frombits(binary.LittleEndian.Uint64(r.b[r.off:]))
+		r.off += 8
+		return FloatValue(v)
+	case KindBool:
+		switch r.u8() {
+		case 0:
+			return BoolValue(false)
+		case 1:
+			return BoolValue(true)
+		}
+		r.fail("invalid Bool constant %d", i)
+		return Value{}
+	case KindString:
+		return StringValue(r.str("String constant"))
+	}
+	return UnitValue()
+}

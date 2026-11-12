@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sarvessveeriyah2312/Tread/internal/bytecode"
 	"github.com/sarvessveeriyah2312/Tread/internal/checker"
 	"github.com/sarvessveeriyah2312/Tread/internal/compiler"
 	"github.com/sarvessveeriyah2312/Tread/internal/lexer"
@@ -45,8 +46,20 @@ func FuzzCompileAndRun(f *testing.F) {
 		if len(diags) > 0 {
 			t.Fatalf("checked program failed to compile: %+v\n%s", diags, data)
 		}
+		// ADR-0011: compiled code passes the stack verifier and survives a
+		// bytecode file round trip.
+		if err := m.Verify(); err != nil {
+			t.Fatalf("compiled program fails stack verification: %v\n%s", err, data)
+		}
+		enc, err := bytecode.Encode(&bytecode.File{SourceName: "fuzz.tr", Source: data, Module: m})
+		if err != nil {
+			t.Fatalf("compiled program does not encode: %v\n%s", err, data)
+		}
+		if _, err := bytecode.Decode(enc); err != nil {
+			t.Fatalf("encoded program does not decode: %v\n%s", err, data)
+		}
 		var out strings.Builder
-		err := vm.Run(m, &out, vm.Config{MaxInstructions: 100000, MaxCallDepth: 200})
+		err = vm.Run(m, &out, vm.Config{MaxInstructions: 100000, MaxCallDepth: 200})
 		if e, ok := err.(*vm.Error); ok && e.Code == vm.CodeInvalidBytecode {
 			t.Fatalf("compiled program produced invalid bytecode: %v\n%s", e, data)
 		}

@@ -67,6 +67,9 @@ const (
 	CallDepthExceeded     Code = "TR-R003"
 	InstructionLimit      Code = "TR-R004"
 	IntegerOverflow       Code = "TR-R005"
+	// BytecodeLoadError: a .tbc file is malformed, corrupted, or uses an
+	// unsupported format version (ADR-0011).
+	BytecodeLoadError Code = "TR-R006"
 )
 
 // Registry returns every registered code in registry order. The result is
@@ -87,7 +90,7 @@ func Registry() []Code {
 		BuiltinRedeclared, FloatLiteralRange, FunctionAsValue,
 		InternalCompilerError,
 		DivisionByZero, InvalidBytecode, CallDepthExceeded, InstructionLimit,
-		IntegerOverflow,
+		IntegerOverflow, BytecodeLoadError,
 	}
 }
 

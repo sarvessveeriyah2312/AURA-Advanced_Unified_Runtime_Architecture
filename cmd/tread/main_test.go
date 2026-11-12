@@ -36,7 +36,7 @@ func TestBinary(t *testing.T) {
 		{args: []string{"run", filepath.Join(root, "testdata", "e2e", "D4.tr")}, exit: 1, stdout: "before\n", stderrHas: "error[TR-R001]"},
 		{args: []string{"run", filepath.Join(root, "testdata", "e2e", "D6.tr")}, exit: 0, stdout: "B\n", stderrNone: true},
 		{args: []string{"run", "missing.tr"}, exit: 2, stdout: "", stderrHas: "cannot read missing.tr"},
-		{args: []string{"run", "hello.nova"}, exit: 2, stdout: "", stderrHas: "is not a Tread source file: expected the .tr extension"},
+		{args: []string{"run", "hello.nova"}, exit: 2, stdout: "", stderrHas: "is not a Tread program: expected the .tr or .tbc extension"},
 		{args: []string{"run"}, exit: 2, stdout: "", stderrHas: "run requires exactly one file argument"},
 		{args: []string{"frobnicate"}, exit: 2, stdout: "", stderrHas: `unknown command "frobnicate"`},
 		{args: []string{"version"}, exit: 0, stdout: "tread 0.3.0\n", stderrNone: true},

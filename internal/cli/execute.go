@@ -4,51 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sort"
 
 	"github.com/sarvessveeriyah2312/Tread/internal/bytecode"
-	"github.com/sarvessveeriyah2312/Tread/internal/checker"
-	"github.com/sarvessveeriyah2312/Tread/internal/compiler"
 	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
-	"github.com/sarvessveeriyah2312/Tread/internal/lexer"
-	"github.com/sarvessveeriyah2312/Tread/internal/parser"
-	"github.com/sarvessveeriyah2312/Tread/internal/source"
 	"github.com/sarvessveeriyah2312/Tread/internal/vm"
 )
-
-// This file orchestrates the compiler phases (docs/07 §7.4). It contains
-// no language logic: each phase is delegated to its package, and the only
-// I/O is the program output writer handed to the VM.
-
-// analyze runs the frontend: lexing and parsing, then type checking only
-// if lexing and parsing produced no diagnostics. Checking a syntactically
-// broken program would report spurious errors (for example a missing
-// main whose declaration failed to parse). Diagnostics are sorted by
-// position; the result is nil if any diagnostic was produced.
-func analyze(file *source.File) (*checker.CheckedProgram, []diagnostic.Diagnostic) {
-	toks, lexDiags := lexer.Lex(file)
-	prog, parseDiags := parser.Parse(toks)
-	syntax := append(append([]diagnostic.Diagnostic(nil), lexDiags...), parseDiags...)
-	if len(syntax) > 0 {
-		sort.SliceStable(syntax, func(i, j int) bool { return syntax[i].Span.Start < syntax[j].Span.Start })
-		return nil, syntax
-	}
-	checked, checkDiags := checker.Check(prog)
-	if len(checkDiags) > 0 {
-		return nil, checkDiags
-	}
-	return checked, nil
-}
-
-// build runs the frontend and the bytecode compiler. The compiler
-// validates the module it returns (docs/05 §5.5).
-func build(file *source.File) (*bytecode.Module, []diagnostic.Diagnostic) {
-	checked, diags := analyze(file)
-	if len(diags) > 0 {
-		return nil, diags
-	}
-	return compiler.Compile(checked)
-}
 
 // runtimeFailure is a Tread runtime error converted to a diagnostic.
 // withSource is false for errors without a source location (bytecode

@@ -10,6 +10,7 @@ import (
 
 	"github.com/sarvessveeriyah2312/Tread/internal/bytecode"
 	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/Tread/internal/pipeline"
 	"github.com/sarvessveeriyah2312/Tread/internal/source"
 )
 
@@ -108,7 +109,7 @@ func TestEndToEnd(t *testing.T) {
 
 func invoke(args ...string) (stdout, stderr string, code int) {
 	var out, errOut strings.Builder
-	code = Run(args, &out, &errOut)
+	code = Run(pipeline.Compiler{}, args, &out, &errOut)
 	return out.String(), errOut.String(), code
 }
 
@@ -185,7 +186,7 @@ func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("disk ful
 
 func TestOutputWriteFailureIsInternal(t *testing.T) {
 	var errOut strings.Builder
-	code := Run([]string{"run", "../../examples/hello.tr"}, failingWriter{}, &errOut)
+	code := Run(pipeline.Compiler{}, []string{"run", "../../examples/hello.tr"}, failingWriter{}, &errOut)
 	if code != ExitInternal || errOut.String() != "error: cannot write program output: disk full\n" {
 		t.Errorf("exit %d stderr %q", code, errOut.String())
 	}

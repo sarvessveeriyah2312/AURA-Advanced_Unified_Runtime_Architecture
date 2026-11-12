@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"os"
 	"testing"
+
+	"github.com/sarvessveeriyah2312/Tread/internal/pipeline"
 )
 
 // osReadError returns the operating system's message for reading a
@@ -48,31 +50,31 @@ func TestRun(t *testing.T) {
 			name:       "help command",
 			args:       []string{"help"},
 			wantCode:   ExitOK,
-			wantStdout: usage,
+			wantStdout: sdkUsage,
 		},
 		{
 			name:       "short help flag",
 			args:       []string{"-h"},
 			wantCode:   ExitOK,
-			wantStdout: usage,
+			wantStdout: sdkUsage,
 		},
 		{
 			name:       "long help flag",
 			args:       []string{"--help"},
 			wantCode:   ExitOK,
-			wantStdout: usage,
+			wantStdout: sdkUsage,
 		},
 		{
 			name:       "no arguments",
 			args:       nil,
 			wantCode:   ExitUsage,
-			wantStderr: usage,
+			wantStderr: sdkUsage,
 		},
 		{
 			name:       "unknown command",
 			args:       []string{"bogus"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: unknown command \"bogus\"\n\n" + usage,
+			wantStderr: "error: unknown command \"bogus\"\n\n" + sdkUsage,
 		},
 		{
 			name:       "run nonexistent file",
@@ -90,7 +92,7 @@ func TestRun(t *testing.T) {
 			name:       "run rejects the old .nova extension",
 			args:       []string{"run", "hello.nova"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: hello.nova is not a Tread source file: expected the .tr extension\n",
+			wantStderr: "error: hello.nova is not a Tread program: expected the .tr or .tbc extension\n",
 		},
 		{
 			name:       "check rejects other extensions",
@@ -102,56 +104,50 @@ func TestRun(t *testing.T) {
 			name:       "run rejects a missing extension",
 			args:       []string{"run", "program"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: program is not a Tread source file: expected the .tr extension\n",
+			wantStderr: "error: program is not a Tread program: expected the .tr or .tbc extension\n",
 		},
 		{
 			name:       "extension match is case-sensitive",
 			args:       []string{"run", "HELLO.TR"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: HELLO.TR is not a Tread source file: expected the .tr extension\n",
+			wantStderr: "error: HELLO.TR is not a Tread program: expected the .tr or .tbc extension\n",
 		},
 		{
 			name:       "run without file",
 			args:       []string{"run"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: run requires exactly one file argument\n\n" + usage,
+			wantStderr: "error: run requires exactly one file argument\n\n" + sdkUsage,
 		},
 		{
 			name:       "check without file",
 			args:       []string{"check"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: check requires exactly one file argument\n\n" + usage,
+			wantStderr: "error: check requires exactly one file argument\n\n" + sdkUsage,
 		},
 		{
 			name:       "run with two files",
 			args:       []string{"run", "a.tr", "b.tr"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: run requires exactly one file argument\n\n" + usage,
-		},
-		{
-			name:       "build is not implemented",
-			args:       []string{"build", "a.tr"},
-			wantCode:   ExitUsage,
-			wantStderr: "error: unknown command \"build\"\n\n" + usage,
+			wantStderr: "error: run requires exactly one file argument\n\n" + sdkUsage,
 		},
 		{
 			name:       "version with extra argument",
 			args:       []string{"version", "extra"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: version takes no arguments\n\n" + usage,
+			wantStderr: "error: version takes no arguments\n\n" + sdkUsage,
 		},
 		{
 			name:       "help with extra argument",
 			args:       []string{"help", "extra"},
 			wantCode:   ExitUsage,
-			wantStderr: "error: help takes no arguments\n\n" + usage,
+			wantStderr: "error: help takes no arguments\n\n" + sdkUsage,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			code := Run(tt.args, &stdout, &stderr)
+			code := Run(pipeline.Compiler{}, tt.args, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Errorf("exit code = %d, want %d", code, tt.wantCode)
