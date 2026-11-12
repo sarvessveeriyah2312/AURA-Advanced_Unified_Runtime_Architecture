@@ -14,6 +14,7 @@ A small, statically typed programming language whose whole toolchain
 built to be read, one stage at a time. Written in Go.
 
 **Version 0.3.0** · macOS · Linux · Windows ·
+[Website](https://treadlang.vercel.app/) ·
 [Repository](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture) ·
 [Latest release](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/latest)
 
@@ -1042,7 +1043,7 @@ Contributions are welcome.
 1.  **For language or CLI changes,** first
     [open an issue](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/issues).
     Syntax and behaviour change only by a documented design decision.
-2.  **Read [`CLAUDE.md`](CLAUDE.md)** for the engineering rules:
+2.  **Follow the engineering rules:**
     -   separate compiler phases;
     -   no panics on user input;
     -   deterministic output;

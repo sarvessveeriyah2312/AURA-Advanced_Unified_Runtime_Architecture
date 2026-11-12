@@ -12,6 +12,14 @@ export const RELEASED = false;
 export const RELEASE_DATE: string | null = null;
 export const MOTTO = "A language for learning how languages work.";
 
+// Canonical address of this website. index.html, public/robots.txt and
+// public/llms.txt repeat it as literals (they are static files); change
+// all of them together if the domain changes.
+export const SITE_URL = "https://treadlang.vercel.app/";
+// Shown in the footer and used as the sitemap's <lastmod>.
+export const UPDATED = "2026-11-12";
+export const AUTHOR = { name: "Sarvess Veeriyah", url: "https://github.com/sarvessveeriyah2312" };
+
 export const OWNER = "sarvessveeriyah2312";
 export const REPO_NAME = "AURA-Advanced_Unified_Runtime_Architecture";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO_NAME}`;
