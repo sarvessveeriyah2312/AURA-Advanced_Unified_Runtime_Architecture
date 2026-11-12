@@ -23,6 +23,7 @@ function Invoke-Msi([string]$verb, [string]$path) {
     $log = Join-Path $env:TEMP ("msi-" + [guid]::NewGuid() + ".log")
     $p = Start-Process msiexec.exe -ArgumentList "$verb `"$path`" /qn /norestart /l*v `"$log`"" -Wait -PassThru
     if ($p.ExitCode -ne 0) { Get-Content $log -Tail 40 | Write-Host; throw "msiexec $verb exited $($p.ExitCode)" }
+    return $true
 }
 
 Check "install $v1" { Invoke-Msi "/i" $msi }

@@ -16,6 +16,10 @@ cd "$(dirname "$0")/.."
 usage="usage: scripts/smoke-release.sh SDK_TREAD RUNTIME_TREAD [EXPECTED_VERSION]"
 bin=${1:?$usage}
 rt=${2:?$usage}
+# Absolute paths: some checks run from another directory.
+abspath() { printf '%s/%s\n' "$(cd "$(dirname "$1")" && pwd)" "$(basename "$1")"; }
+bin=$(abspath "$bin")
+rt=$(abspath "$rt")
 version=${3:-$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/cli/version.go)}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
