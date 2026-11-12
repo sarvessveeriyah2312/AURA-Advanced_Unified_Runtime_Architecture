@@ -248,6 +248,79 @@ Open a **new** terminal, so that it picks up the updated `PATH`, then
 run `tread version`. It should print `tread 0.3.0`. SmartScreen may warn
 the first time, because the binary is not code-signed.
 
+### Coming in the next release: installers, SDK and Runtime
+
+> The `main` branch builds these artifacts; they will be published with
+> the next release. The download instructions above are for 0.3.0.
+
+Each platform gets two downloads, plus an installer for the SDK:
+
+| Download | What it is |
+|---|---|
+| `tread-sdk-<version>-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
+| `tread-runtime-<version>-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
+| `.msi` (Windows), `.pkg` (macOS), `.deb` / `.rpm` (Linux) | SDK installer |
+| `install.sh`, `install.ps1` | user-level install scripts (no administrator rights) |
+
+`<platform>` is `windows-x64`, `macos-arm64`, `macos-x64`, `linux-x64`
+or `linux-arm64`. Every archive has the same layout:
+
+``` text
+tread-sdk-<version>-<platform>/
+├── bin/tread              # tread.exe on Windows
+├── docs/                  # LICENSE, README.md, CHANGELOG.md, THIRD_PARTY_NOTICES.txt
+└── release                # version, edition, bytecode format, platform
+```
+
+**Installers:**
+
+| Installer | Installs into | PATH | Uninstall |
+|---|---|---|---|
+| `install.sh` (macOS, Linux) | `~/.tread` | a marked block in `~/.profile` (and `~/.bashrc`, `~/.zshrc` if present) | `sh install.sh --uninstall` |
+| `install.ps1` (Windows) | `%USERPROFILE%\.tread` | user `PATH`, `TREAD_HOME` | `install.ps1 -Uninstall` |
+| `.msi` (Windows, per user) | `%LOCALAPPDATA%\Programs\Tread` | user `PATH`, `TREAD_HOME` | Settings → Apps |
+| `.pkg` (macOS) | `/Library/Tread` | `/etc/paths.d/tread` | `sudo /Library/Tread/uninstall.sh` |
+| `.deb`, `.rpm` (Linux) | `/opt/tread` | `/usr/bin/tread` link | `sudo apt remove tread` / `sudo dnf remove tread` |
+
+``` bash
+# macOS / Linux, no sudo:
+curl -fsSL https://github.com/sarvessveeriyah2312/Tread/releases/latest/download/install.sh | sh
+```
+
+``` powershell
+# Windows, no administrator rights:
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://github.com/sarvessveeriyah2312/Tread/releases/latest/download/install.ps1 | iex"
+```
+
+The install scripts verify the archive against `SHA256SUMS` before
+installing, never add a duplicate `PATH` entry, only replace or remove
+files they installed, and refuse to install into a directory that is
+not empty and not a previous Tread installation. Upgrading is running
+the installer again with a newer version. `TREAD_HOME` is optional:
+`tread` finds its installation from its own location.
+
+Then open a new terminal and check the installation:
+
+``` text
+$ tread doctor
+Tread Installation Diagnostics
+
+[OK]   Tread CLI: tread <version> (SDK) at /home/you/.tread/bin/tread
+[OK]   Installation: /home/you/.tread (Tread SDK <version>, linux-x64)
+[OK]   TREAD_HOME: /home/you/.tread
+[OK]   PATH: tread resolves to this executable
+[OK]   Runtime: encoded, verified and ran a test program (bytecode format 1)
+[OK]   Bytecode compatibility: format 1 loads; format 2 is rejected with a rebuild hint
+[OK]   SDK compiler: compiled a test program to bytecode and ran it
+[OK]   Standard library: built-in print and toString work (no library modules in this release)
+
+Installation is healthy.
+```
+
+The installers and binaries are **not code-signed** yet, so macOS
+Gatekeeper and Windows SmartScreen may warn on first use. Verify
+downloads with `SHA256SUMS`.
+
 ### Method B: Install with Go
 
 This method needs **Go 1.25 or later**; `go.mod` declares `go 1.25.0`.
@@ -707,6 +780,25 @@ tread <command> [arguments]
 Flags: `--version` is the same as `tread version`; `-h` and `--help` are
 the same as `tread help`.
 
+**Unreleased (on `main`, in the next release):**
+
+| Command | Purpose | Exit code |
+|---|---|---|
+| `tread build <file.tr> [-o <file.tbc>]` | Compile to a bytecode file (default: next to the source). Prints nothing on success. | `0`, `1`, `2`, or `3` |
+| `tread run <file.tbc>` | Run a compiled program. Runtime errors look exactly like running the source. A file that cannot be loaded is `TR-R006`. | `0`, `1`, `2`, or `3` |
+| `tread new <name>` | Create `<name>/` with `tread.toml`, `src/main.tr` and `README.md`. Never overwrites. | `0`, `1`, or `2` |
+| `tread doctor` | Check the installation, `TREAD_HOME`, `PATH`, the runtime, bytecode compatibility and the compiler. | `0` or `1` |
+| `tread sdk --version` | `Tread SDK <version>` | `0` (`1` in the runtime) |
+| `tread runtime --version` | `Tread Runtime <version> (bytecode format 1)` | `0` |
+
+The **Tread Runtime** edition supports only `run <file.tbc>`, `doctor`,
+`version`, `runtime --version` and `help`; other commands explain that
+the SDK is needed and exit `2`.
+
+`.tbc` files contain the program's source text (for error messages),
+and there is no compatibility promise between releases yet: rebuild
+`.tbc` files with the SDK of the same release as the runtime.
+
 **Behaviour:**
 
 -   **The file must end in `.tr`,** in lower case. Any other name is
@@ -947,7 +1039,8 @@ repository:
 ## Repository structure
 
 ``` text
-cmd/tread/               the tread executable (entry point only)
+cmd/tread/               the tread SDK executable (entry point only)
+cmd/tread-runtime/       the runtime edition: runs .tbc files, no compiler
 internal/
   source/                source files, spans, line and column mapping
   token/                 token kinds
@@ -956,25 +1049,33 @@ internal/
   parser/                tokens -> syntax tree
   checker/               name resolution and type checking
   compiler/              checked program -> Tread Bytecode
-  bytecode/              instruction set, values, validation
+  bytecode/              instruction set, values, validation, .tbc files, verifier
   vm/                    the Tread Virtual Machine
   diagnostic/            error codes and rendering
-  cli/                   commands, pipeline, exit codes
+  pipeline/              lexer -> checker -> compiler orchestration (SDK only)
+  cli/                   commands and exit codes, for both editions
+  doctor/                tread doctor
+  project/               tread new
 examples/                example programs
 testdata/e2e/            end-to-end test programs and expected output
 scripts/
   verify.sh              the full local quality gate
-  build-release.sh       reproducible release archives
-  smoke-release.sh       CLI smoke test of a built binary
-  package/               deterministic archive writer
-.github/workflows/ci.yml continuous integration
+  build-release.sh       reproducible SDK/runtime archives, .deb, manifest
+  smoke-release.sh       CLI smoke test of both editions
+  test-install.sh        install/upgrade/uninstall test of install.sh
+  install/               install.sh and install.ps1 (user-level installers)
+  package/               deterministic archive and .deb writer
+  manifest/              SHA256SUMS and release-manifest.json
+packaging/               .pkg (macOS), .rpm (Linux), .msi (Windows) and their tests
+.github/workflows/       ci.yml (every push) and release.yml (version tags)
 ```
 
 The compiler phases are separate packages, and each depends only on the
 earlier ones:
 
 -   `lexer` → `parser` → `checker` → `compiler` → `vm`;
--   `cli` connects them;
+-   `pipeline` connects them, and `cli` runs commands; the runtime
+    edition links `cli`, `bytecode` and `vm` only (a test enforces it);
 -   `diagnostic` formats every error.
 
 The VM executes validated, typed bytecode, and never panics on a user
@@ -985,7 +1086,8 @@ program.
 Development needs **Go 1.25 or later**, and no other dependencies.
 
 ``` bash
-go build -o ./bin/tread ./cmd/tread    # build the CLI
+go build -o ./bin/tread ./cmd/tread    # build the CLI (SDK)
+go build -o ./bin/tread-runtime ./cmd/tread-runtime   # the runtime edition
 go test ./...                          # run all tests
 go vet ./...                           # static analysis
 scripts/verify.sh                      # full gate: gofmt check, vet, tests, build, smoke test
@@ -997,8 +1099,10 @@ scripts/verify.sh                      # full gate: gofmt check, vet, tests, bui
     compiler, VM, diagnostics, and CLI.
 -   **End-to-end tests** run real programs, and compare stdout and
     stderr with the golden files in `testdata/e2e/`.
--   **Four fuzz targets** check that no input crashes the toolchain:
-    `FuzzLex`, `FuzzParse`, `FuzzCheck`, and `FuzzCompileAndRun`.
+-   **Five fuzz targets** check that no input crashes the toolchain:
+    `FuzzLex`, `FuzzParse`, `FuzzCheck`, `FuzzCompileAndRun` (which
+    also verifies and round-trips every compiled program through a
+    `.tbc` file), and `FuzzDecode` (arbitrary `.tbc` input).
 
     ``` bash
     go test ./internal/vm -run '^$' -fuzz=FuzzCompileAndRun -fuzztime=60s
@@ -1008,22 +1112,31 @@ scripts/verify.sh                      # full gate: gofmt check, vet, tests, bui
     no timing dependencies, and no OS-specific error text.
 
 **Continuous integration** (`.github/workflows/ci.yml`) runs on every
-push and pull request to `main`, in three jobs:
+push and pull request to `main`:
 
 1.  **verify:** `gofmt`, `go vet`, `go test`, `go build`, and
     `scripts/verify.sh`, on Linux, macOS, and Windows;
-2.  **release build:** cross-compiles all five release archives twice,
-    and checks that they are byte-identical;
-3.  **release smoke:** runs each archive on its own platform:
-    -   Linux x86-64 and ARM64;
-    -   macOS Apple silicon and Intel;
-    -   Windows x86-64.
+2.  **release build:** builds every release artifact twice and checks
+    that they are byte-identical;
+3.  **release smoke:** runs both editions of each platform on that
+    platform (Linux x86-64 and ARM64, macOS Apple silicon and Intel,
+    Windows x86-64), and tests `install.sh` / `install.ps1`;
+4.  **installers:** builds the `.deb`, `.rpm`, `.pkg` and `.msi` on
+    their own platforms and tests install, `PATH`, `tread doctor`,
+    upgrade and uninstall.
+
+**Releases** (`.github/workflows/release.yml`): pushing a tag `vX.Y.Z`
+that matches `internal/cli/version.go` runs all of CI, then creates a
+**draft** GitHub Release with every artifact, `SHA256SUMS` and
+`release-manifest.json` (the download list for the website). Nothing is
+released if any job fails.
 
 **Release builds:**
 
 ``` bash
-scripts/build-release.sh               # writes dist/: 5 archives, SHA256SUMS, BUILD-INFO.txt
-scripts/smoke-release.sh ./bin/tread   # 10 CLI checks against a built binary
+scripts/build-release.sh                       # writes dist/: archives, .deb, install scripts, SHA256SUMS, manifest
+scripts/smoke-release.sh SDK/bin/tread RUNTIME/bin/tread   # CLI checks of both editions
+scripts/test-install.sh dist [dist-upgrade]    # install.sh end to end, in a temporary HOME
 ```
 
 Release builds are reproducible: the same commit produces byte-identical

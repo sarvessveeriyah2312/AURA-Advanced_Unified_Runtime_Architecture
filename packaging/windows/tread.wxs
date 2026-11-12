@@ -1,0 +1,63 @@
+<!--
+  WiX Toolset (v5) source for the Tread SDK Windows installer (ADR-0011 §7).
+  Built by packaging/windows/build-msi.ps1 from a released SDK archive.
+
+  Per-user install (no administrator rights) into
+  %LOCALAPPDATA%\Programs\Tread. Appends Tread's bin directory to the
+  user PATH and sets TREAD_HOME; both are removed on uninstall. A newer
+  version replaces an older one (MajorUpgrade); downgrades are refused.
+  Nothing outside the install directory and those two variables changes.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Tread SDK"
+           Manufacturer="Tread project"
+           Version="$(var.Version)"
+           UpgradeCode="6f1c2a8e-3b7d-4e5a-9c2f-8d4b1e7a0c53"
+           Scope="perUser"
+           Language="1033">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Tread is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Property Id="ARPURLINFOABOUT" Value="https://treadlang.vercel.app/" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/sarvessveeriyah2312/Tread" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Tread">
+          <Directory Id="BinFolder" Name="bin" />
+          <Directory Id="DocsFolder" Name="docs" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="TreadSDK" Title="Tread SDK">
+      <ComponentRef Id="Executable" />
+      <ComponentRef Id="Docs" />
+      <ComponentRef Id="ReleaseInfo" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <!-- Per-user components use an HKCU value as their key path. -->
+    <Component Id="Executable" Directory="BinFolder">
+      <File Id="TreadExe" Source="$(var.SourceDir)\bin\tread.exe" />
+      <RegistryValue Root="HKCU" Key="Software\Tread\SDK" Name="Executable" Type="integer" Value="1" KeyPath="yes" />
+      <Environment Id="PathEntry" Name="PATH" Value="[BinFolder]" Part="last" Action="set" System="no" Permanent="no" />
+      <Environment Id="TreadHome" Name="TREAD_HOME" Value="[INSTALLFOLDER]" Action="set" System="no" Permanent="no" />
+      <RemoveFolder Id="RemoveBinFolder" Directory="BinFolder" On="uninstall" />
+      <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+      <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+    </Component>
+    <Component Id="Docs" Directory="DocsFolder">
+      <File Id="License" Source="$(var.SourceDir)\docs\LICENSE" />
+      <File Id="Readme" Source="$(var.SourceDir)\docs\README.md" />
+      <File Id="Changelog" Source="$(var.SourceDir)\docs\CHANGELOG.md" />
+      <File Id="Notices" Source="$(var.SourceDir)\docs\THIRD_PARTY_NOTICES.txt" />
+      <RegistryValue Root="HKCU" Key="Software\Tread\SDK" Name="Docs" Type="integer" Value="1" KeyPath="yes" />
+      <RemoveFolder Id="RemoveDocsFolder" Directory="DocsFolder" On="uninstall" />
+    </Component>
+    <Component Id="ReleaseInfo" Directory="INSTALLFOLDER">
+      <File Id="Release" Source="$(var.SourceDir)\release" />
+      <RegistryValue Root="HKCU" Key="Software\Tread\SDK" Name="Release" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+  </Fragment>
+</Wix>

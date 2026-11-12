@@ -1,0 +1,97 @@
+# Tread release workflow (ADR-0011 §8).
+#
+# On a version tag (v0.4.0), runs the complete CI workflow (tests,
+# reproducible release build, smoke tests of both editions on every
+# platform, and install/upgrade/uninstall tests of every installer).
+# Only if every job passes does it collect the artifacts, regenerate
+# SHA256SUMS and release-manifest.json over all of them, and create a
+# DRAFT GitHub Release. The owner reviews the draft and publishes it
+# (docs/14). Nothing is published when any check fails.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: draft GitHub Release
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go (version from go.mod)
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.mod
+
+      - name: Check the tag matches the version
+        id: version
+        run: |
+          version=$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/cli/version.go)
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match internal/cli/version.go (${version})" >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Download archives
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-release
+          path: dist
+
+      - name: Download installers
+        uses: actions/download-artifact@v8
+        with:
+          pattern: tread-installer-*
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums and manifest over every artifact
+        run: |
+          go run ./scripts/manifest -version "${{ steps.version.outputs.version }}" dist
+          cat dist/SHA256SUMS
+          (cd dist && sha256sum -c SHA256SUMS)
+          # Every platform must have both archives and its installer.
+          v=${{ steps.version.outputs.version }}
+          for f in \
+            tread-sdk-$v-windows-x64.zip tread-runtime-$v-windows-x64.zip tread-sdk-$v-windows-x64.msi \
+            tread-sdk-$v-macos-arm64.tar.gz tread-runtime-$v-macos-arm64.tar.gz tread-sdk-$v-macos-arm64.pkg \
+            tread-sdk-$v-macos-x64.tar.gz tread-runtime-$v-macos-x64.tar.gz tread-sdk-$v-macos-x64.pkg \
+            tread-sdk-$v-linux-x64.tar.gz tread-runtime-$v-linux-x64.tar.gz tread-sdk-$v-linux-x64.deb tread-sdk-$v-linux-x64.rpm \
+            tread-sdk-$v-linux-arm64.tar.gz tread-runtime-$v-linux-arm64.tar.gz tread-sdk-$v-linux-arm64.deb tread-sdk-$v-linux-arm64.rpm \
+            install.sh install.ps1 SHA256SUMS release-manifest.json; do
+            test -f "dist/$f" || { echo "missing dist/$f" >&2; exit 1; }
+          done
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          v=${{ steps.version.outputs.version }}
+          awk -v v="$v" '
+            $0 ~ "^## \\[" v "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "CHANGELOG.md has no section for $v" >&2; exit 1; }
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --draft --verify-tag \
+            --title "Tread ${{ steps.version.outputs.version }}" \
+            --notes-file notes.md

@@ -25,9 +25,22 @@ SDK and runtime editions, bytecode files, and installers (ADR-0011).
 -   **`tread doctor`** checks the installation, `TREAD_HOME`, `PATH`,
     and runs runtime, bytecode-compatibility and compiler self-tests.
 -   **`tread sdk --version`** and **`tread runtime --version`**.
+-   **Installers.** A `.msi` (Windows, per user), `.pkg` (macOS), `.deb`
+    and `.rpm` (Linux) for the SDK, and user-level `install.sh` and
+    `install.ps1` for either edition. They put `tread` on `PATH`, set
+    `TREAD_HOME`, upgrade in place, and uninstall cleanly. None needs
+    Go.
+-   **Release automation.** `release.yml` builds and tests every
+    artifact on its own platform and creates a draft GitHub Release with
+    `SHA256SUMS` and `release-manifest.json`.
 
 ### Changed
 
+-   **Release artifacts** are now `tread-sdk-<version>-<platform>` and
+    `tread-runtime-<version>-<platform>` (`.tar.gz`, `.zip` on Windows),
+    with `<platform>` one of `windows-x64`, `macos-arm64`, `macos-x64`,
+    `linux-x64`, `linux-arm64`. Each unpacks to `bin/tread`, `docs/`
+    and a `release` file.
 -   `tread run` with neither a `.tr` nor a `.tbc` argument now says
     `expected the .tr or .tbc extension`.
 

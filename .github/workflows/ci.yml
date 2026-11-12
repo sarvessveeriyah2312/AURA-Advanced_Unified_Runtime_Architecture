@@ -1,4 +1,6 @@
-# Tread continuous integration (CI). Release packaging: ADR-0008.
+# Tread continuous integration (CI). Release packaging: ADR-0008,
+# ADR-0011. The release workflow (release.yml) calls this workflow, so a
+# release is built and verified by exactly these jobs.
 #
 # The default branch is assumed to be `main` (the repository's configured
 # branch at the time this workflow was written).
@@ -10,12 +12,13 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -86,6 +89,11 @@ jobs:
         run: |
           DIST_DIR=dist-again bash scripts/build-release.sh
           diff dist/SHA256SUMS dist-again/SHA256SUMS
+          cmp dist/release-manifest.json dist-again/release-manifest.json
+
+      # A second build with a higher version, used only to test upgrades.
+      - name: Build an upgrade test release
+        run: TREAD_VERSION=9.9.9 DIST_DIR=dist-upgrade bash scripts/build-release.sh
 
       - name: Upload release archives
         uses: actions/upload-artifact@v7
@@ -95,20 +103,29 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # Runs every release archive on its own operating system and CPU
-  # architecture (cross-compilation alone does not prove a binary runs).
+      - name: Upload upgrade test release
+        uses: actions/upload-artifact@v7
+        with:
+          name: tread-upgrade-test
+          path: dist-upgrade/
+          if-no-files-found: error
+          retention-days: 3
+
+  # Runs both editions of every platform on its own operating system and
+  # CPU architecture (cross-compilation alone does not prove a binary
+  # runs), and tests the user-level install script.
   release-smoke:
-    name: release smoke (${{ matrix.target }})
+    name: release smoke (${{ matrix.platform }})
     needs: release-build
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { target: linux_amd64, os: ubuntu-latest, ext: tar.gz, exe: tread }
-          - { target: linux_arm64, os: ubuntu-24.04-arm, ext: tar.gz, exe: tread }
-          - { target: darwin_arm64, os: macos-latest, ext: tar.gz, exe: tread }
-          - { target: darwin_amd64, os: macos-15-intel, ext: tar.gz, exe: tread }
-          - { target: windows_amd64, os: windows-latest, ext: zip, exe: tread.exe }
+          - { platform: linux-x64, os: ubuntu-latest, ext: tar.gz, exe: tread }
+          - { platform: linux-arm64, os: ubuntu-24.04-arm, ext: tar.gz, exe: tread }
+          - { platform: macos-arm64, os: macos-latest, ext: tar.gz, exe: tread }
+          - { platform: macos-x64, os: macos-15-intel, ext: tar.gz, exe: tread }
+          - { platform: windows-x64, os: windows-latest, ext: zip, exe: tread.exe }
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -123,24 +140,195 @@ jobs:
           name: tread-release
           path: dist
 
+      - name: Download upgrade test release
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-upgrade-test
+          path: dist-upgrade
+
       - name: Verify checksums
         run: |
           cd dist
           if command -v sha256sum >/dev/null 2>&1; then sha256sum -c SHA256SUMS; else shasum -a 256 -c SHA256SUMS; fi
 
-      - name: Extract and smoke-test the binary
+      - name: Extract and smoke-test both editions
         run: |
-          version=$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/cli/version.go)
-          name="tread_${version}_${{ matrix.target }}"
+          version=$(sed -n 's/^version: *//p' dist/BUILD-INFO.txt)
           mkdir -p extracted
-          if [ "${{ matrix.ext }}" = zip ]; then
-            # The documented Windows install step (README); `unzip` is not
-            # listed in the windows-latest runner image, PowerShell 7 is.
-            pwsh -NoProfile -Command "Expand-Archive -LiteralPath 'dist/${name}.zip' -DestinationPath 'extracted'"
-          else
-            tar -xzf "dist/${name}.tar.gz" -C extracted
-          fi
-          for f in LICENSE README.md CHANGELOG.md THIRD_PARTY_NOTICES.txt; do
-            test -f "extracted/${name}/$f"
+          for edition in sdk runtime; do
+            name="tread-${edition}-${version}-${{ matrix.platform }}"
+            if [ "${{ matrix.ext }}" = zip ]; then
+              # The documented Windows install step; `unzip` is not listed
+              # in the windows-latest runner image, PowerShell 7 is.
+              pwsh -NoProfile -Command "Expand-Archive -LiteralPath 'dist/${name}.zip' -DestinationPath 'extracted'"
+            else
+              tar -xzf "dist/${name}.tar.gz" -C extracted
+            fi
+            for f in docs/LICENSE docs/README.md docs/CHANGELOG.md docs/THIRD_PARTY_NOTICES.txt release; do
+              test -f "extracted/${name}/$f"
+            done
           done
-          bash scripts/smoke-release.sh "extracted/${name}/${{ matrix.exe }}" "$version"
+          bash scripts/smoke-release.sh \
+            "extracted/tread-sdk-${version}-${{ matrix.platform }}/bin/${{ matrix.exe }}" \
+            "extracted/tread-runtime-${version}-${{ matrix.platform }}/bin/${{ matrix.exe }}" \
+            "$version"
+
+      - name: Test install.sh (install, upgrade, uninstall)
+        if: matrix.ext == 'tar.gz'
+        run: bash scripts/test-install.sh dist dist-upgrade
+
+      - name: Test install.ps1 (install, reinstall, upgrade, uninstall)
+        if: matrix.ext == 'zip'
+        shell: pwsh
+        run: ./packaging/windows/test-install-ps1.ps1 -Dist dist -UpgradeDist dist-upgrade
+
+  # Native installers: each is built on its own platform from the
+  # release archive and tested there: install, PATH, doctor, upgrade,
+  # uninstall.
+  deb:
+    name: installer (.deb, ${{ matrix.platform }})
+    needs: release-build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux-x64, os: ubuntu-latest }
+          - { platform: linux-arm64, os: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Download release archives
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-release
+          path: dist
+      - name: Download upgrade test release
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-upgrade-test
+          path: dist-upgrade
+      - name: Install, upgrade and remove
+        run: bash packaging/linux/test-packages.sh deb dist dist-upgrade ${{ matrix.platform }}
+
+  rpm:
+    name: installer (.rpm, ${{ matrix.platform }})
+    needs: release-build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux-x64, os: ubuntu-latest }
+          - { platform: linux-arm64, os: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Download release archives
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-release
+          path: dist
+      - name: Download upgrade test release
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-upgrade-test
+          path: dist-upgrade
+      - name: Install rpmbuild
+        run: sudo apt-get update && sudo apt-get install -y rpm
+      - name: Build .rpm packages
+        run: |
+          version=$(sed -n 's/^version: *//p' dist/BUILD-INFO.txt)
+          up=$(sed -n 's/^version: *//p' dist-upgrade/BUILD-INFO.txt)
+          sh packaging/rpm/build-rpm.sh "dist/tread-sdk-${version}-${{ matrix.platform }}.tar.gz" installers
+          sh packaging/rpm/build-rpm.sh "dist-upgrade/tread-sdk-${up}-${{ matrix.platform }}.tar.gz" installers-upgrade
+      - name: Install, upgrade and remove (Fedora container)
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w fedora:41 \
+            bash packaging/linux/test-packages.sh rpm installers installers-upgrade ${{ matrix.platform }}
+      - name: Upload .rpm
+        uses: actions/upload-artifact@v7
+        with:
+          name: tread-installer-rpm-${{ matrix.platform }}
+          path: installers/*.rpm
+          if-no-files-found: error
+          retention-days: 14
+
+  pkg:
+    name: installer (.pkg, ${{ matrix.platform }})
+    needs: release-build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: macos-arm64, os: macos-latest }
+          - { platform: macos-x64, os: macos-15-intel }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Download release archives
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-release
+          path: dist
+      - name: Download upgrade test release
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-upgrade-test
+          path: dist-upgrade
+      - name: Build .pkg installers
+        run: |
+          version=$(sed -n 's/^version: *//p' dist/BUILD-INFO.txt)
+          up=$(sed -n 's/^version: *//p' dist-upgrade/BUILD-INFO.txt)
+          sh packaging/macos/build-pkg.sh "dist/tread-sdk-${version}-${{ matrix.platform }}.tar.gz" installers
+          sh packaging/macos/build-pkg.sh "dist-upgrade/tread-sdk-${up}-${{ matrix.platform }}.tar.gz" installers-upgrade
+      - name: Install, upgrade and uninstall
+        run: bash packaging/macos/test-pkg.sh installers installers-upgrade ${{ matrix.platform }}
+      - name: Upload .pkg
+        uses: actions/upload-artifact@v7
+        with:
+          name: tread-installer-pkg-${{ matrix.platform }}
+          path: installers/*.pkg
+          if-no-files-found: error
+          retention-days: 14
+
+  msi:
+    name: installer (.msi, windows-x64)
+    needs: release-build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Download release archives
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-release
+          path: dist
+      - name: Download upgrade test release
+        uses: actions/download-artifact@v8
+        with:
+          name: tread-upgrade-test
+          path: dist-upgrade
+      - name: Install the WiX Toolset
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Build .msi installers
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path dist/BUILD-INFO.txt -Pattern '^version:\s*(.+)$').Matches[0].Groups[1].Value
+          $up = (Select-String -Path dist-upgrade/BUILD-INFO.txt -Pattern '^version:\s*(.+)$').Matches[0].Groups[1].Value
+          ./packaging/windows/build-msi.ps1 -Archive "dist/tread-sdk-$version-windows-x64.zip" -OutDir installers
+          ./packaging/windows/build-msi.ps1 -Archive "dist-upgrade/tread-sdk-$up-windows-x64.zip" -OutDir installers-upgrade
+      - name: Install, upgrade and uninstall
+        shell: pwsh
+        run: ./packaging/windows/test-msi.ps1 -Dir installers -UpgradeDir installers-upgrade
+      - name: Upload .msi
+        uses: actions/upload-artifact@v7
+        with:
+          name: tread-installer-msi-windows-x64
+          path: installers/*.msi
+          if-no-files-found: error
+          retention-days: 14

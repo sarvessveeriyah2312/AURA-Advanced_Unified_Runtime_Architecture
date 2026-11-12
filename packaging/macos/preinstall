@@ -1,0 +1,9 @@
+#!/bin/sh
+# Upgrade: remove the files of the previous Tread SDK package, so files
+# dropped in the new version do not linger. Only /Library/Tread's own
+# content is removed; the directory is recreated by the installer.
+set -e
+if [ -f /Library/Tread/release ]; then
+	rm -rf /Library/Tread/bin /Library/Tread/docs /Library/Tread/release /Library/Tread/uninstall.sh
+fi
+exit 0

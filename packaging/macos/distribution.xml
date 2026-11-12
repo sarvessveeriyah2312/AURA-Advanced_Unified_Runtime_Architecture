@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>Tread SDK @VERSION@</title>
+    <welcome mime-type="text/plain"><![CDATA[This installs the Tread SDK @VERSION@ (compiler, bytecode tools and runtime) in /Library/Tread and adds /Library/Tread/bin to PATH for new terminal windows.
+
+Go is not required.]]></welcome>
+    <conclusion mime-type="text/plain"><![CDATA[Tread is installed. Open a new terminal window and run:
+
+    tread --version
+    tread doctor
+
+To uninstall: sudo /Library/Tread/uninstall.sh]]></conclusion>
+    <options customize="never" require-scripts="false" hostArchitectures="@ARCH@"/>
+    <domains enable_localSystem="true"/>
+    <volume-check>
+        <allowed-os-versions>
+            <os-version min="12.0"/>
+        </allowed-os-versions>
+    </volume-check>
+    <choices-outline>
+        <line choice="default">
+            <line choice="dev.tread.sdk"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="dev.tread.sdk" visible="false">
+        <pkg-ref id="dev.tread.sdk"/>
+    </choice>
+    <pkg-ref id="dev.tread.sdk" version="@VERSION@" onConclusion="none">tread-component.pkg</pkg-ref>
+</installer-gui-script>
