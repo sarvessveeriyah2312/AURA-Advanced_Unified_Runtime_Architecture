@@ -1,0 +1,9 @@
+error[AURA-R005]: integer overflow: 4611686018427387904 * 2 (in function 'double')
+  --> trace_overflow.aura:7:12
+   |
+ 7 |     return n * 2
+   |            ^^^^^
+
+stack trace:
+  0: double  trace_overflow.aura:7:12  return n * 2
+  1: main    trace_overflow.aura:3:11  print(double(4611686018427387904))

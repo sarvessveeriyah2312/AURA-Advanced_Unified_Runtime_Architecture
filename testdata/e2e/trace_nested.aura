@@ -1,0 +1,13 @@
+// ADR-0009: a runtime error below main prints a stack trace.
+fn main() -> Unit {
+    print("start")
+    print(average(10, 0))
+}
+
+fn average(total: Int, count: Int) -> Int {
+    return divide(total, count)
+}
+
+fn divide(a: Int, b: Int) -> Int {
+    return a / b
+}

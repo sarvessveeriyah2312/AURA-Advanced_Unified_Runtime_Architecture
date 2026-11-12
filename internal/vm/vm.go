@@ -30,6 +30,17 @@ type Error struct {
 	Function string
 	Span     source.Span
 	HasSpan  bool
+	// Trace is the call stack when the error occurred, innermost first
+	// (ADR-0009). Trace[0] is the failing function at Span; each later
+	// entry is a caller at its call expression; the last is main. It is
+	// empty for errors found before execution.
+	Trace []Frame
+}
+
+// Frame is one entry of a runtime error's stack trace (ADR-0009).
+type Frame struct {
+	Function string
+	Span     source.Span
 }
 
 func (e *Error) Error() string {
@@ -91,7 +102,29 @@ type machine struct {
 }
 
 func (m *machine) fail(code, format string, args ...any) *Error {
-	return &Error{Code: code, Message: fmt.Sprintf(format, args...), Function: m.fn.Name, Span: m.span, HasSpan: true}
+	return &Error{Code: code, Message: fmt.Sprintf(format, args...), Function: m.fn.Name, Span: m.span, HasSpan: true, Trace: m.trace()}
+}
+
+// trace captures the call stack for a runtime error (ADR-0009). It runs
+// only when an error is raised, so successful execution pays nothing.
+// The failing function is reported at the current instruction; every
+// caller is reported at its call instruction, which is the instruction
+// just before its saved ip.
+func (m *machine) trace() []Frame {
+	if len(m.frames) == 0 {
+		return nil
+	}
+	frames := make([]Frame, 0, len(m.frames))
+	frames = append(frames, Frame{Function: m.fn.Name, Span: m.span})
+	for i := len(m.frames) - 2; i >= 0; i-- {
+		fr := &m.frames[i]
+		at := fr.ip - 1
+		if at < 0 || at >= len(fr.fn.Spans) {
+			continue // unreachable for compiled code: a caller always sits after its call
+		}
+		frames = append(frames, Frame{Function: fr.fn.Name, Span: fr.fn.Spans[at]})
+	}
+	return frames
 }
 
 func (m *machine) invalid(format string, args ...any) *Error {

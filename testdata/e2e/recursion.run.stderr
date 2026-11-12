@@ -3,3 +3,7 @@ error[AURA-R003]: call depth limit of 10000 exceeded calling forever (in functio
    |
  3 |     return forever(n + 1)
    |            ^^^^^^^^^^^^^^
+
+stack trace:
+  0-9998: forever  recursion.aura:3:12  return forever(n + 1)
+  9999:   main     recursion.aura:7:11  print(forever(0))

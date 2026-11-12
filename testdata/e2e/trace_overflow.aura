@@ -1,0 +1,8 @@
+// ADR-0009: integer overflow inside a called function.
+fn main() -> Unit {
+    print(double(4611686018427387904))
+}
+
+fn double(n: Int) -> Int {
+    return n * 2
+}
