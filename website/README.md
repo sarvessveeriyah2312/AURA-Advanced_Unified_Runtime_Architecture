@@ -59,8 +59,9 @@ The changelog page gets its own title, description, canonical URL, and
 Static discovery files live in `public/`:
 
 -   `robots.txt`: allows every crawler, and points to the sitemap;
--   `llms.txt`: a plain-text overview for AI assistants (llmstxt.org),
-    linked from the footer and the page head;
+-   `llms.txt`: a plain-text overview for AI assistants (llmstxt.org).
+    It is not shown to visitors; each page links it from its `<head>`
+    (`<link rel="alternate">`), which is how crawlers discover it;
 -   `og-image.png`: the 1200×630 social sharing card.
 
 **The domain appears in several places.** `https://treadlang.vercel.app/`

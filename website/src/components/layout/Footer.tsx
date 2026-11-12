@@ -9,9 +9,9 @@ const LINKS = [
   { label: "License", href: LICENSE_URL },
   { label: "Changelog", href: CHANGELOG_PAGE },
   { label: "FAQ", href: "/#faq" },
-  // Machine-readable overview for AI assistants (llmstxt.org).
-  { label: "llms.txt", href: "/llms.txt" },
 ];
+// llms.txt is not linked here on purpose: it is for AI assistants, and is
+// discoverable through the <link rel="alternate"> tag in each page's head.
 
 export function Footer() {
   return (

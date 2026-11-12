@@ -8,8 +8,8 @@ export const VERSION = "0.3.0";
 // the site shows the upcoming archive names without download links and
 // points visitors at building from source instead. Set it to true (and
 // RELEASE_DATE) on release day.
-export const RELEASED = false;
-export const RELEASE_DATE: string | null = null;
+export const RELEASED = true;
+export const RELEASE_DATE: string | null = "2026-11-13";
 export const MOTTO = "A language for learning how languages work.";
 
 // Canonical address of this website. index.html, public/robots.txt and
@@ -17,7 +17,7 @@ export const MOTTO = "A language for learning how languages work.";
 // all of them together if the domain changes.
 export const SITE_URL = "https://treadlang.vercel.app/";
 // Shown in the footer and used as the sitemap's <lastmod>.
-export const UPDATED = "2026-11-12";
+export const UPDATED = "2026-11-13";
 export const AUTHOR = { name: "Sarvess Veeriyah", url: "https://github.com/sarvessveeriyah2312" };
 
 export const OWNER = "sarvessveeriyah2312";

@@ -2,12 +2,12 @@
 
 > Tread is a small, statically typed programming language built to teach how programming languages work. Its toolchain is written in Go: a lexer, parser, type checker, bytecode compiler, and stack-based virtual machine, each a separate package small enough to read.
 
-Key facts (updated 2026-11-12):
+Key facts (updated 2026-11-13):
 
 - Motto: "A language for learning how languages work." A tread is one step of a staircase; Tread is learned one stage at a time: lexer, parser, checker, compiler, VM.
 - Command: `tread`, with `tread run <file.tr>`, `tread check <file.tr>`, `tread version`, and `tread help`. Source files use the `.tr` extension.
 - Error codes: `TR-` plus a phase letter and a number, for example `TR-T001` (type mismatch) or `TR-R003` (call depth exceeded). Runtime errors inside a function print a stack trace.
-- Version 0.3.0, experimental. 0.3.0 is not published as a release yet; build from source with Go 1.25 or later.
+- Version 0.3.0, released 2026-11-13, experimental. Precompiled archives for macOS, Linux, and Windows need no Go: https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.3.0 . With Go 1.25 or later: `go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.3.0`.
 - Language today: types Int, Float, Bool, String, Unit; `let` and `let mut`; functions with typed parameters and recursion; if / else if / else; string interpolation with `${...}`; `print` and `toString`; checked integer arithmetic.
 - Not supported yet: loops (use recursion), collections, user-defined types, generics, imports, and file or network I/O.
 - Platforms: macOS 12 or later (Apple silicon, Intel), Linux kernel 3.2 or later (x86-64, ARM64), Windows 10 or Server 2016 or later (x86-64).
