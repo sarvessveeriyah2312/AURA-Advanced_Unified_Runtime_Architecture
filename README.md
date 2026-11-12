@@ -76,7 +76,7 @@ The design goals:
 | **Helpful errors** | Every error has a stable code (such as `TR-T001`), an exact line and column, and a pointer to the problem. |
 | **Small and understandable** | A compiler and runtime that one developer can read and extend. |
 
-> **Status: 0.3.0, released 2026-11-12.** A deliberately small language
+> **Status: 0.3.0, released 2026-11-13.** A deliberately small language
 > core, tested on Linux, macOS, and Windows. 0.3.0 gives the language its
 > name: the `tread` command, `.tr` source files, and `TR-` error codes.
 > Tread 0.x is experimental, and the language may change between minor
