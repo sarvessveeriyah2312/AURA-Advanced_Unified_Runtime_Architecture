@@ -1,11 +1,11 @@
-import { AUTHOR, CHANGELOG_PAGE, LICENSE_URL, MOTTO, README_URL, RELEASED, REPO_URL, UPDATED, VERSION } from "../../data/site";
+import { AUTHOR, CHANGELOG_PAGE, DOWNLOAD_PAGE, LICENSE_URL, MOTTO, README_URL, RELEASED, REPO_URL, UPDATED, VERSION } from "../../data/site";
 import { TreadMark } from "../ui/GitHubIcon";
 import { Container } from "../ui/SectionHeading";
 
 const LINKS = [
   { label: "GitHub", href: REPO_URL },
   { label: "Documentation", href: README_URL },
-  { label: "Downloads", href: "/#download" },
+  { label: "Downloads", href: DOWNLOAD_PAGE },
   { label: "License", href: LICENSE_URL },
   { label: "Changelog", href: CHANGELOG_PAGE },
   { label: "FAQ", href: "/#faq" },

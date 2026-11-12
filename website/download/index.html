@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Download Tread · SDK, Runtime and installers</title>
+    <meta
+      name="description"
+      content="Download the Tread SDK or Tread Runtime: installers for Windows (.msi), macOS (.pkg) and Linux (.deb, .rpm), archives, and one-line install scripts. No Go required."
+    />
+    <link rel="canonical" href="https://treadlang.vercel.app/download/" />
+    <meta name="theme-color" content="#f7f8fc" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Plain-text overview for AI assistants (llmstxt.org). -->
+    <link rel="alternate" type="text/plain" href="https://treadlang.vercel.app/llms.txt" title="llms.txt" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tread" />
+    <meta property="og:url" content="https://treadlang.vercel.app/download/" />
+    <meta property="og:title" content="Download Tread · SDK, Runtime and installers" />
+    <meta property="og:description" content="Download the Tread SDK or Tread Runtime: installers for Windows (.msi), macOS (.pkg) and Linux (.deb, .rpm), archives, and one-line install scripts. No Go required." />
+    <meta property="og:image" content="https://treadlang.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Tread: a language for learning how languages work. A short Tread program printing Hello, Tread!" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Download Tread · SDK, Runtime and installers" />
+    <meta name="twitter:description" content="Download the Tread SDK or Tread Runtime: installers for Windows (.msi), macOS (.pkg) and Linux (.deb, .rpm), archives, and one-line install scripts. No Go required." />
+    <meta name="twitter:image" content="https://treadlang.vercel.app/og-image.png" />
+    <meta name="twitter:image:alt" content="Tread: a language for learning how languages work. A short Tread program printing Hello, Tread!" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Apply the saved theme before first paint, so there is no flash.
+         Light is the default; only "light" and "dark" are valid values. -->
+    <script>
+      (function () {
+        var theme = "light";
+        try {
+          if (localStorage.getItem("tread-theme") === "dark") theme = "dark";
+        } catch (e) {}
+        var root = document.documentElement;
+        root.classList.toggle("dark", theme === "dark");
+        root.style.colorScheme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", theme === "dark" ? "#06080f" : "#f7f8fc");
+      })();
+    </script>
+  </head>
+  <body>
+    <!-- The page is prerendered, so it reads fine without JavaScript. Scroll
+         animations start transparent; without JavaScript they never run, so
+         show that content as it is. -->
+    <noscript>
+      <style>
+        #root [style*="opacity"] {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+      </style>
+    </noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/download-main.tsx"></script>
+  </body>
+</html>

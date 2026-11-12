@@ -1,7 +1,9 @@
-import { CircleCheck, Clock, Download, ExternalLink, FileText, Laptop, Monitor, Server, ShieldCheck } from "lucide-react";
+import { ArrowRight, CircleCheck, Clock, Download, ExternalLink, FileText, Laptop, Monitor, Package, Server, ShieldCheck } from "lucide-react";
+import { INSTALLERS_RELEASED, INSTALLERS_VERSION } from "../../data/downloads";
 import {
   BUILD_FROM_SOURCE,
   CHECKSUMS_URL,
+  DOWNLOAD_PAGE,
   GO_INSTALL,
   PLATFORMS,
   RELEASED,
@@ -113,6 +115,30 @@ export function Downloads() {
             </div>
           </div>
         )}
+      </Reveal>
+
+      <Reveal className="mt-4">
+        <a
+          href={DOWNLOAD_PAGE}
+          className="group flex flex-col gap-3 rounded-2xl border border-line bg-surface p-5 shadow-card transition-colors hover:border-accent/60 sm:flex-row sm:items-center"
+        >
+          <IconBadge>
+            <Package className="size-5" />
+          </IconBadge>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">
+              Tread SDK, Tread Runtime and installers
+              {!INSTALLERS_RELEASED && <span className="ml-2 text-xs font-normal text-subtle">coming in {INSTALLERS_VERSION}</span>}
+            </span>
+            <span className="mt-1 block text-sm text-muted">
+              .msi for Windows, .pkg for macOS, .deb and .rpm for Linux, and one-line install scripts that set up your PATH.
+            </span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent">
+            Download page
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </span>
+        </a>
       </Reveal>
 
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">

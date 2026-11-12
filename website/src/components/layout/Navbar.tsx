@@ -2,7 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { MouseEvent } from "react";
 import { Download, Menu, Moon, Sun, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CHANGELOG_PAGE, NAV_LINKS, REPO_URL, type PageId } from "../../data/site";
+import { CHANGELOG_PAGE, DOWNLOAD_PAGE, NAV_LINKS, REPO_URL, type PageId } from "../../data/site";
+import { INSTALLERS_RELEASED } from "../../data/downloads";
 import { useActiveSection } from "../../hooks/useActiveSection";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { useTheme } from "../../hooks/useTheme";
@@ -13,6 +14,10 @@ import { Container } from "../ui/SectionHeading";
 
 // Track every section (not only those in the nav), so that no nav link is
 // highlighted while a section without one (CLI, Download, ...) is in view.
+// The "Download Tread" button goes to the download page once its
+// installers are published; until then, to the home page downloads.
+const DOWNLOAD_CTA = INSTALLERS_RELEASED ? DOWNLOAD_PAGE : "/#download";
+
 const SECTION_IDS = ["overview", "features", "examples", "architecture", "cli", "download", "documentation", "faq", "roadmap", "community"];
 
 function ThemeToggle() {
@@ -127,6 +132,18 @@ export function Navbar({ page = "home" }: { page?: PageId }) {
                 Changelog
               </a>
             </li>
+            <li>
+              <a
+                href={DOWNLOAD_PAGE}
+                aria-current={page === "download" ? "page" : undefined}
+                className={cn(
+                  "rounded-md px-3 py-2 text-sm transition-colors",
+                  page === "download" ? "text-fg" : "text-muted hover:text-fg",
+                )}
+              >
+                Downloads
+              </a>
+            </li>
           </ul>
         </nav>
 
@@ -139,7 +156,7 @@ export function Navbar({ page = "home" }: { page?: PageId }) {
               <GitHubIcon className="size-4" />
               GitHub
             </ButtonLink>
-            <ButtonLink href="/#download" size="sm">
+            <ButtonLink href={DOWNLOAD_CTA} size="sm">
               <Download className="size-4" aria-hidden />
               Download Tread
             </ButtonLink>
@@ -198,13 +215,26 @@ export function Navbar({ page = "home" }: { page?: PageId }) {
                     Changelog
                   </a>
                 </li>
+                <li>
+                  <a
+                    href={DOWNLOAD_PAGE}
+                    aria-current={page === "download" ? "page" : undefined}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "block rounded-lg px-3 py-3 text-[15px]",
+                      page === "download" ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
+                    )}
+                  >
+                    Downloads
+                  </a>
+                </li>
               </ul>
               <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3">
                 <ButtonLink href={REPO_URL} variant="secondary" onClick={() => setOpen(false)}>
                   <GitHubIcon className="size-4" />
                   GitHub
                 </ButtonLink>
-                <ButtonLink href="/#download" onClick={(e) => goFromMenu(e, "download")}>
+                <ButtonLink href={DOWNLOAD_CTA} onClick={(e) => (INSTALLERS_RELEASED ? setOpen(false) : goFromMenu(e, "download"))}>
                   <Download className="size-4" aria-hidden />
                   Download
                 </ButtonLink>

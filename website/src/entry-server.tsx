@@ -4,8 +4,9 @@ import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import App from "./App";
 import ChangelogApp from "./ChangelogApp";
+import DownloadApp from "./DownloadApp";
 
-export { changelogStructuredData, structuredData } from "./lib/structuredData";
+export { changelogStructuredData, downloadStructuredData, structuredData } from "./lib/structuredData";
 export { SITE_URL, UPDATED } from "./data/site";
 
 // Build-time render of each page to static HTML (scripts/prerender.mjs).
@@ -23,6 +24,14 @@ export function renderChangelog(): string {
   return renderToString(
     <StrictMode>
       <ChangelogApp />
+    </StrictMode>,
+  );
+}
+
+export function renderDownload(): string {
+  return renderToString(
+    <StrictMode>
+      <DownloadApp />
     </StrictMode>,
   );
 }

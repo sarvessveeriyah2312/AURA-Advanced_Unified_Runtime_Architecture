@@ -12,6 +12,7 @@ const { SITE_URL, UPDATED } = server;
 const PAGES = [
   { file: "index.html", path: "", render: server.render, jsonLd: server.structuredData },
   { file: "changelog/index.html", path: "changelog/", render: server.renderChangelog, jsonLd: server.changelogStructuredData },
+  { file: "download/index.html", path: "download/", render: server.renderDownload, jsonLd: server.downloadStructuredData },
 ];
 
 const ROOT = '<div id="root"></div>';

@@ -29,7 +29,13 @@ match the text shown on the site exactly.
     `../CHANGELOG.md` by `src/data/changelog.ts`, which parses exactly
     the Markdown that file uses. Edit `CHANGELOG.md`, never the page.
 
-Both pages share `SiteShell` (navigation, footer). Navigation links use
+-   `/download/` (`download/index.html`, `src/DownloadApp.tsx`): Tread
+    SDK and Tread Runtime installers and archives for every platform.
+    Its data is `src/data/downloads.ts`; file names follow
+    `scripts/build-release.sh` and `packaging/` exactly. The OS tab is
+    picked in the browser (`detectOs`); the prerendered page shows macOS.
+
+Every page shares `SiteShell` (navigation, footer). Navigation links use
 `/#section` hrefs, so they work from either page. The site is served from
 the root of its domain (`base: "/"` in `vite.config.ts`).
 
@@ -71,6 +77,13 @@ and `public/llms.txt`. Change them all together.
 
 **On release day**, besides setting `RELEASED = true`, update the status
 line in `public/llms.txt` ("0.3.0 is not published as a release yet").
+
+**For 0.4.0** (the first release with SDK/Runtime installers), setting
+`VERSION = "0.4.0"` with `RELEASED = true` is enough to switch the site
+over: the download page's links go live (`INSTALLERS_RELEASED`), the home
+page's archives use the new `tread-sdk-<version>-<platform>` names, and
+the "Download Tread" button goes to `/download/`. Also update the facts
+in `public/llms.txt`.
 
 Components must not read `window`, `document`, or `localStorage` while
 rendering, because the page is rendered at build time. Read them in

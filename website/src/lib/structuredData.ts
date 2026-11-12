@@ -1,4 +1,5 @@
 import { FAQS } from "../data/faq";
+import { INSTALLERS_RELEASED, INSTALLERS_VERSION } from "../data/downloads";
 import { AUTHOR, LICENSE_URL, MOTTO, REPO_URL, SITE_URL } from "../data/site";
 
 const DESCRIPTION =
@@ -78,4 +79,44 @@ export function changelogStructuredData() {
       },
     ],
   };
+}
+
+// JSON-LD for the download page. The SoftwareApplication entry is only
+// emitted once the installers are published, since structured data must
+// restate what the page actually offers.
+export function downloadStructuredData() {
+  const url = `${SITE_URL}download/`;
+  const graph: object[] = [
+    {
+      "@type": "WebPage",
+      "@id": `${url}#webpage`,
+      url,
+      name: "Download Tread · SDK, Runtime and installers",
+      description: "Tread SDK and Tread Runtime installers and archives for Windows, macOS and Linux.",
+      isPartOf: { "@id": `${SITE_URL}#website` },
+      about: { "@id": `${SITE_URL}#language` },
+      inLanguage: "en",
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Tread", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Download", item: url },
+      ],
+    },
+  ];
+  if (INSTALLERS_RELEASED) {
+    graph.push({
+      "@type": "SoftwareApplication",
+      "@id": `${url}#sdk`,
+      name: "Tread SDK",
+      softwareVersion: INSTALLERS_VERSION,
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Windows 10, macOS 12, Linux",
+      downloadUrl: url,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      license: LICENSE_URL,
+    });
+  }
+  return { "@context": "https://schema.org", "@graph": graph };
 }
