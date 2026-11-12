@@ -50,10 +50,10 @@ func exec(t *testing.T, m *bytecode.Module, cfg vm.Config) (string, *vm.Error) {
 	return out.String(), ve
 }
 
-// runSrc runs AURA source through lex, parse, check, compile and execute.
+// runSrc runs Tread source through lex, parse, check, compile and execute.
 func runSrc(t *testing.T, src string, cfg vm.Config) (string, *vm.Error) {
 	t.Helper()
-	f := source.NewFile(1, "t.aura", []byte(src))
+	f := source.NewFile(1, "t.tr", []byte(src))
 	toks, ld := lexer.Lex(f)
 	prog, pd := parser.Parse(toks)
 	cp, cd := checker.Check(prog)
@@ -506,9 +506,9 @@ func TestV16ShortCircuit(t *testing.T) {
 }
 
 func TestV17StringsAndInterpolation(t *testing.T) {
-	src := mainOf("let name = \"AURA\"\nlet n = 3\nprint(\"Hello, \" + name + \"!\")\nprint(\"${name} has ${n} items, ratio ${1.5 * 2.0}, ok=${n > 2}\")\nprint(\"\\${literal} $5\")")
+	src := mainOf("let name = \"Tread\"\nlet n = 3\nprint(\"Hello, \" + name + \"!\")\nprint(\"${name} has ${n} items, ratio ${1.5 * 2.0}, ok=${n > 2}\")\nprint(\"\\${literal} $5\")")
 	out, err := runSrc(t, src, vm.Config{})
-	if err != nil || out != "Hello, AURA!\nAURA has 3 items, ratio 3.0, ok=true\n${literal} $5\n" {
+	if err != nil || out != "Hello, Tread!\nTread has 3 items, ratio 3.0, ok=true\n${literal} $5\n" {
 		t.Errorf("got %q %+v", out, err)
 	}
 }
@@ -561,7 +561,7 @@ func TestWriterErrorIsReturned(t *testing.T) {
 
 func TestErrorString(t *testing.T) {
 	e := &vm.Error{Code: vm.CodeDivisionByZero, Message: "division by zero", Function: "f"}
-	if e.Error() != "AURA-R001: division by zero (in f)" {
+	if e.Error() != "TR-R001: division by zero (in f)" {
 		t.Errorf("Error() = %q", e.Error())
 	}
 }

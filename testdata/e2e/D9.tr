@@ -1,4 +1,4 @@
-// D9: integer overflow (AURA-R005).
+// D9: integer overflow (TR-R005).
 fn main() -> Unit {
     print(9223372036854775807 + 1)
 }

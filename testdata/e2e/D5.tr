@@ -1,4 +1,4 @@
-// D5: a Unit value cannot be printed (AURA-T011).
+// D5: a Unit value cannot be printed (TR-T011).
 fn u() -> Unit { }
 
 fn main() -> Unit {

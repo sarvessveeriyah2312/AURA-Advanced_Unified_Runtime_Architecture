@@ -15,7 +15,7 @@ import (
 // diagnostic span must be in bounds.
 func checkAny(t *testing.T, data []byte) {
 	t.Helper()
-	f := source.NewFile(1, "fuzz.aura", data)
+	f := source.NewFile(1, "fuzz.tr", data)
 	toks, _ := lexer.Lex(f)
 	prog, _ := parser.Parse(toks)
 	_, diags := Check(prog)

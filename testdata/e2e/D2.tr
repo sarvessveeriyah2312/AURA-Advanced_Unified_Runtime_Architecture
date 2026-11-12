@@ -1,4 +1,4 @@
-// D2: parser error (AURA-P002).
+// D2: parser error (TR-P002).
 fn main() -> Unit {
     let = 1
 }

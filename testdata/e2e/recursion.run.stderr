@@ -1,9 +1,9 @@
-error[AURA-R003]: call depth limit of 10000 exceeded calling forever (in function 'forever')
-  --> recursion.aura:3:12
+error[TR-R003]: call depth limit of 10000 exceeded calling forever (in function 'forever')
+  --> recursion.tr:3:12
    |
  3 |     return forever(n + 1)
    |            ^^^^^^^^^^^^^^
 
 stack trace:
-  0-9998: forever  recursion.aura:3:12  return forever(n + 1)
-  9999:   main     recursion.aura:7:11  print(forever(0))
+  0-9998: forever  recursion.tr:3:12  return forever(n + 1)
+  9999:   main     recursion.tr:7:11  print(forever(0))

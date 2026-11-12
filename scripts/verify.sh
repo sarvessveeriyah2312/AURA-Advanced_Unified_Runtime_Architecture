@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Local quality gate for AURA. CI runs this same script.
+# Local quality gate for Tread. CI runs this same script.
 # Usage: scripts/verify.sh
 set -eu
 
@@ -22,10 +22,10 @@ go test ./...
 echo "==> go build"
 go build ./...
 
-echo "==> aura smoke test"
-output=$(go run ./cmd/aura run examples/hello.aura)
-if [ "$output" != "Hello, AURA!" ]; then
-	echo "aura run examples/hello.aura printed: $output" >&2
+echo "==> tread smoke test"
+output=$(go run ./cmd/tread run examples/hello.tr)
+if [ "$output" != "Hello, Tread!" ]; then
+	echo "tread run examples/hello.tr printed: $output" >&2
 	exit 1
 fi
 

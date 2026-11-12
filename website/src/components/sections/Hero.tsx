@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Download, Monitor, Scale, Tag } from "lucide-react";
 import { HERO_EXAMPLE } from "../../data/examples";
-import { FULL_NAME, RELEASE_URL, REPO_URL, TAGLINE, VERSION } from "../../data/site";
+import { CHANGELOG_URL, MOTTO, RELEASED, REPO_URL, VERSION } from "../../data/site";
 import { ButtonLink } from "../ui/Button";
-import { AuraCode, CopyButton, TerminalText, WindowBar } from "../ui/CodeBlock";
+import { TreadCode, CopyButton, TerminalText, WindowBar } from "../ui/CodeBlock";
 import { GitHubIcon } from "../ui/GitHubIcon";
 import { Container } from "../ui/SectionHeading";
 
@@ -26,34 +26,34 @@ export function Hero() {
           transition={{ duration: 0.6, ease }}
         >
           <a
-            href={RELEASE_URL}
+            href={CHANGELOG_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 py-1 pr-3 pl-1 text-xs text-muted transition-colors hover:border-line-strong hover:text-fg"
           >
-            <span className="rounded-full bg-accent-soft px-2 py-0.5 font-medium text-accent">New</span>
-            AURA {VERSION} adds runtime stack traces
+            <span className="rounded-full bg-accent-soft px-2 py-0.5 font-medium text-accent">{VERSION}</span>
+            The language now has its name: Tread
             <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
-            <span className="sr-only">(release notes open in a new tab)</span>
+            <span className="sr-only">(changelog opens in a new tab)</span>
           </a>
 
           <h1 id="hero-title" className="mt-7 text-5xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">
             Meet{" "}
             <span className="bg-gradient-to-r from-accent via-accent-2 to-electric bg-clip-text text-transparent">
-              AURA.
+              Tread.
             </span>
           </h1>
-          <p className="mt-4 text-lg font-medium text-fg/90 sm:text-xl">{FULL_NAME}</p>
-          <p className="mt-2 text-lg text-muted italic">{TAGLINE}</p>
+          <p className="mt-4 text-lg font-medium text-fg/90 italic sm:text-xl">{MOTTO}</p>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-pretty text-muted sm:text-[17px]">
-            AURA is an independently developed, statically typed programming language built around its own compiler,
-            bytecode instruction set, and stack-based virtual machine.
+            Tread is an independently developed, statically typed programming language. Its lexer, parser, type
+            checker, bytecode compiler, and stack-based virtual machine are each small enough to read, so you can
+            learn how a language works one step at a time.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <ButtonLink href="#download" size="lg">
               <Download className="size-[18px]" aria-hidden />
-              Download AURA
+              Download Tread
             </ButtonLink>
             <ButtonLink href={REPO_URL} variant="secondary" size="lg">
               <GitHubIcon className="size-[18px]" />
@@ -66,6 +66,7 @@ export function Hero() {
             <li className="flex items-center gap-2">
               <Tag className="size-4 text-accent" aria-hidden />
               Version {VERSION}
+              {!RELEASED && " (unreleased)"}
             </li>
             <li className="flex items-center gap-2">
               <Scale className="size-4 text-accent" aria-hidden />
@@ -86,15 +87,15 @@ export function Hero() {
         >
           <div className="overflow-hidden rounded-2xl border border-code-line bg-code-bg shadow-[0_30px_80px_-40px_rgba(80,60,200,0.55)]">
             <WindowBar title={HERO_EXAMPLE.file}>
-              <CopyButton text={HERO_EXAMPLE.code} label="Copy greet.aura source" />
+              <CopyButton text={HERO_EXAMPLE.code} label="Copy greet.tr source" />
             </WindowBar>
-            <AuraCode code={HERO_EXAMPLE.code} />
+            <TreadCode code={HERO_EXAMPLE.code} />
             <div className="border-t border-code-line">
-              <TerminalText command={`aura ${HERO_EXAMPLE.command} ${HERO_EXAMPLE.file}`} output={HERO_EXAMPLE.output} />
+              <TerminalText command={`tread ${HERO_EXAMPLE.command} ${HERO_EXAMPLE.file}`} output={HERO_EXAMPLE.output} />
             </div>
           </div>
           <figcaption className="mt-3 text-center text-xs text-subtle">
-            Real AURA {VERSION} source and output, recorded from <code className="font-mono">aura run</code>.
+            Real Tread {VERSION} source and output, recorded from <code className="font-mono">tread run</code>.
           </figcaption>
         </motion.figure>
       </Container>

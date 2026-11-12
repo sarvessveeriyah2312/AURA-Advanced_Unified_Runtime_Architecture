@@ -1,17 +1,17 @@
-error[AURA-T001]: expected Int but found String
-  --> multiple.aura:3:18
+error[TR-T001]: expected Int but found String
+  --> multiple.tr:3:18
    |
  3 |     let a: Int = "s"
    |                  ^^^
 
-error[AURA-T002]: undefined name 'undefinedName'
-  --> multiple.aura:4:13
+error[TR-T002]: undefined name 'undefinedName'
+  --> multiple.tr:4:13
    |
  4 |     let b = undefinedName
    |             ^^^^^^^^^^^^^
 
-error[AURA-T007]: operator '+' cannot be applied to Bool and Int
-  --> multiple.aura:5:11
+error[TR-T007]: operator '+' cannot be applied to Bool and Int
+  --> multiple.tr:5:11
    |
  5 |     print(true + 1)
    |           ^^^^^^^^

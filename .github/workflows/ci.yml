@@ -1,4 +1,4 @@
-# AURA continuous integration (CI). Release packaging: ADR-0008.
+# Tread continuous integration (CI). Release packaging: ADR-0008.
 #
 # The default branch is assumed to be `main` (the repository's configured
 # branch at the time this workflow was written).
@@ -60,7 +60,7 @@ jobs:
         run: go build ./...
 
       # Repeats the checks above from the build and test caches (fast) and
-      # adds the `aura run` smoke test, proving the local gate equals CI.
+      # adds the `tread run` smoke test, proving the local gate equals CI.
       - name: scripts/verify.sh
         run: bash scripts/verify.sh
 
@@ -90,7 +90,7 @@ jobs:
       - name: Upload release archives
         uses: actions/upload-artifact@v7
         with:
-          name: aura-release
+          name: tread-release
           path: dist/
           if-no-files-found: error
           retention-days: 14
@@ -104,11 +104,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { target: linux_amd64, os: ubuntu-latest, ext: tar.gz, exe: aura }
-          - { target: linux_arm64, os: ubuntu-24.04-arm, ext: tar.gz, exe: aura }
-          - { target: darwin_arm64, os: macos-latest, ext: tar.gz, exe: aura }
-          - { target: darwin_amd64, os: macos-15-intel, ext: tar.gz, exe: aura }
-          - { target: windows_amd64, os: windows-latest, ext: zip, exe: aura.exe }
+          - { target: linux_amd64, os: ubuntu-latest, ext: tar.gz, exe: tread }
+          - { target: linux_arm64, os: ubuntu-24.04-arm, ext: tar.gz, exe: tread }
+          - { target: darwin_arm64, os: macos-latest, ext: tar.gz, exe: tread }
+          - { target: darwin_amd64, os: macos-15-intel, ext: tar.gz, exe: tread }
+          - { target: windows_amd64, os: windows-latest, ext: zip, exe: tread.exe }
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -120,7 +120,7 @@ jobs:
       - name: Download release archives
         uses: actions/download-artifact@v8
         with:
-          name: aura-release
+          name: tread-release
           path: dist
 
       - name: Verify checksums
@@ -131,7 +131,7 @@ jobs:
       - name: Extract and smoke-test the binary
         run: |
           version=$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/cli/version.go)
-          name="aura_${version}_${{ matrix.target }}"
+          name="tread_${version}_${{ matrix.target }}"
           mkdir -p extracted
           if [ "${{ matrix.ext }}" = zip ]; then
             # The documented Windows install step (README); `unzip` is not

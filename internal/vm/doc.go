@@ -2,5 +2,5 @@
 // Output is written to a host-injected writer; runtime errors are returned
 // as structured values, never as panics.
 //
-// Allowed AURA imports: source, bytecode.
+// Allowed Tread imports: source, bytecode.
 package vm

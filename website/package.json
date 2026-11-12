@@ -1,8 +1,8 @@
 {
-  "name": "aura-website",
+  "name": "tread-website",
   "private": true,
   "version": "1.0.0",
-  "description": "Official landing page for AURA (Advanced Unified Runtime Architecture).",
+  "description": "Official landing page for Tread, a language for learning how languages work.",
   "license": "MIT",
   "type": "module",
   "scripts": {

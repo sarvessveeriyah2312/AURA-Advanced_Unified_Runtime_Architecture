@@ -1,16 +1,23 @@
 # Claude Code Project Instructions
 
-You are implementing **AURA** (Advanced Unified Runtime Architecture),
-an experimental statically typed programming language in Go.
+You are implementing **Tread**, an experimental statically typed
+programming language in Go: *a language for learning how languages work*.
+Every stage (lexer, parser, checker, compiler, VM) should stay small
+and readable on its own.
 
-Identity (ADR-0005):
+Identity (ADR-0010, from 0.3.0):
 
--   the CLI executable is `aura`;
--   source files use `.aura`;
--   diagnostic codes use the `AURA-` prefix.
+-   the CLI executable is `tread`;
+-   source files use `.tr`;
+-   diagnostic codes use the `TR-` prefix.
 
-NOVA was the development codename and appears only in historical ADR
-text.
+The language was renamed to Tread in 0.3.0, with no backward
+compatibility. NOVA was the development codename. Earlier names appear
+only in historical ADRs and in the CHANGELOG entries for 0.1.0 and 0.2.0;
+do not edit those.
+
+The Go module path still contains the old repository name until the
+owner renames the GitHub repository; do not change it on your own.
 
 ## Product decisions
 
@@ -54,7 +61,7 @@ compatibility, or public CLI behavior.
     `scripts/smoke-release.sh`.
 -   Keep tests deterministic and OS-independent (`docs/08` §8.8).
 -   Never crash on any input. Pathological nesting is bounded by
-    ADR-0006 (AURA-P014).
+    ADR-0006 (TR-P014).
 -   Record user-visible changes in `CHANGELOG.md`.
 -   Update documentation and examples whenever syntax or behavior
     changes.
@@ -77,7 +84,7 @@ compatibility, or public CLI behavior.
     `github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture`,
     chosen by the owner in Phase 5.1. Do not change it without the
     owner's approval.
--   AURA is MIT-licensed (`LICENSE`). Do not add a dependency whose
+-   Tread is MIT-licensed (`LICENSE`). Do not add a dependency whose
     license conflicts with MIT or that needs a notice, without updating
     `THIRD_PARTY_NOTICES.txt` in `scripts/build-release.sh`.
 -   Use Go's standard library unless a dependency provides clear value.
@@ -102,6 +109,6 @@ implement them now. Release status and owner prerequisites are in
 tag, publish) are in `docs/17-owner-release-steps.md`; never perform
 them without the owner's explicit authorization.
 
-The name AURA is final (ADR-0005 addendum). Trademark risk is recorded
-in `docs/16-name-and-trademark-risk.md`. Never claim that the name is
+The name Tread was adopted in 0.3.0 (ADR-0010). It has not been checked
+for trademarks. Never claim that the name is
 cleared or owned.

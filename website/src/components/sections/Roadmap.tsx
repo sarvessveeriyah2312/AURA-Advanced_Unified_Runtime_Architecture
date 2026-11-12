@@ -19,7 +19,7 @@ const MILESTONES: { title: string; status: Status; version?: string; items: stri
       "if / else if / else",
       "Strings with interpolation",
       "Bytecode compiler and stack VM",
-      "aura run and aura check",
+      "tread run and tread check",
     ],
   },
   {
@@ -67,7 +67,7 @@ export function Roadmap() {
       <SectionHeading
         id="roadmap-title"
         eyebrow="Roadmap"
-        title="Where AURA is going."
+        title="Where Tread is going."
         description={
           <>
             Released work is in the current version. Planned and possible features are not available yet, and there
@@ -108,7 +108,7 @@ export function Roadmap() {
         <Card>
           <div className="flex flex-wrap items-center gap-3">
             <StatusBadge status="Under consideration" />
-            <p className="text-sm text-muted">Ideas being evaluated. None of these are available in AURA today.</p>
+            <p className="text-sm text-muted">Ideas being evaluated. None of these are available in Tread today.</p>
           </div>
           <ul className="mt-4 flex flex-wrap gap-2">
             {CONSIDERING.map((c) => (

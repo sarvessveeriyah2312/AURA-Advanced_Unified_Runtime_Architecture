@@ -17,12 +17,12 @@ const PILLARS = [
   {
     icon: Workflow,
     title: "Its own compiler",
-    body: "AURA does not translate to another language. A dedicated lexer, parser, type checker, and bytecode compiler turn source code into AURA's own typed instructions.",
+    body: "Tread does not translate to another language. A dedicated lexer, parser, type checker, and bytecode compiler turn source code into Tread's own typed instructions.",
   },
   {
     icon: Cpu,
     title: "A stack-based VM",
-    body: "The AURA Virtual Machine executes that bytecode on an operand stack, checking integer overflow, division by zero, and call depth as it runs.",
+    body: "The Tread Virtual Machine executes that bytecode on an operand stack, checking integer overflow, division by zero, and call depth as it runs.",
   },
 ];
 
@@ -33,9 +33,9 @@ export function Introduction() {
         <div>
           <SectionHeading
             id="overview-title"
-            eyebrow="What is AURA?"
+            eyebrow="What is Tread?"
             title="A small language, built end to end."
-            description="AURA is a general-purpose programming language designed to be predictable and easy to understand, from the syntax you write to the virtual machine that runs it."
+            description="Tread is a general-purpose programming language designed to be predictable and easy to understand, from the syntax you write to the virtual machine that runs it."
           />
           <Reveal delay={0.05} className="mt-6 space-y-4 text-[15px] leading-relaxed text-muted">
             <p>
@@ -43,7 +43,7 @@ export function Introduction() {
               specified rather than left to convention. Integer overflow is an error, never a silent wrap-around.
             </p>
             <p>
-              AURA is young and deliberately small. Version 0.x focuses on a solid foundation (types, functions,
+              Tread is young and deliberately small. Version 0.x focuses on a solid foundation (types, functions,
               control flow, and diagnostics) before adding larger features such as loops and collections.
             </p>
           </Reveal>

@@ -1,10 +1,10 @@
-error[AURA-R001]: division by zero (in function 'divide')
-   --> trace_nested.aura:12:12
+error[TR-R001]: division by zero (in function 'divide')
+   --> trace_nested.tr:12:12
     |
  12 |     return a / b
     |            ^^^^^
 
 stack trace:
-  0: divide   trace_nested.aura:12:12  return a / b
-  1: average  trace_nested.aura:8:12   return divide(total, count)
-  2: main     trace_nested.aura:4:11   print(average(10, 0))
+  0: divide   trace_nested.tr:12:12  return a / b
+  1: average  trace_nested.tr:8:12   return divide(total, count)
+  2: main     trace_nested.tr:4:11   print(average(10, 0))

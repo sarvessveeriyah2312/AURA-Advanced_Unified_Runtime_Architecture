@@ -1,0 +1,2 @@
+// A program without main (TR-T013).
+fn helper() -> Unit { }

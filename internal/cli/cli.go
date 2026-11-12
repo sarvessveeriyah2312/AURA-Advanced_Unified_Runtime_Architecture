@@ -1,4 +1,4 @@
-// Package cli implements the aura command-line interface.
+// Package cli implements the tread command-line interface.
 //
 // The CLI is the only layer that decides process exit codes. Program output
 // goes to stdout; diagnostics, errors and usage text go to stderr
@@ -29,20 +29,20 @@ const (
 	ExitInternal = 3
 )
 
-const usage = `Usage: aura <command> [arguments]
+const usage = `Usage: tread <command> [arguments]
 
 Commands:
-  run <file.aura>     Check, compile and run a program
-  check <file.aura>   Check a program for errors without running it
-  version             Print the AURA version
+  run <file.tr>       Check, compile and run a program
+  check <file.tr>     Check a program for errors without running it
+  version             Print the Tread version
   help                Print this help
 
 Flags:
   -h, --help     Print this help
-  --version      Print the AURA version
+  --version      Print the Tread version
 `
 
-// Run executes the aura CLI with the given arguments (excluding the program
+// Run executes the tread CLI with the given arguments (excluding the program
 // name), writing to stdout and stderr, and returns the process exit code.
 func Run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
@@ -56,7 +56,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		if len(rest) > 0 {
 			return usageError(stderr, "%s takes no arguments", cmd)
 		}
-		fmt.Fprintf(stdout, "aura %s\n", Version)
+		fmt.Fprintf(stdout, "tread %s\n", Version)
 		return ExitOK
 	case "help", "-h", "--help":
 		if len(rest) > 0 {
@@ -87,16 +87,16 @@ func usageError(stderr io.Writer, format string, a ...any) int {
 	return ExitUsage
 }
 
-// SourceExtension is the required extension of AURA source files
+// SourceExtension is the required extension of Tread source files
 // (docs/02 §2.1, ADR-0005).
-const SourceExtension = ".aura"
+const SourceExtension = ".tr"
 
 // readSource loads the file named on the command line. A path without the
-// .aura extension, or a file that cannot be read, is an invalid argument
+// .tr extension, or a file that cannot be read, is an invalid argument
 // (exit 2); the message names the path (docs/07 §7.4).
 func readSource(path string, stderr io.Writer) (*source.File, int) {
 	if filepath.Ext(path) != SourceExtension {
-		fmt.Fprintf(stderr, "error: %s is not an AURA source file: expected the %s extension\n", path, SourceExtension)
+		fmt.Fprintf(stderr, "error: %s is not a Tread source file: expected the %s extension\n", path, SourceExtension)
 		return nil, ExitUsage
 	}
 	content, err := os.ReadFile(path)
@@ -112,7 +112,7 @@ func readSource(path string, stderr io.Writer) (*source.File, int) {
 	return source.NewFile(1, path, content), ExitOK
 }
 
-// runCheck implements `aura check`: lex, parse and type-check, and report
+// runCheck implements `tread check`: lex, parse and type-check, and report
 // diagnostics. It never compiles or executes the program, and prints
 // nothing on success.
 func runCheck(file *source.File, stderr io.Writer) int {
@@ -124,7 +124,7 @@ func runCheck(file *source.File, stderr io.Writer) int {
 	return ExitOK
 }
 
-// runProgram implements `aura run`. Each phase runs only if the previous
+// runProgram implements `tread run`. Each phase runs only if the previous
 // one produced no diagnostics, so a program is never executed after a
 // compile-time error.
 func runProgram(file *source.File, stdout, stderr io.Writer) int {

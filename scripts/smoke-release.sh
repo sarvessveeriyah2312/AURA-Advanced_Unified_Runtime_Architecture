@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Smoke-tests one AURA release binary (ADR-0008): every CLI command, the
+# Smoke-tests one Tread release binary (ADR-0008): every CLI command, the
 # documented exit codes, and the diagnostics for compile-time errors,
 # runtime errors, and wrong file extensions.
 #
 # Usage (from the repository root):
-#   scripts/smoke-release.sh PATH/TO/aura[.exe] [EXPECTED_VERSION]
+#   scripts/smoke-release.sh PATH/TO/tread[.exe] [EXPECTED_VERSION]
 #
 # EXPECTED_VERSION defaults to the version in internal/cli/version.go.
 set -u
 
 cd "$(dirname "$0")/.."
 
-bin=${1:?usage: scripts/smoke-release.sh PATH/TO/aura [EXPECTED_VERSION]}
+bin=${1:?usage: scripts/smoke-release.sh PATH/TO/tread [EXPECTED_VERSION]}
 version=${2:-$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/cli/version.go)}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -46,29 +46,29 @@ expect() {
 	fi
 }
 
-cat >"$tmp/type_error.aura" <<'EOF'
+cat >"$tmp/type_error.tr" <<'EOF'
 fn main() -> Unit {
     let x: Int = "text"
 }
 EOF
-cat >"$tmp/runtime_error.aura" <<'EOF'
+cat >"$tmp/runtime_error.tr" <<'EOF'
 fn main() -> Unit {
     let zero = 0
     print("start")
     print(10 / zero)
 }
 EOF
-cp examples/hello.aura "$tmp/hello.nova"
+cp examples/hello.tr "$tmp/hello.nova"
 
 expect "help"                 0 "*"              ""                 -- "$bin" help
-expect "version"              0 "aura $version"  ""                 -- "$bin" version
-expect "check hello"          0 ""               ""                 -- "$bin" check examples/hello.aura
-expect "run hello"            0 "Hello, AURA!"   ""                 -- "$bin" run examples/hello.aura
-expect "check type error"     1 ""               'error\[AURA-T001\]' -- "$bin" check "$tmp/type_error.aura"
-expect "run runtime error"    1 "start"          'error\[AURA-R001\]' -- "$bin" run "$tmp/runtime_error.aura"
-expect "wrong extension"      2 ""               '\.aura'           -- "$bin" run "$tmp/hello.nova"
-expect "missing file"         2 ""               'missing\.aura'    -- "$bin" run "$tmp/missing.aura"
-expect "no arguments"         2 ""               'Usage: aura'      -- "$bin"
+expect "version"              0 "tread $version" ""                 -- "$bin" version
+expect "check hello"          0 ""               ""                 -- "$bin" check examples/hello.tr
+expect "run hello"            0 "Hello, Tread!"  ""                 -- "$bin" run examples/hello.tr
+expect "check type error"     1 ""               'error\[TR-T001\]' -- "$bin" check "$tmp/type_error.tr"
+expect "run runtime error"    1 "start"          'error\[TR-R001\]' -- "$bin" run "$tmp/runtime_error.tr"
+expect "wrong extension"      2 ""               '\.tr'             -- "$bin" run "$tmp/hello.nova"
+expect "missing file"         2 ""               'missing\.tr'      -- "$bin" run "$tmp/missing.tr"
+expect "no arguments"         2 ""               'Usage: tread'     -- "$bin"
 expect "unknown command"      2 ""               'unknown command|Usage' -- "$bin" frobnicate
 
 if [ "$failures" -ne 0 ]; then

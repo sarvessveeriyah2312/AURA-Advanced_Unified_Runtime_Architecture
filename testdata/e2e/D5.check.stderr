@@ -1,5 +1,5 @@
-error[AURA-T011]: 'print' cannot take a value of type Unit; it accepts Int, Float, Bool or String
-  --> D5.aura:5:11
+error[TR-T011]: 'print' cannot take a value of type Unit; it accepts Int, Float, Bool or String
+  --> D5.tr:5:11
    |
  5 |     print(u())
    |           ^^^

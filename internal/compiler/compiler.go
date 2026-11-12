@@ -14,7 +14,7 @@ import (
 // §5.4). The program must have passed the checker without diagnostics.
 // The compiler never infers types: it reads them from the CheckedProgram
 // side tables. A violated checked-program invariant is reported as
-// AURA-C001 and no module is returned; Compile never panics.
+// TR-C001 and no module is returned; Compile never panics.
 func Compile(cp *checker.CheckedProgram) (*bytecode.Module, []diagnostic.Diagnostic) {
 	c := &compiler{
 		cp:        cp,

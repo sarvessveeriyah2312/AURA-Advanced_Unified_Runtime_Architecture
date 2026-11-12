@@ -1,6 +1,6 @@
-// Command package writes one reproducible AURA release archive
+// Command package writes one reproducible Tread release archive
 // (ADR-0008). It is release tooling, run by scripts/build-release.sh;
-// it is not part of the AURA toolchain.
+// it is not part of the Tread toolchain.
 //
 // Usage:
 //

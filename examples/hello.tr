@@ -1,6 +1,6 @@
 module main
 
 fn main() -> Unit {
-    let name = "AURA"
+    let name = "Tread"
     print("Hello, ${name}!")
 }

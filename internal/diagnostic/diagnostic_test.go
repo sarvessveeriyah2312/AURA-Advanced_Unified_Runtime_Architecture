@@ -9,7 +9,7 @@ import (
 )
 
 func TestRegistryWellFormedAndUnique(t *testing.T) {
-	re := regexp.MustCompile(`^AURA-[LPTCR][0-9]{3}$`)
+	re := regexp.MustCompile(`^TR-[LPTCR][0-9]{3}$`)
 	seen := map[Code]bool{}
 	counts := map[byte]int{}
 	for _, c := range Registry() {
@@ -36,7 +36,7 @@ func TestRegistryIsSequentialPerPhase(t *testing.T) {
 	for _, c := range Registry() {
 		p := c.Phase()
 		next[p]++
-		want := Code("AURA-" + string(p) + pad3(next[p]))
+		want := Code("TR-" + string(p) + pad3(next[p]))
 		if c != want {
 			t.Errorf("got %s, want %s (codes must be numbered from 001 without gaps)", c, want)
 		}
@@ -103,7 +103,7 @@ func TestRenderingVectors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			f := source.NewFile(1, "t.aura", []byte(tt.src))
+			f := source.NewFile(1, "t.tr", []byte(tt.src))
 			var b strings.Builder
 			if err := Render(&b, f, Errorf(TypeMismatch, f.Span(tt.start, tt.end), "msg")); err != nil {
 				t.Fatal(err)
@@ -124,15 +124,15 @@ func TestRenderingVectors(t *testing.T) {
 // TestRenderingR7 is the exact golden output of the docs/04 §4.4 example.
 func TestRenderingR7(t *testing.T) {
 	src := "fn main() {\n    // a\n    // b\nlet total: Int = \"five\"\n}\n"
-	f := source.NewFile(1, "examples/main.aura", []byte(src))
+	f := source.NewFile(1, "examples/main.tr", []byte(src))
 	start := strings.Index(src, `"five"`)
 	d := Errorf(TypeMismatch, f.Span(start, start+len(`"five"`)), "expected Int but found String")
 	var b strings.Builder
 	if err := Render(&b, f, d); err != nil {
 		t.Fatal(err)
 	}
-	want := "error[AURA-T001]: expected Int but found String\n" +
-		"  --> examples/main.aura:4:18\n" +
+	want := "error[TR-T001]: expected Int but found String\n" +
+		"  --> examples/main.tr:4:18\n" +
 		"   |\n" +
 		" 4 | let total: Int = \"five\"\n" +
 		"   |                  ^^^^^^\n"
@@ -143,7 +143,7 @@ func TestRenderingR7(t *testing.T) {
 
 func TestRenderHelpRelatedAndWideGutter(t *testing.T) {
 	src := strings.Repeat("\n", 9) + "module b\n"
-	f := source.NewFile(1, "m.aura", []byte(src))
+	f := source.NewFile(1, "m.tr", []byte(src))
 	d := Errorf(DuplicateModule, f.Span(9, 17), "duplicate module declaration").
 		WithHelp("remove one").
 		WithRelated(f.Span(0, 0), "first module declaration is here")
@@ -151,13 +151,13 @@ func TestRenderHelpRelatedAndWideGutter(t *testing.T) {
 	if err := Render(&b, f, d); err != nil {
 		t.Fatal(err)
 	}
-	want := "error[AURA-P008]: duplicate module declaration\n" +
-		"   --> m.aura:10:1\n" +
+	want := "error[TR-P008]: duplicate module declaration\n" +
+		"   --> m.tr:10:1\n" +
 		"    |\n" +
 		" 10 | module b\n" +
 		"    | ^^^^^^^^\n" +
 		"    = help: remove one\n" +
-		"    = note: first module declaration is here (m.aura:1:1)\n"
+		"    = note: first module declaration is here (m.tr:1:1)\n"
 	if b.String() != want {
 		t.Errorf("got:\n%s\nwant:\n%s", b.String(), want)
 	}
@@ -218,8 +218,30 @@ func TestRenderWithoutSource(t *testing.T) {
 	if err := Render(&b, nil, d); err != nil {
 		t.Fatal(err)
 	}
-	want := "error[AURA-R002]: invalid module: main index 3 out of range\n  = help: h\n"
+	want := "error[TR-R002]: invalid module: main index 3 out of range\n  = help: h\n"
 	if b.String() != want {
 		t.Errorf("got %q, want %q", b.String(), want)
+	}
+}
+
+// Regression: Phase once read a fixed byte offset that only matched the
+// old five-character prefix. It must follow Prefix, whatever its length.
+func TestPhaseFollowsPrefix(t *testing.T) {
+	cases := map[Code]byte{
+		Code(Prefix + "T001"): 'T',
+		Code(Prefix + "R005"): 'R',
+		"XX-T001":             0, // wrong prefix
+		Code(Prefix + "T01"):  0, // too short
+		"":                    0,
+	}
+	for c, want := range cases {
+		if got := c.Phase(); got != want {
+			t.Errorf("Code(%q).Phase() = %q, want %q", c, got, want)
+		}
+	}
+	for _, c := range Registry() {
+		if !strings.HasPrefix(string(c), Prefix) || c.Phase() == 0 {
+			t.Errorf("registered code %q does not start with %q or has no phase", c, Prefix)
+		}
 	}
 }

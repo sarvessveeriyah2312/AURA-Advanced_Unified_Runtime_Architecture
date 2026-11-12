@@ -1,8 +1,51 @@
 # Changelog
 
-All notable changes to AURA are documented in this file. The format is
+All notable changes to Tread are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-AURA uses [Semantic Versioning](https://semver.org/).
+Tread uses [Semantic Versioning](https://semver.org/). Entries for 0.1.0
+and 0.2.0 are kept as written, under the language's name at the time.
+
+## [0.3.0] - Unreleased
+
+The language is renamed **Tread**: *a language for learning how
+languages work*. This is a breaking change, with no backward
+compatibility. Tread 0.x is experimental.
+
+### Changed (breaking)
+
+-   **Name.** The language, its compiler, bytecode, virtual machine, and
+    CLI are now Tread.
+-   **Command.** The executable is `tread`, with the same commands:
+    `tread run`, `tread check`, `tread version` (prints `tread 0.3.0`),
+    and `tread help`. The previous command name is no longer provided.
+-   **Source extension.** Source files use `.tr`, in lower case only.
+    Any other extension, including the previous one, is rejected with
+    exit code 2, as before.
+-   **Error codes.** Diagnostic codes use the prefix `TR-`. Every
+    category letter and number is unchanged: for example, the type
+    mismatch error is now `TR-T001`, and the call depth error is
+    `TR-R003`.
+-   **Releases.**
+    -   Release archives are named `tread_<version>_<os>_<arch>`
+        (`.tar.gz`, or `.zip` for Windows), and contain `tread`
+        (`tread.exe` on Windows).
+    -   The command builds from `cmd/tread`.
+    -   The version override for release builds is `TREAD_VERSION`.
+
+### Fixed
+
+-   **Phase letter of an error code.** `Code.Phase()` read the letter at
+    a fixed byte offset that only matched the previous five-character
+    prefix. It now reads the letter right after the prefix, whatever its
+    length, and has a regression test.
+
+### Notes
+
+-   **No other changes:** language behaviour, syntax, and error message
+    wording are unchanged apart from the name and the code prefix.
+-   **Example programs** greet `Tread` instead of the previous name.
+-   **The Go module path** is unchanged until the GitHub repository is
+    renamed.
 
 ## [0.2.0] - 2026-11-12
 

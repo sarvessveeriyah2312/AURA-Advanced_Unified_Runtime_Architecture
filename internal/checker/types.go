@@ -5,7 +5,7 @@ import (
 	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
 )
 
-// Type is an AURA MVP type.
+// Type is a Tread MVP type.
 type Type int
 
 const (

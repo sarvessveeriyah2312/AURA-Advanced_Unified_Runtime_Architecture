@@ -167,7 +167,7 @@ var checkCases = []checkCase{
 // lexer or parser diagnostics.
 func runCheck(t *testing.T, src string, lexOK bool) (*CheckedProgram, []diagnostic.Diagnostic) {
 	t.Helper()
-	f := source.NewFile(1, "t.aura", []byte(src))
+	f := source.NewFile(1, "t.tr", []byte(src))
 	toks, lexDiags := lexer.Lex(f)
 	if len(lexDiags) > 0 && !lexOK {
 		t.Fatalf("unexpected lexer diagnostics: %+v", lexDiags)
@@ -182,7 +182,7 @@ func runCheck(t *testing.T, src string, lexOK bool) (*CheckedProgram, []diagnost
 // describe renders a diagnostic as `T001 "text"`; when the span text is
 // empty or ambiguous, tests append @offset.
 func describe(src string, d diagnostic.Diagnostic, withOffset bool) string {
-	s := fmt.Sprintf("%s %q", strings.TrimPrefix(string(d.Code), "AURA-"), src[d.Span.Start:d.Span.End])
+	s := fmt.Sprintf("%s %q", strings.TrimPrefix(string(d.Code), "TR-"), src[d.Span.Start:d.Span.End])
 	if withOffset {
 		s += fmt.Sprintf("@%d", d.Span.Start)
 	}
@@ -255,7 +255,7 @@ func TestEveryCheckerCodeIsTested(t *testing.T) {
 	seen := map[string]bool{}
 	for _, tc := range checkCases {
 		for _, w := range tc.want {
-			seen["AURA-"+strings.SplitN(w, " ", 2)[0]] = true
+			seen["TR-"+strings.SplitN(w, " ", 2)[0]] = true
 		}
 	}
 	var missing []string
@@ -397,7 +397,7 @@ fn grade(score: Int) -> String {
 }
 
 fn main() -> Unit {
-    let name = "AURA"
+    let name = "Tread"
     let mut total: Int = add(2,
                              3)
     total = total +

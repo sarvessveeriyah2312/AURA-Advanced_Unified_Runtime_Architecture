@@ -7,18 +7,18 @@ export function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
-// AuraMark is the site's logo: a stylised "A" in the accent gradient.
-export function AuraMark({ className }: { className?: string }) {
+// TreadMark is the site's logo: a stylised "T" in the accent gradient.
+export function TreadMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true" focusable="false">
       <defs>
-        <linearGradient id="aura-mark" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="tread-mark" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#9b8cff" />
           <stop offset="1" stopColor="#5cc8ff" />
         </linearGradient>
       </defs>
       <rect width="64" height="64" rx="14" className="fill-[#0c1020]" />
-      <path d="M32 13 15 51h7.6l3.5-8.4h11.8l3.5 8.4H49L32 13Zm0 13.4 3.4 8.6h-6.8L32 26.4Z" fill="url(#aura-mark)" />
+      <path d="M15 14h34v8.5H36.3V50h-8.6V22.5H15Z" fill="url(#tread-mark)" />
     </svg>
   );
 }

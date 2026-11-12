@@ -1,5 +1,5 @@
-error[AURA-R005]: integer overflow: 9223372036854775807 + 1 (in function 'main')
-  --> D9.aura:3:11
+error[TR-R005]: integer overflow: 9223372036854775807 + 1 (in function 'main')
+  --> D9.tr:3:11
    |
  3 |     print(9223372036854775807 + 1)
    |           ^^^^^^^^^^^^^^^^^^^^^^^

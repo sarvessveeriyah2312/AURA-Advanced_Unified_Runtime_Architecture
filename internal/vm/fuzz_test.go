@@ -21,8 +21,8 @@ import (
 //
 //	go test ./internal/vm -run '^$' -fuzz=FuzzCompileAndRun
 func FuzzCompileAndRun(f *testing.F) {
-	seeds, _ := filepath.Glob("../../testdata/e2e/*.aura")
-	seeds = append(seeds, "../../examples/hello.aura")
+	seeds, _ := filepath.Glob("../../testdata/e2e/*.tr")
+	seeds = append(seeds, "../../examples/hello.tr")
 	for _, p := range seeds {
 		if src, err := os.ReadFile(p); err == nil {
 			f.Add(src)
@@ -31,7 +31,7 @@ func FuzzCompileAndRun(f *testing.F) {
 	f.Add([]byte(mainOf("let max = 9223372036854775807\nprint(max + 1)")))
 	f.Add([]byte(mainOf("print(\"${1.5 / 0.0} ${toString(-0.0)}\" + \"x\")")))
 	f.Fuzz(func(t *testing.T, data []byte) {
-		file := source.NewFile(1, "fuzz.aura", data)
+		file := source.NewFile(1, "fuzz.tr", data)
 		toks, ld := lexer.Lex(file)
 		prog, pd := parser.Parse(toks)
 		if len(ld)+len(pd) > 0 {

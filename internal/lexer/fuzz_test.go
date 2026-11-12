@@ -14,7 +14,7 @@ func FuzzLex(f *testing.F) {
 		f.Add([]byte(tc.src))
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
-		file := source.NewFile(1, "fuzz.aura", data)
+		file := source.NewFile(1, "fuzz.tr", data)
 		toks, diags := Lex(file)
 		checkInvariants(t, file, toks, diags)
 	})

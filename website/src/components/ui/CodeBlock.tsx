@@ -42,8 +42,8 @@ export function WindowBar({ title, children }: { title: string; children?: React
   );
 }
 
-// AuraCode renders highlighted AURA source with line numbers.
-export function AuraCode({ code, className }: { code: string; className?: string }) {
+// TreadCode renders highlighted Tread source with line numbers.
+export function TreadCode({ code, className }: { code: string; className?: string }) {
   const lines = useMemo(() => {
     const tokens = highlight(code);
     // Split tokens into lines so each line can carry a number.
@@ -62,7 +62,7 @@ export function AuraCode({ code, className }: { code: string; className?: string
     <pre
       className={cn("scrollbar-thin overflow-x-auto py-4 font-mono text-[13px] leading-6 text-code-fg", className)}
       tabIndex={0}
-      aria-label="AURA source code"
+      aria-label="Tread source code"
     >
       <code className="grid min-w-max">
         {lines.map((line, n) => (

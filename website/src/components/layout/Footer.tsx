@@ -1,5 +1,5 @@
-import { CHANGELOG_URL, FULL_NAME, LICENSE_URL, README_URL, REPO_URL, TAGLINE, VERSION } from "../../data/site";
-import { AuraMark } from "../ui/GitHubIcon";
+import { CHANGELOG_URL, LICENSE_URL, MOTTO, README_URL, RELEASED, REPO_URL, VERSION } from "../../data/site";
+import { TreadMark } from "../ui/GitHubIcon";
 import { Container } from "../ui/SectionHeading";
 
 const LINKS = [
@@ -16,18 +16,19 @@ export function Footer() {
       <Container className="flex flex-col gap-10 py-12 md:flex-row md:items-start md:justify-between">
         <div className="max-w-sm">
           <div className="flex items-center gap-2.5">
-            <AuraMark className="size-8" />
+            <TreadMark className="size-8" />
             <p className="font-semibold">
-              AURA <span className="font-normal text-muted">— {FULL_NAME}</span>
+              Tread
             </p>
           </div>
-          <p className="mt-3 text-sm text-muted italic">“{TAGLINE}”</p>
+          <p className="mt-3 text-sm text-muted italic">{MOTTO}</p>
           <p className="mt-6 text-xs text-subtle">
-            © 2026 Sarvess Veeriyah. Licensed under the MIT License. Current release: {VERSION}.
+            © 2026 Sarvess Veeriyah. Licensed under the MIT License. Version {VERSION}
+            {RELEASED ? "" : " (unreleased)"}.
           </p>
           <p className="mt-2 text-xs text-subtle">
-            AURA is an independent open-source project. It is not affiliated with other products named Aura, and
-            claims no trademark rights in the name.
+            A tread is one step of a staircase: Tread is learned one stage at a time, from lexer to parser, checker,
+            compiler, and VM.
           </p>
         </div>
         <nav aria-label="Footer">

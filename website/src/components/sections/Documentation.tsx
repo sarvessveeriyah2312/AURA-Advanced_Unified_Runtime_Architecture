@@ -4,7 +4,7 @@ import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
 
 // Every link points at documentation that exists in the public
-// repository (verified). AURA's design records are not published yet,
+// repository (verified). Tread's design records are not published yet,
 // so the README's language reference is the public reference.
 const DOCS = [
   { icon: BookOpen, title: "README", body: "Overview, installation, and the full guide.", href: README_URL },
@@ -24,8 +24,8 @@ export function Documentation() {
       <SectionHeading
         id="documentation-title"
         eyebrow="Documentation"
-        title="Everything you need to learn AURA."
-        description="AURA's documentation lives with its source on GitHub, so it always matches the code."
+        title="Everything you need to learn Tread."
+        description="Tread's documentation lives with its source on GitHub, so it always matches the code."
       />
       <ul className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {DOCS.map((d, i) => (

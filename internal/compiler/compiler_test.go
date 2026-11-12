@@ -18,7 +18,7 @@ import (
 // frontend lexes, parses and checks src, failing on any diagnostic.
 func frontend(t *testing.T, src string) *checker.CheckedProgram {
 	t.Helper()
-	f := source.NewFile(1, "t.aura", []byte(src))
+	f := source.NewFile(1, "t.tr", []byte(src))
 	toks, ld := lexer.Lex(f)
 	prog, pd := parser.Parse(toks)
 	cp, cd := checker.Check(prog)
@@ -169,7 +169,7 @@ func TestG4InvariantViolations(t *testing.T) {
 			mutate(cp)
 			m, diags := compiler.Compile(cp)
 			if m != nil || len(diags) == 0 || diags[0].Code != diagnostic.InternalCompilerError {
-				t.Errorf("want AURA-C001 and no module, got %v %+v", m, diags)
+				t.Errorf("want TR-C001 and no module, got %v %+v", m, diags)
 			}
 		})
 	}

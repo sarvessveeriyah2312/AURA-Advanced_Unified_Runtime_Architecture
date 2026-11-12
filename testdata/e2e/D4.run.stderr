@@ -1,5 +1,5 @@
-error[AURA-R001]: division by zero (in function 'main')
-  --> D4.aura:5:11
+error[TR-R001]: division by zero (in function 'main')
+  --> D4.tr:5:11
    |
  5 |     print(1 / z)
    |           ^^^^^

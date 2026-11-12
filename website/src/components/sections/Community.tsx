@@ -5,7 +5,7 @@ import { GitHubIcon } from "../ui/GitHubIcon";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
 
-// AURA's only community channel today is its GitHub repository.
+// Tread's only community channel today is its GitHub repository.
 const ACTIONS = [
   { icon: Code2, title: "Explore the source", body: "Read the compiler, the VM, and their tests.", href: REPO_URL },
   { icon: Bug, title: "Report an issue", body: "Found a bug or a confusing error message? Tell us.", href: NEW_ISSUE_URL },
@@ -27,7 +27,7 @@ export function Community() {
               id="community-title"
               eyebrow="Open source"
               title="Built in the open, on GitHub."
-              description="AURA is MIT-licensed and developed in public. Explore the code, report what breaks, and help shape what comes next."
+              description="Tread is MIT-licensed and developed in public. Explore the code, report what breaks, and help shape what comes next."
             />
             <Reveal className="mt-8">
               <ButtonLink href={REPO_URL} size="lg">

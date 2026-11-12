@@ -7,7 +7,7 @@ import { useActiveSection } from "../../hooks/useActiveSection";
 import { useTheme } from "../../hooks/useTheme";
 import { cn } from "../../lib/cn";
 import { ButtonLink } from "../ui/Button";
-import { AuraMark, GitHubIcon } from "../ui/GitHubIcon";
+import { TreadMark, GitHubIcon } from "../ui/GitHubIcon";
 import { Container } from "../ui/SectionHeading";
 
 // Track every section (not only those in the nav), so that no nav link is
@@ -88,9 +88,9 @@ export function Navbar() {
       )}
     >
       <Container className="flex h-16 items-center justify-between gap-4">
-        <a href="#top" className="flex items-center gap-2.5 rounded-md" aria-label="AURA, back to top">
-          <AuraMark className="size-8" />
-          <span className="text-[15px] font-semibold tracking-[0.12em]">AURA</span>
+        <a href="#top" className="flex items-center gap-2.5 rounded-md" aria-label="Tread, back to top">
+          <TreadMark className="size-8" />
+          <span className="text-[15px] font-semibold tracking-[0.12em]">Tread</span>
         </a>
 
         <nav aria-label="Primary" className="hidden md:block">
@@ -117,13 +117,13 @@ export function Navbar() {
           {/* Visibility lives on a wrapper: the buttons' own display class
               would otherwise compete with "hidden". */}
           <div className="hidden items-center gap-1.5 sm:flex">
-            <ButtonLink href={REPO_URL} variant="ghost" size="sm" aria-label="AURA on GitHub (opens in a new tab)">
+            <ButtonLink href={REPO_URL} variant="ghost" size="sm" aria-label="Tread on GitHub (opens in a new tab)">
               <GitHubIcon className="size-4" />
               GitHub
             </ButtonLink>
             <ButtonLink href="#download" size="sm">
               <Download className="size-4" aria-hidden />
-              Download AURA
+              Download Tread
             </ButtonLink>
           </div>
           <button

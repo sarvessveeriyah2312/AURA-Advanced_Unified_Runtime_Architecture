@@ -6,27 +6,27 @@ import { TerminalText, WindowBar } from "../ui/CodeBlock";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
 
-// Commands and their real output (aura 0.2.0).
+// Commands and their real output (tread 0.3.0).
 const COMMANDS = [
   {
-    command: "aura version",
-    purpose: "Print the installed version. Also available as aura --version.",
-    output: `aura ${VERSION}`,
+    command: "tread version",
+    purpose: "Print the installed version. Also available as tread --version.",
+    output: `tread ${VERSION}`,
   },
   {
-    command: "aura check hello.aura",
+    command: "tread check hello.tr",
     purpose: "Check a program for errors without running it. It prints nothing when the program is correct.",
     output: "",
     after: "$ echo $?\n0",
   },
   {
-    command: "aura run hello.aura",
+    command: "tread run hello.tr",
     purpose: "Check, compile, and run a program. It runs only if there are no compile-time errors.",
-    output: "Hello, AURA!",
+    output: "Hello, Tread!",
   },
   {
-    command: "aura help",
-    purpose: "Print usage. Also available as aura -h and aura --help.",
+    command: "tread help",
+    purpose: "Print usage. Also available as tread -h and tread --help.",
     output: CLI_HELP,
   },
 ];
@@ -34,7 +34,7 @@ const COMMANDS = [
 const EXIT_CODES = [
   { code: "0", meaning: "Success" },
   { code: "1", meaning: "The program has compile-time or runtime errors" },
-  { code: "2", meaning: "Usage error, a file not ending in .aura, or an unreadable file" },
+  { code: "2", meaning: "Usage error, a file not ending in .tr, or an unreadable file" },
   { code: "3", meaning: "Internal failure" },
 ];
 
@@ -49,11 +49,11 @@ export function CLIShowcase() {
         id="cli-title"
         eyebrow="CLI experience"
         title="One command, four verbs."
-        description="The aura command is the whole toolchain. Program output goes to stdout and diagnostics to stderr, so it fits naturally into scripts and CI."
+        description="The tread command is the whole toolchain. Program output goes to stdout and diagnostics to stderr, so it fits naturally into scripts and CI."
       />
 
       <Reveal className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <ul className="flex flex-col gap-2" aria-label="aura commands">
+        <ul className="flex flex-col gap-2" aria-label="tread commands">
           {COMMANDS.map((c, i) => (
             <li key={c.command}>
               <button

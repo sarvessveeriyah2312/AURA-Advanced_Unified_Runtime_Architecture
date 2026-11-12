@@ -28,7 +28,7 @@ const FEATURES = [
   },
   {
     icon: Cpu,
-    title: "AURA Virtual Machine",
+    title: "Tread Virtual Machine",
     points: [
       "Stack-based execution",
       "46 typed bytecode instructions",
@@ -40,7 +40,7 @@ const FEATURES = [
     icon: ListTree,
     title: "Structured diagnostics",
     points: [
-      "47 stable codes, such as AURA-T001",
+      "47 stable codes, such as TR-T001",
       "Exact line and column positions",
       "Underlined source excerpts and help text",
       "Several errors reported in one run",
@@ -60,8 +60,8 @@ const FEATURES = [
     icon: SquareTerminal,
     title: "Developer experience",
     points: [
-      "aura check finds errors without running",
-      "aura run checks, compiles, and executes",
+      "tread check finds errors without running",
+      "tread run checks, compiles, and executes",
       "Documented exit codes for scripts and CI",
       "Program output on stdout, errors on stderr",
     ],
@@ -79,7 +79,7 @@ const FEATURES = [
   {
     icon: TriangleAlert,
     title: "Stack traces",
-    badge: `New in ${VERSION}`,
+    badge: "Since 0.2.0",
     points: [
       "Every active call, innermost first",
       "Function, location, and source line",
@@ -95,8 +95,8 @@ export function Features() {
       <SectionHeading
         id="features-title"
         eyebrow="Features"
-        title="What AURA does today."
-        description={`Everything on this page is implemented and tested in AURA ${VERSION}. Planned work is listed separately in the roadmap.`}
+        title="What Tread does today."
+        description={`Everything on this page is implemented and tested in Tread ${VERSION}. Planned work is listed separately in the roadmap.`}
       />
       <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map((f, i) => (
