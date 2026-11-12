@@ -23,7 +23,9 @@ $rt = (Resolve-Path "$Dist\tread-runtime-$v1-windows-x64.zip").Path
 $sdk2 = (Resolve-Path "$UpgradeDist\tread-sdk-$v2-windows-x64.zip").Path
 $prefix = Join-Path $HOME ".tread"
 $bin = Join-Path $prefix "bin"
-function Run-Installer { & pwsh -NoProfile -File $installer @args; return $LASTEXITCODE -eq 0 }
+# The child's printed messages go to the console, not into the return
+# value, so callers get exactly one Boolean.
+function Run-Installer { & pwsh -NoProfile -File $installer @args | Out-Host; return $LASTEXITCODE -eq 0 }
 
 Check "fresh install" { Run-Installer -Archive $sdk }
 Check "binary installed" { Test-Path "$bin\tread.exe" }
