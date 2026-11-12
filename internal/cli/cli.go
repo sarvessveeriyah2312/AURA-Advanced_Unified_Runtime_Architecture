@@ -13,8 +13,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/diagnostic"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
 )
 
 // Exit codes, as specified in docs/07-cli-and-tooling.md.

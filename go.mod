@@ -1,3 +1,3 @@
-module github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture
+module github.com/sarvessveeriyah2312/Tread
 
 go 1.25.0

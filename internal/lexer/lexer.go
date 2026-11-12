@@ -5,9 +5,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/diagnostic"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/token"
+	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/token"
 )
 
 // Lex converts a source file into tokens. The result always ends with an

@@ -6,14 +6,14 @@ import (
 	"io"
 	"sort"
 
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/bytecode"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/checker"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/compiler"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/diagnostic"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/lexer"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/parser"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/vm"
+	"github.com/sarvessveeriyah2312/Tread/internal/bytecode"
+	"github.com/sarvessveeriyah2312/Tread/internal/checker"
+	"github.com/sarvessveeriyah2312/Tread/internal/compiler"
+	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/Tread/internal/lexer"
+	"github.com/sarvessveeriyah2312/Tread/internal/parser"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/vm"
 )
 
 // This file orchestrates the compiler phases (docs/07 §7.4). It contains

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
 )
 
 // Stack trace rendering (ADR-0009).

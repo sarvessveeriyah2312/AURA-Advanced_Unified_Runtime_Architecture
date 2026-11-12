@@ -44,8 +44,11 @@ compatibility. Tread 0.x is experimental.
 -   **No other changes:** language behaviour, syntax, and error message
     wording are unchanged apart from the name and the code prefix.
 -   **Example programs** greet `Tread` instead of the previous name.
--   **The Go module path** is unchanged until the GitHub repository is
-    renamed.
+-   **Repository and module path.** The GitHub repository is now
+    `sarvessveeriyah2312/Tread`, and the Go module path is
+    `github.com/sarvessveeriyah2312/Tread`; install with
+    `go install github.com/sarvessveeriyah2312/Tread/cmd/tread@<version>`.
+    Links to the previous repository name redirect on GitHub.
 
 ## [0.2.0] - 2026-11-12
 

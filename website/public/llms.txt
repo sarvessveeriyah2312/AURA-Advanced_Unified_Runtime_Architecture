@@ -15,17 +15,17 @@ Key facts (updated 2026-11-12):
 
 ## Docs
 
-- [README](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/blob/main/README.md): overview, installation, quick start, and full guide
-- [README as Markdown](https://raw.githubusercontent.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/main/README.md): the same guide as plain Markdown
-- [Installation](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/blob/main/README.md#installation): release archives, go install, building from source
-- [Language tutorial](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/blob/main/README.md#language-tutorial): eleven short lessons, each a complete program with its output
-- [Language reference](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/blob/main/README.md#language-reference): types, operators, keywords, scope
-- [CLI reference](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/blob/main/README.md#cli-reference): commands, behaviour, exit codes
-- [Errors and diagnostics](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/blob/main/README.md#errors-and-diagnostics): error format, code families, stack traces
+- [README](https://github.com/sarvessveeriyah2312/Tread/blob/main/README.md): overview, installation, quick start, and full guide
+- [README as Markdown](https://raw.githubusercontent.com/sarvessveeriyah2312/Tread/main/README.md): the same guide as plain Markdown
+- [Installation](https://github.com/sarvessveeriyah2312/Tread/blob/main/README.md#installation): release archives, go install, building from source
+- [Language tutorial](https://github.com/sarvessveeriyah2312/Tread/blob/main/README.md#language-tutorial): eleven short lessons, each a complete program with its output
+- [Language reference](https://github.com/sarvessveeriyah2312/Tread/blob/main/README.md#language-reference): types, operators, keywords, scope
+- [CLI reference](https://github.com/sarvessveeriyah2312/Tread/blob/main/README.md#cli-reference): commands, behaviour, exit codes
+- [Errors and diagnostics](https://github.com/sarvessveeriyah2312/Tread/blob/main/README.md#errors-and-diagnostics): error format, code families, stack traces
 
 ## Optional
 
-- [Changelog](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/blob/main/CHANGELOG.md): every user-visible change, by release
-- [Source code](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/tree/main): compiler, virtual machine, CLI, and tests
-- [Issues](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/issues): bug reports and feature requests
+- [Changelog](https://github.com/sarvessveeriyah2312/Tread/blob/main/CHANGELOG.md): every user-visible change, by release
+- [Source code](https://github.com/sarvessveeriyah2312/Tread/tree/main): compiler, virtual machine, CLI, and tests
+- [Issues](https://github.com/sarvessveeriyah2312/Tread/issues): bug reports and feature requests
 - [Website](https://treadlang.vercel.app/): overview, examples, architecture, and FAQ

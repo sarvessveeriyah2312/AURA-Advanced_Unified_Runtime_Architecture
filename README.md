@@ -4,10 +4,10 @@
 
 *A language for learning how languages work.*
 
-[![CI](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/actions/workflows/ci.yml/badge.svg)](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture)](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/latest)
-[![License: MIT](https://img.shields.io/github/license/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture)](LICENSE)
-[![Go](https://img.shields.io/github/go-mod/go-version/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture)](go.mod)
+[![CI](https://github.com/sarvessveeriyah2312/Tread/actions/workflows/ci.yml/badge.svg)](https://github.com/sarvessveeriyah2312/Tread/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/sarvessveeriyah2312/Tread)](https://github.com/sarvessveeriyah2312/Tread/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/sarvessveeriyah2312/Tread)](LICENSE)
+[![Go](https://img.shields.io/github/go-mod/go-version/sarvessveeriyah2312/Tread)](go.mod)
 
 A small, statically typed programming language whose whole toolchain
 (lexer, parser, type checker, bytecode compiler, and virtual machine) is
@@ -15,8 +15,8 @@ built to be read, one stage at a time. Written in Go.
 
 **Version 0.3.0** · macOS · Linux · Windows ·
 [Website](https://treadlang.vercel.app/) ·
-[Repository](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture) ·
-[Latest release](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/latest)
+[Repository](https://github.com/sarvessveeriyah2312/Tread) ·
+[Latest release](https://github.com/sarvessveeriyah2312/Tread/releases/latest)
 
 </div>
 
@@ -157,7 +157,7 @@ Choose one of three methods:
 archive contains a single, self-contained `tread` executable.
 
 Download from the
-[v0.3.0 release page](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/tag/v0.3.0):
+[v0.3.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.3.0):
 
 | Platform | Archive | Minimum OS |
 |---|---|---|
@@ -183,7 +183,7 @@ The release also provides `SHA256SUMS`, to verify your download, and
 ``` bash
 # Apple silicon. For an Intel Mac, use tread_0.3.0_darwin_amd64.tar.gz.
 ARCHIVE=tread_0.3.0_darwin_arm64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.3.0
+BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.3.0
 
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
@@ -209,7 +209,7 @@ xattr -d com.apple.quarantine /usr/local/bin/tread
 ``` bash
 # x86-64. For ARM64, use tread_0.3.0_linux_arm64.tar.gz.
 ARCHIVE=tread_0.3.0_linux_amd64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.3.0
+BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.3.0
 
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
@@ -234,7 +234,7 @@ install -m 0755 "${ARCHIVE%.tar.gz}/tread" ~/.local/bin/tread
 #### Windows (PowerShell)
 
 ``` powershell
-$Base = "https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/releases/download/v0.3.0"
+$Base = "https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.3.0"
 Invoke-WebRequest "$Base/tread_0.3.0_windows_amd64.zip" -OutFile tread_0.3.0_windows_amd64.zip
 Invoke-WebRequest "$Base/SHA256SUMS" -OutFile SHA256SUMS
 
@@ -260,7 +260,7 @@ The `@v0.3.0` tag below exists only once 0.3.0 is published.
 Go 1.21 or later can download the required toolchain automatically.
 
 ``` bash
-go install github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/cmd/tread@v0.3.0
+go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.3.0
 ```
 
 Go installs `tread` into `$(go env GOBIN)`, or into
@@ -278,8 +278,8 @@ This method needs **Go 1.25 or later** and Git. Tread has no other
 dependencies.
 
 ``` bash
-git clone https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture.git
-cd AURA-Advanced_Unified_Runtime_Architecture
+git clone https://github.com/sarvessveeriyah2312/Tread.git
+cd Tread
 go build -o ./bin/tread ./cmd/tread
 ./bin/tread version                      # tread 0.3.0
 ./bin/tread run examples/hello.tr        # Hello, Tread!
@@ -905,7 +905,7 @@ problem:
 | `TR-Pnnn` | Parser | unexpected token, missing brace, nesting too deep |
 | `TR-Tnnn` | Type checker | type mismatch, undefined name, assignment to immutable, missing return |
 | `TR-Rnnn` | Runtime | division by zero, integer overflow, call depth exceeded |
-| `TR-Cnnn` | Compiler internal | indicates a bug in Tread; please [report it](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/issues) |
+| `TR-Cnnn` | Compiler internal | indicates a bug in Tread; please [report it](https://github.com/sarvessveeriyah2312/Tread/issues) |
 
 ## Current limitations
 
@@ -1041,7 +1041,7 @@ archives on any machine with the same Go version.
 Contributions are welcome.
 
 1.  **For language or CLI changes,** first
-    [open an issue](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/issues).
+    [open an issue](https://github.com/sarvessveeriyah2312/Tread/issues).
     Syntax and behaviour change only by a documented design decision.
 2.  **Follow the engineering rules:**
     -   separate compiler phases;

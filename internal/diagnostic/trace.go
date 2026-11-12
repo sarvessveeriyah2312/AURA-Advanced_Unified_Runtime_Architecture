@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
 )
 
 // TraceFrame is one frame of a runtime stack trace (ADR-0009): a

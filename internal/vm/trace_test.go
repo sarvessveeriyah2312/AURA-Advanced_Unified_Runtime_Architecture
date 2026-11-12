@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/bytecode"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/vm"
+	"github.com/sarvessveeriyah2312/Tread/internal/bytecode"
+	"github.com/sarvessveeriyah2312/Tread/internal/vm"
 )
 
 // Stack traces for runtime errors (ADR-0009).

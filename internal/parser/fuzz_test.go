@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/lexer"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/lexer"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
 )
 
 // parseAll lexes and parses data, failing on panics or out-of-bounds

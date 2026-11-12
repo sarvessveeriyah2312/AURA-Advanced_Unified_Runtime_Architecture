@@ -1,8 +1,8 @@
 package ast
 
 import (
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/token"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/token"
 )
 
 // ImplicitModuleName is the module name used when a file has no module

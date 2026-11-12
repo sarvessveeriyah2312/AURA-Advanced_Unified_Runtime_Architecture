@@ -3,7 +3,7 @@ package diagnostic
 import (
 	"fmt"
 
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
 )
 
 // Severity classifies a diagnostic.

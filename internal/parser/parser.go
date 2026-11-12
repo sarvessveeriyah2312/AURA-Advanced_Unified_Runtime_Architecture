@@ -1,10 +1,10 @@
 package parser
 
 import (
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/ast"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/diagnostic"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/source"
-	"github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/internal/token"
+	"github.com/sarvessveeriyah2312/Tread/internal/ast"
+	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/Tread/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/token"
 )
 
 // Parse builds an AST from a token stream produced by lexer.Lex. It

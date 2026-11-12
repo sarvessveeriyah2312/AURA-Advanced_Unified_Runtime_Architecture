@@ -21,7 +21,7 @@ export const UPDATED = "2026-11-12";
 export const AUTHOR = { name: "Sarvess Veeriyah", url: "https://github.com/sarvessveeriyah2312" };
 
 export const OWNER = "sarvessveeriyah2312";
-export const REPO_NAME = "AURA-Advanced_Unified_Runtime_Architecture";
+export const REPO_NAME = "Tread";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO_NAME}`;
 export const MODULE_PATH = `github.com/${OWNER}/${REPO_NAME}`;
 
