@@ -1,0 +1,6 @@
+// D5: a Unit value cannot be printed (AURA-T011).
+fn u() -> Unit { }
+
+fn main() -> Unit {
+    print(u())
+}

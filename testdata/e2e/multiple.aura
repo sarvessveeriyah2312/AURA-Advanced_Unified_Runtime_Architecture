@@ -1,0 +1,6 @@
+// Several independent type errors, reported together in source order.
+fn main() -> Unit {
+    let a: Int = "s"
+    let b = undefinedName
+    print(true + 1)
+}

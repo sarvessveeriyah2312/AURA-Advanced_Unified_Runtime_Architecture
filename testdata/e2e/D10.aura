@@ -1,0 +1,6 @@
+// D10: float formatting is identical for print, toString and interpolation.
+fn main() -> Unit {
+    print(1.0)
+    print(toString(0.1))
+    print("${-0.0}")
+}

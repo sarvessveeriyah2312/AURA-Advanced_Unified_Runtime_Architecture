@@ -1,0 +1,5 @@
+error[AURA-T013]: program has no entry point: declare 'fn main() -> Unit'
+  --> no_main.aura:1:1
+   |
+ 1 | // A program without main (AURA-T013).
+   | ^

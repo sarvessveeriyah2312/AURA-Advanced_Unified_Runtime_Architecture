@@ -1,0 +1,5 @@
+// D3: renders exactly like the docs/04 §4.4 example.
+fn main() -> Unit {
+    // The next line is deliberately not indented: it is line 4.
+let total: Int = "five"
+}

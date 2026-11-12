@@ -1,0 +1,6 @@
+error[AURA-L001]: invalid character ';' (U+003B)
+  --> D1.aura:3:13
+   |
+ 3 |     print(1);
+   |             ^
+   = help: AURA does not use semicolons; end statements with a newline

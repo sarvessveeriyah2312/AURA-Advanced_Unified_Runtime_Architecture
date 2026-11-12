@@ -1,0 +1,11 @@
+// D6: the docs/03 S68 else-if chain.
+fn main() -> Unit {
+    let score = 70
+    if score >= 80 {
+        print("A")
+    } else if score >= 60 {
+        print("B")
+    } else {
+        print("C")
+    }
+}

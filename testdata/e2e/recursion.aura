@@ -1,0 +1,8 @@
+// Unbounded recursion hits the call depth limit (AURA-R003).
+fn forever(n: Int) -> Int {
+    return forever(n + 1)
+}
+
+fn main() -> Unit {
+    print(forever(0))
+}

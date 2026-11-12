@@ -1,0 +1,16 @@
+# Build output
+/aura
+/aura.exe
+/bin/
+/dist/
+/dist-*/
+
+# Test and coverage artifacts
+*.test
+*.out
+coverage.*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

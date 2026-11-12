@@ -1,0 +1,17 @@
+error[AURA-L001]: invalid character '@' (U+0040)
+  --> syntax_multiple.aura:3:15
+   |
+ 3 |     let x = 1 @ 2
+   |               ^
+
+error[AURA-P004]: expected newline or '}' after statement, found number 2
+  --> syntax_multiple.aura:3:17
+   |
+ 3 |     let x = 1 @ 2
+   |                 ^
+
+error[AURA-P002]: expected variable name, found '='
+  --> syntax_multiple.aura:4:9
+   |
+ 4 |     let = 3
+   |         ^

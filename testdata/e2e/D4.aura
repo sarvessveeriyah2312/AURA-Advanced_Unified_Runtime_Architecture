@@ -1,0 +1,7 @@
+// D4: output before a runtime error is kept (AURA-R001).
+fn main() -> Unit {
+    print("before")
+    let z = 0
+    print(1 / z)
+    print("after")
+}

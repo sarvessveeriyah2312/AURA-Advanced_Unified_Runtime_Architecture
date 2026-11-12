@@ -1,0 +1,17 @@
+// Functions, recursion, interpolation and toString.
+fn fact(n: Int) -> Int {
+    if n <= 1 {
+        return 1
+    }
+    return n * fact(n - 1)
+}
+
+fn describe(n: Int) -> String {
+    return "fact(" + toString(n) + ") = ${fact(n)}"
+}
+
+fn main() -> Unit {
+    print(describe(5))
+    print(describe(20))
+    print(1.5 * 2.0 == 3.0 && !false)
+}

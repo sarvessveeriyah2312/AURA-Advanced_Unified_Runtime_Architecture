@@ -1,0 +1,4 @@
+// D1: lexer error (AURA-L001). Semicolons are not AURA syntax.
+fn main() -> Unit {
+    print(1);
+}

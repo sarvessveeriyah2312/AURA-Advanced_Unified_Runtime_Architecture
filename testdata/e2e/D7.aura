@@ -1,0 +1,4 @@
+// D7: the minimum Int literal.
+fn main() -> Unit {
+    print(-9223372036854775808)
+}

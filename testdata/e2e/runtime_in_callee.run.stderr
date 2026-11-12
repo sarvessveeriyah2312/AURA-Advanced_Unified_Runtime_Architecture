@@ -1,0 +1,5 @@
+error[AURA-R001]: division by zero (in function 'div')
+  --> runtime_in_callee.aura:3:12
+   |
+ 3 |     return a / b
+   |            ^^^^^

@@ -1,0 +1,6 @@
+module main
+
+fn main() -> Unit {
+    let name = "AURA"
+    print("Hello, ${name}!")
+}

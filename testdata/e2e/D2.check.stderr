@@ -1,0 +1,5 @@
+error[AURA-P002]: expected variable name, found '='
+  --> D2.aura:3:9
+   |
+ 3 |     let = 1
+   |         ^

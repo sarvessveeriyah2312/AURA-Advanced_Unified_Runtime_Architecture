@@ -1,0 +1,5 @@
+error[AURA-R003]: call depth limit of 10000 exceeded calling forever (in function 'forever')
+  --> recursion.aura:3:12
+   |
+ 3 |     return forever(n + 1)
+   |            ^^^^^^^^^^^^^^
