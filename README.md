@@ -1,64 +1,569 @@
+<div align="center">
+
 # AURA
 
 **Advanced Unified Runtime Architecture**
 
 *Give ideas the power to become reality.*
 
-AURA is a small, statically typed, general-purpose programming language
-implemented in Go. It was developed under the codename NOVA; AURA is its
-official name.
+[![CI](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/actions/workflows/ci.yml/badge.svg)](https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/actions/workflows/ci.yml)
+&nbsp;·&nbsp; Version 0.1.0 &nbsp;·&nbsp; [MIT License](LICENSE) &nbsp;·&nbsp; macOS · Linux · Windows
 
-## What AURA is
+</div>
 
-A `.aura` source file goes through this pipeline:
+``` aura
+fn main() -> Unit {
+    let name = "AURA"
+    print("Hello, ${name}!")
+}
+```
 
-1.  The **AURA Compiler** checks the program: lexer, parser, and type
-    checker.
-2.  The compiler translates the program into typed **AURA Bytecode**.
-3.  The **AURA Virtual Machine**, a stack-based interpreter, executes
-    the bytecode.
-4.  The `aura` command-line tool (the **AURA CLI**) runs the whole
-    pipeline.
+``` text
+$ aura run hello.aura
+Hello, AURA!
+```
 
-## Design goals
+------------------------------------------------------------------------
 
--   **Readability:** clear, consistent syntax, with newlines instead of
-    semicolons.
--   **Predictability:** specified evaluation, types, and errors. `Int`
-    arithmetic is checked, and never wraps silently.
--   **Static safety:** type errors are caught before the program runs.
--   **Good diagnostics:** every error has a stable code (for example
-    `AURA-T001`) and an exact source location.
--   **A small core:** a compiler and runtime that one developer can
-    understand and extend.
+## Contents
 
-## Status
+1.  [What is AURA?](#what-is-aura)
+2.  [What AURA does](#what-aura-does)
+3.  [Quick start](#quick-start)
+4.  [Using the `aura` command](#using-the-aura-command)
+5.  [Language guide](#language-guide)
+6.  [Language reference](#language-reference)
+7.  [What AURA 0.1 does not have yet](#what-aura-01-does-not-have-yet)
+8.  [Installation in detail](#installation-in-detail)
+9.  [Building and contributing](#building-and-contributing)
+10. [The AURA name](#the-aura-name)
+11. [License](#license)
 
-**Version 0.1.0, pre-release.** The MVP is implemented and tested end
-to end on Linux, macOS, and Windows. It is being prepared for its first
-public release, which has not been published yet. AURA 0.x is
-experimental: syntax and behavior may change between minor versions,
-and every change is recorded in [`CHANGELOG.md`](CHANGELOG.md).
+------------------------------------------------------------------------
 
-## Installing
+## What is AURA?
 
-### From a release archive
+AURA is a small, **statically typed**, general-purpose programming
+language. You write programs in `.aura` files. The `aura` tool checks
+them for mistakes and then runs them.
 
-Each release provides one archive per platform, plus `SHA256SUMS`:
+It is built around five ideas:
 
-  Platform               Archive
-  ---------------------- ------------------------------------
-  macOS, Apple silicon   `aura_0.1.0_darwin_arm64.tar.gz`
-  macOS, Intel           `aura_0.1.0_darwin_amd64.tar.gz`
-  Linux, x86-64          `aura_0.1.0_linux_amd64.tar.gz`
-  Linux, ARM64           `aura_0.1.0_linux_arm64.tar.gz`
-  Windows, x86-64        `aura_0.1.0_windows_amd64.zip`
+| Goal | What it means in practice |
+|---|---|
+| **Readable** | Clean syntax, and no semicolons: a new line ends a statement. |
+| **Predictable** | Every type, operator, and error is specified. Integer overflow is an error, never a silent wrap-around. |
+| **Safe before running** | Type errors are caught before a single line executes. |
+| **Helpful errors** | Every error has a stable code (like `AURA-T001`), the exact line and column, and a pointer to the problem. |
+| **Small and understandable** | A compiler and runtime that one person can read, understand, and extend. |
 
-Each archive contains a folder with the `aura` executable (`aura.exe`
-on Windows), `LICENSE`, `README.md`, `CHANGELOG.md`, and
-`THIRD_PARTY_NOTICES.txt`.
+> **Status: Version 0.1.0, released 2026-11-12.** The first version is
+> complete and tested on Linux, macOS, and Windows. AURA 0.x is
+> experimental: the language is deliberately small, and may change
+> between versions. Every change is recorded in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
-On macOS or Linux:
+## What AURA does
+
+When you run a program, AURA takes it through four stages:
+
+``` text
+  hello.aura
+      │
+      ▼
+ ┌──────────────────┐   reads the text, checks the grammar,
+ │  AURA Compiler   │   checks every type ──► errors? report them and stop
+ └──────────────────┘
+      │ AURA Bytecode   (compact, typed instructions)
+      ▼
+ ┌──────────────────┐
+ │  AURA Virtual    │   executes the instructions; stops with a clear
+ │  Machine (VM)    │   error on division by zero or integer overflow
+ └──────────────────┘
+      │
+      ▼
+   program output
+```
+
+-   **The AURA Compiler** reads your source code, checks its structure,
+    and checks every type. If anything is wrong, it reports all the
+    problems it can find, and nothing runs.
+-   **AURA Bytecode** is the compiler's output: a list of simple, typed
+    instructions. It lives only in memory; there are no bytecode files.
+-   **The AURA Virtual Machine (VM)** executes the bytecode.
+-   **The `aura` command (the AURA CLI)** connects the stages:
+    -   `aura check` runs only the compiler;
+    -   `aura run` runs everything.
+
+## Quick start
+
+**1. Install.** Choose one of these:
+
+-   **Download a release archive.** Extract it and put `aura` on your
+    `PATH`. See [Installation in detail](#installation-in-detail).
+-   **Install with Go 1.25 or later:**
+
+    ``` bash
+    go install github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture/cmd/aura@latest
+    ```
+
+-   **Build from source:**
+
+    ``` bash
+    git clone https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture.git
+    cd AURA-Advanced_Unified_Runtime_Architecture
+    go build -o ./bin/aura ./cmd/aura
+    ```
+
+**2. Check it works:**
+
+``` text
+$ aura version
+aura 0.1.0
+```
+
+**3. Write a program.** Save this as `hello.aura`. The same file is in
+[`examples/hello.aura`](examples/hello.aura).
+
+``` aura
+fn main() -> Unit {
+    let name = "AURA"
+    print("Hello, ${name}!")
+}
+```
+
+**4. Run it:**
+
+``` text
+$ aura run hello.aura
+Hello, AURA!
+```
+
+## Using the `aura` command
+
+| Command | What it does |
+|---|---|
+| `aura run <file.aura>` | Checks, compiles, and runs the program. |
+| `aura check <file.aura>` | Checks the program for errors without running it. Prints nothing if it is correct. |
+| `aura version` | Prints the version (`aura 0.1.0`). Also `aura --version`. |
+| `aura help` | Prints the usage summary. Also `aura -h` and `aura --help`. |
+
+-   **Output:** your program's output goes to **stdout**. Errors go to
+    **stderr**, so you can redirect them separately.
+-   **Files:** source files must end in `.aura`. Any other file name is
+    rejected before it is read.
+
+**Exit codes**, for scripts and CI:
+
+| Code | Meaning |
+|---|---|
+| `0` | success |
+| `1` | the program has errors (found by the compiler, or while running) |
+| `2` | usage error: a wrong command, a file not ending in `.aura`, or an unreadable file |
+| `3` | internal failure of the AURA toolchain itself |
+
+For example, use `aura check` as a quick test in a script:
+
+``` bash
+aura check app.aura && echo "no errors"
+```
+
+## Language guide
+
+This guide walks through all of AURA 0.1 in about ten minutes. Every
+example is a complete program: save it as a `.aura` file and run it
+with `aura run`. The output shown is exactly what AURA prints.
+
+### 1. Program structure
+
+Every program has a `main` function. It takes no parameters and returns
+`Unit` (nothing). Execution starts there.
+
+``` aura
+// A comment runs to the end of the line.
+/* A block comment
+   can span lines. */
+fn main() -> Unit {
+    print("Statements end at the end of the line. No semicolons.")
+}
+```
+
+-   An optional `module` declaration, for example `module app`, may
+    come first in the file.
+-   Functions can be declared in any order. A function can call another
+    one that is declared further down.
+-   A long expression can continue onto the next line after an operator
+    such as `+`, or inside parentheses.
+
+### 2. Variables and types
+
+``` aura
+fn main() -> Unit {
+    let language = "AURA"        // String (inferred)
+    let year: Int = 2026         // Int (annotated)
+    let ratio = 0.75             // Float
+    let ready = true             // Bool
+
+    let mut visits = 0           // mutable
+    visits = visits + 1
+
+    print(language)
+    print(year)
+    print(ratio)
+    print(ready)
+    print(visits)
+}
+```
+
+``` text
+AURA
+2026
+0.75
+true
+1
+```
+
+-   **`let` creates a constant.** Assigning to it again is an error.
+    Use `let mut` when the value needs to change.
+-   **Types are inferred** from the value. You can also write them
+    explicitly: `let year: Int = 2026`.
+-   **The five types** are `Int`, `Float`, `Bool`, `String`, and
+    `Unit`.
+-   **There are no automatic conversions.** `1 + 2.0` is an error, so
+    write `1.0 + 2.0`. Use `toString(value)` to turn a number into
+    text.
+
+### 3. Operators and arithmetic
+
+``` aura
+fn main() -> Unit {
+    print(7 / 2)                 // Int division truncates
+    print(7 % 2)
+    print(-7 / 2)
+    print(7.0 / 2.0)             // Float division
+    print(2 + 3 * 4)             // precedence: * before +
+    print((2 + 3) * 4)
+    print("AU" + "RA")           // String concatenation
+    print(10 > 3 && 2 > 5)
+    print(!(1 == 2))
+    print("count: " + toString(42))
+}
+```
+
+``` text
+3
+1
+-3
+3.5
+14
+20
+AURA
+false
+true
+count: 42
+```
+
+-   **`Int` arithmetic is checked.** Overflow, and division or
+    remainder by zero, stop the program with an error instead of giving
+    a wrong answer.
+-   **`Int` division** rounds toward zero, and `%` takes the sign of the
+    left-hand number.
+-   **`Float` follows IEEE-754.** Dividing a `Float` by zero gives
+    infinity, not an error.
+-   **`&&` and `||` short-circuit:** the right-hand side is evaluated
+    only when it is needed.
+
+### 4. Strings
+
+``` aura
+fn main() -> Unit {
+    let item = "coffee"
+    let price = 4
+    let qty = 3
+    print("${qty} x ${item} = ${price * qty}")
+    print("Tab:\tdone")
+    print("Quote: \"AURA\"")
+    print("Literal: \${not interpolated}")
+}
+```
+
+``` text
+3 x coffee = 12
+Tab:	done
+Quote: "AURA"
+Literal: ${not interpolated}
+```
+
+-   **`${...}` inserts any expression** whose type is `Int`, `Float`,
+    `Bool`, or `String`. That includes arithmetic and function calls.
+-   **Escapes:** `\n` (new line), `\t` (tab), `\r`, `\"`, `\\`, and `\$`
+    (a literal `$`).
+-   **One line only:** a string must start and end on the same line.
+
+### 5. Making decisions with `if`
+
+``` aura
+fn main() -> Unit {
+    grade(91)
+    grade(72)
+    grade(40)
+}
+
+fn grade(score: Int) -> Unit {
+    if score >= 80 {
+        print("${score}: A")
+    } else if score >= 60 {
+        print("${score}: B")
+    } else {
+        print("${score}: try again")
+    }
+}
+```
+
+``` text
+91: A
+72: B
+40: try again
+```
+
+-   **The condition must be a `Bool`.** `if 1 { … }` is an error.
+-   **Braces are required.** The `{` goes on the same line as the `if`,
+    and `else` goes on the same line as the closing `}`.
+
+### 6. Functions
+
+``` aura
+fn main() -> Unit {
+    print(square(9))
+    print(greet("Ada"))
+    print(factorial(10))
+}
+
+fn square(n: Int) -> Int {
+    return n * n
+}
+
+fn greet(name: String) -> String {
+    return "Hello, ${name}!"
+}
+
+fn factorial(n: Int) -> Int {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+```
+
+``` text
+81
+Hello, Ada!
+3628800
+```
+
+-   **Types are required** on every parameter, and every function
+    declares its return type after `->`.
+-   **Every path must return.** A function that returns a value must
+    `return` one on every path. A `Unit` function may use a bare
+    `return` to stop early.
+-   **Recursion** is supported, up to a depth of 10,000 calls.
+
+### 7. Repeating things
+
+AURA 0.1 has no `for` or `while` loops yet. Repeat work with a function
+that calls itself. Here is FizzBuzz from 1 to 15:
+
+``` aura
+// FizzBuzz from 1 to 15. AURA 0.1 has no loops, so we recurse.
+fn main() -> Unit {
+    fizzbuzz(1, 15)
+}
+
+fn fizzbuzz(n: Int, last: Int) -> Unit {
+    if n > last {
+        return
+    }
+    if n % 15 == 0 {
+        print("FizzBuzz")
+    } else if n % 3 == 0 {
+        print("Fizz")
+    } else if n % 5 == 0 {
+        print("Buzz")
+    } else {
+        print(n)
+    }
+    fizzbuzz(n + 1, last)
+}
+```
+
+``` text
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
+```
+
+### 8. Reading error messages
+
+`aura` reports **every** error it can find, each with:
+
+-   a code;
+-   the file, line, and column;
+-   the offending source line, with the problem underlined;
+-   help where it can offer it.
+
+**Compile-time errors.** Nothing runs:
+
+``` aura
+fn main() -> Unit {
+    let total: Int = "ten"
+    let limit = 5
+    limit = 6
+}
+```
+
+``` text
+$ aura check mistakes.aura
+error[AURA-T001]: expected Int but found String
+  --> mistakes.aura:2:22
+   |
+ 2 |     let total: Int = "ten"
+   |                      ^^^^^
+
+error[AURA-T004]: cannot assign twice to immutable variable 'limit'
+  --> mistakes.aura:4:5
+   |
+ 4 |     limit = 6
+   |     ^^^^^^^^^
+   = help: declare it with 'let mut' to allow assignment
+   = note: variable declared here (mistakes.aura:3:9)
+$ echo $?
+1
+```
+
+**Runtime errors.** The program stops at the faulty operation. Output
+printed before that point is kept:
+
+``` aura
+fn main() -> Unit {
+    let items = 0
+    print("Splitting the bill...")
+    print(100 / items)
+}
+```
+
+``` text
+$ aura run crash.aura
+Splitting the bill...
+error[AURA-R001]: division by zero (in function 'main')
+  --> crash.aura:4:11
+   |
+ 4 |     print(100 / items)
+   |           ^^^^^^^^^^^
+```
+
+The letter in a code tells you which stage found the problem:
+
+| Code | Stage |
+|---|---|
+| `AURA-Lnnn` | lexer: invalid characters, bad escapes, unterminated strings, malformed numbers |
+| `AURA-Pnnn` | parser: syntax and grammar |
+| `AURA-Tnnn` | type checker: types, names, mutability, missing returns |
+| `AURA-Rnnn` | runtime: division by zero, overflow, call depth |
+| `AURA-Cnnn` | compiler internal error (please report it) |
+
+## Language reference
+
+**Types**
+
+| Type | Values | Example |
+|---|---|---|
+| `Int` | 64-bit signed integers, checked | `42`, `-7` |
+| `Float` | 64-bit IEEE-754 floating point; literals are plain decimals with a `.` (no exponent) | `3.14`, `1.0` |
+| `Bool` | `true`, `false` | `true` |
+| `String` | Unicode text | `"hi ${name}"` |
+| `Unit` | "no value": the return type of `main` | — |
+
+**Operators**, from highest to lowest precedence:
+
+| Precedence | Operators | Operand types |
+|---|---|---|
+| 1 (highest) | `( )`, function calls | — |
+| 2 | `!`, unary `-` | `Bool`; `Int` or `Float` |
+| 3 | `*` `/` `%` | `Int` or `Float` (`%` is `Int` only) |
+| 4 | `+` `-` | `Int` or `Float`; `+` also joins `String`s |
+| 5 | `<` `<=` `>` `>=` | `Int` or `Float` |
+| 6 | `==` `!=` | two values of the same type |
+| 7 | `&&` | `Bool` |
+| 8 (lowest) | `\|\|` | `Bool` |
+
+Both operands of an operator must have the same type.
+
+**Built-in functions**
+
+| Function | Description |
+|---|---|
+| `print(value)` | Prints an `Int`, `Float`, `Bool`, or `String`, followed by a newline. |
+| `toString(value)` | Returns the text of an `Int`, `Float`, `Bool`, or `String`. |
+
+**Keywords:** `fn`, `let`, `mut`, `if`, `else`, `return`, `true`,
+`false`, `module`.
+
+**Reserved for the future**, and not usable as names: `for`, `while`,
+`match`, `class`, `interface`, `enum`, `import`, `pub`, `async`,
+`await`.
+
+**Names** use ASCII letters, digits, and `_`, and must not start with a
+digit. Strings and comments may contain any Unicode text.
+
+## What AURA 0.1 does not have yet
+
+AURA 0.1 is deliberately small. It does **not** yet have:
+
+-   loops (`for` and `while` are reserved; use recursion);
+-   arrays, maps, or other collections;
+-   structs, classes, enums, generics, or pattern matching;
+-   function values or closures;
+-   imports or multi-file programs;
+-   input, files, or networking (the only output is `print`);
+-   a REPL, a formatter, a debugger, editor (LSP) support, or native
+    compilation.
+
+**Implementation limits:**
+
+-   nesting is limited to 10,000 levels (`AURA-P014`);
+-   calls are limited to 10,000 deep, including `main` (`AURA-R003`);
+-   a runtime error names the function it happened in, but does not show
+    a full stack trace.
+
+## Installation in detail
+
+### Release archives
+
+| Platform | Archive | Requires |
+|---|---|---|
+| macOS, Apple silicon | `aura_0.1.0_darwin_arm64.tar.gz` | macOS 12 or later |
+| macOS, Intel | `aura_0.1.0_darwin_amd64.tar.gz` | macOS 12 or later |
+| Linux, x86-64 | `aura_0.1.0_linux_amd64.tar.gz` | kernel 3.2 or later (static binary; not WSL 1) |
+| Linux, ARM64 | `aura_0.1.0_linux_arm64.tar.gz` | kernel 3.2 or later (static binary) |
+| Windows, x86-64 | `aura_0.1.0_windows_amd64.zip` | Windows 10 or Server 2016, or later |
+
+Each archive contains a single folder. It holds the `aura` executable
+(`aura.exe` on Windows), `LICENSE`, `README.md`, `CHANGELOG.md`, and
+`THIRD_PARTY_NOTICES.txt`. Each release also provides `SHA256SUMS`.
+
+**macOS or Linux:**
 
 ``` bash
 shasum -a 256 -c SHA256SUMS --ignore-missing    # or: sha256sum -c SHA256SUMS --ignore-missing
@@ -67,7 +572,7 @@ sudo install aura_0.1.0_linux_amd64/aura /usr/local/bin/aura   # or any director
 aura version                                                   # aura 0.1.0
 ```
 
-On Windows (PowerShell):
+**Windows (PowerShell):**
 
 ``` powershell
 Get-FileHash aura_0.1.0_windows_amd64.zip -Algorithm SHA256   # compare with SHA256SUMS
@@ -77,31 +582,23 @@ Expand-Archive aura_0.1.0_windows_amd64.zip -DestinationPath .
 
 Then add the folder to your `PATH`.
 
-**Platform requirements:**
+### Platform notes
 
--   macOS 12 (Monterey) or later;
--   Linux with kernel 3.2 or later (the binaries are statically linked
-    and need no system libraries; WSL 1 is not supported);
--   Windows 10 or Windows Server 2016, or later.
-
-These are the minimums of the Go 1.25 toolchain that builds AURA.
-
-**Unsigned binaries.** The binaries are not code-signed or notarized.
-
--   **macOS:** Gatekeeper may block a downloaded `aura`. After checking
-    the checksum, remove the quarantine flag:
+-   **macOS:** the binaries are not code-signed or notarized, so
+    Gatekeeper may block a downloaded `aura`. After checking the
+    checksum, run:
 
     ``` bash
     xattr -d com.apple.quarantine aura
     ```
 
--   **Windows:** SmartScreen may warn the first time `aura.exe` runs.
-
-**Arch Linux users.** The AUR package manager `aura` (`fosskers/aura`)
-installs a command with the same name. If you use it, install this
-`aura` into a directory that comes later in your `PATH` and run it by
-its full path, or give your copy a different file name, such as
-`aura-lang`.
+-   **Windows:** SmartScreen may warn the first time `aura.exe` runs,
+    for the same reason.
+-   **Arch Linux:** the AUR package manager `aura` (`fosskers/aura`)
+    installs a command with the same name. If you use it, either:
+    -   install this `aura` into a directory that comes later in your
+        `PATH`, and run it by its full path; or
+    -   give your copy a different file name, such as `aura-lang`.
 
 ### With Go
 
@@ -113,186 +610,47 @@ go install github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architec
 
 This installs `aura` into `$(go env GOPATH)/bin`.
 
-### Building from source
+## Building and contributing
 
 ``` bash
-git clone https://github.com/sarvessveeriyah2312/AURA-Advanced_Unified_Runtime_Architecture.git
-cd AURA-Advanced_Unified_Runtime_Architecture
-go build -o ./bin/aura ./cmd/aura     # the AURA CLI, in ./bin/aura
-./bin/aura version                    # aura 0.1.0
-```
-
-To build the release archives for every platform, reproducibly and with
-checksums, into `dist/`:
-
-``` bash
-scripts/build-release.sh
-```
-
-## Your first AURA program
-
-Save this as `hello.aura`. The same program is in
-[`examples/hello.aura`](examples/hello.aura).
-
-``` aura
-fn main() -> Unit {
-    let name = "AURA"
-    print("Hello, ${name}!")
-}
-```
-
-### Running a program
-
-``` text
-$ aura run hello.aura
-Hello, AURA!
-```
-
-`aura run` checks, compiles, and executes the program. The program's
-output goes to stdout. Diagnostics go to stderr, for example:
-
-``` text
-error[AURA-R001]: division by zero (in function 'main')
-  --> crash.aura:4:11
-   |
- 4 |     print(10 / zero)
-   |           ^^^^^^^^^
-```
-
-### Checking a program
-
-``` text
-$ aura check hello.aura
-$ echo $?
-0
-```
-
-`aura check` reports compile-time errors without running anything, and
-prints nothing on success.
-
-### Commands and exit codes
-
-  Command                 Description
-  ----------------------- --------------------------------------------------
-  `aura run <file>`       check, compile, and run a program
-  `aura check <file>`     check a program for errors without running it
-  `aura version`          print the AURA version (also `--version`)
-  `aura help`             print help (also `-h`, `--help`)
-
-  Code   Meaning
-  ------ ---------------------------------------------------------------
-  0      success
-  1      the program has errors (compile-time or runtime)
-  2      usage error, a file not ending in `.aura`, or an unreadable file
-  3      internal failure
-
-## Supported language features (0.1)
-
--   **Types:** `Int` (64-bit, checked arithmetic), `Float` (IEEE-754
-    binary64), `Bool`, `String`, `Unit`. There are no implicit
-    conversions.
--   **Variables:** immutable `let`, mutable `let mut`, optional type
-    annotations, and type inference from the initializer.
--   **Functions:** typed parameters, an explicit return type, `return`,
-    recursion, and calls before declaration. The entry point is
-    `fn main() -> Unit`.
--   **Control flow:** `if`, `else if`, and `else`.
--   **Operators:**
-    -   arithmetic `+ - * / %` (`+` also concatenates strings);
-    -   comparisons `== != < <= > >=`;
-    -   short-circuit `&&`, `||`, and `!`.
--   **Strings:** escapes `\\ \" \n \r \t \$`, and interpolation
-    `"${expression}"`.
--   **Built-ins:** `print(value)` and `toString(value)`, for `Int`,
-    `Float`, `Bool`, and `String`.
--   **Other:** an optional `module` declaration, `//` and `/* */`
-    comments, Unicode in strings and comments, and LF, CRLF, or CR line
-    endings.
-
-## Current limitations
-
-AURA 0.1 is deliberately small. It does **not** have:
-
--   loops (`for` and `while` are reserved; use recursion);
--   arrays, maps, or other collections;
--   user-defined types (structs, classes, enums), generics, or pattern
-    matching;
--   function values or closures;
--   imports, multiple source files, or packages;
--   input, file, or network access (the only output is `print`);
--   saved bytecode files, an optimizer, native compilation, a REPL, a
-    debugger, a formatter, or an LSP.
-
-Implementation limits:
-
--   nesting depth (parentheses, blocks, `else if` chains, operator
-    chains) is limited to 10,000 levels (`AURA-P014`);
--   the call depth is limited to 10,000 frames, including `main`
-    (`AURA-R003`);
--   runtime errors report the innermost function, without a full stack
-    trace.
-
-## Development and testing
-
-``` bash
-scripts/verify.sh                                   # the full local gate (also run in CI)
-go test ./...                                       # all tests
+go build -o ./bin/aura ./cmd/aura      # build the CLI
+scripts/verify.sh                      # the full local gate: format, vet, test, build, smoke test
+go test ./...                          # all tests
+scripts/build-release.sh               # reproducible release archives and checksums, in dist/
+scripts/smoke-release.sh ./bin/aura    # CLI smoke test of a built binary
 go test ./internal/vm -run '^$' -fuzz=FuzzCompileAndRun -fuzztime=60s   # one of 4 fuzz targets
-scripts/smoke-release.sh ./bin/aura                 # CLI smoke test of a built binary
 ```
 
-`scripts/verify.sh` runs the formatting check, `go vet`, `go test`,
-`go build`, and an `aura` smoke test.
-
--   **CI** (`.github/workflows/ci.yml`) runs the same checks on Linux,
-    macOS, and Windows. It also builds the release archives twice to
-    prove they are reproducible, then runs each one on its own platform.
+-   **CI** (`.github/workflows/ci.yml`) runs the same gate on Linux,
+    macOS, and Windows. It also builds the release archives twice, to
+    prove they are byte-identical, and runs each archive on its own
+    platform.
 -   **Tests** cover the lexer, parser, type checker, bytecode compiler,
     VM, and CLI, including golden-output end-to-end tests in
     `testdata/e2e/`. All tests are deterministic and OS-independent.
--   **Conventions:** read `CLAUDE.md` before contributing, and record
-    user-visible changes in `CHANGELOG.md`.
+-   **Contributing:** read `CLAUDE.md` first. Record user-visible
+    changes in `CHANGELOG.md`.
 
-### Repository layout
+**Repository layout**
 
 ``` text
 cmd/aura/            the aura executable (entry point only)
 internal/source/     source files, spans, line/column mapping
 internal/token/      token kinds
-internal/lexer/      source -> tokens
+internal/lexer/      source text -> tokens
 internal/ast/        syntax tree
 internal/parser/     tokens -> syntax tree
-internal/diagnostic/ diagnostic codes and rendering
+internal/diagnostic/ diagnostic codes and error rendering
 internal/checker/    name resolution and type checking
 internal/bytecode/   AURA Bytecode: instructions, values, validation
 internal/compiler/   checked program -> AURA Bytecode
 internal/vm/         AURA Virtual Machine
-internal/cli/        commands, pipeline orchestration, exit codes
+internal/cli/        commands, pipeline, exit codes
 examples/            example programs
-testdata/e2e/        end-to-end fixtures and golden output
+testdata/e2e/        end-to-end fixtures and expected output
 scripts/             verify.sh, build-release.sh, smoke-release.sh,
                      package/ (reproducible archive writer)
 ```
-
-### Terminology
-
-  Term                       Meaning
-  -------------------------- ---------------------------------------------------------------
-  AURA Language              the language described above
-  AURA Compiler              the lexer, parser, type checker, and bytecode compiler (`internal/`)
-  AURA Bytecode              the typed instruction set executed by the VM (in memory only)
-  AURA Virtual Machine (VM)  the stack machine that executes AURA Bytecode
-  AURA CLI                   the `aura` executable (`cmd/aura`)
-
-## License
-
-AURA is released under the [MIT License](LICENSE).
-Copyright (c) 2026 Sarvess Veeriyah.
-
-Release binaries also include the Go runtime and standard library,
-which are distributed under Go's BSD-style license. The notice is in
-`THIRD_PARTY_NOTICES.txt` in each release archive. AURA has no other
-dependencies.
 
 ## The AURA name
 
@@ -308,3 +666,13 @@ or endorsed by:
 -   the Arch Linux `aura` package manager;
 -   Neo4j (Aura);
 -   any other product or project named Aura.
+
+## License
+
+AURA is released under the [MIT License](LICENSE).
+Copyright (c) 2026 Sarvess Veeriyah.
+
+Release binaries also include the Go runtime and standard library,
+which are distributed under Go's BSD-style license. The notice is in
+`THIRD_PARTY_NOTICES.txt` in each release archive. AURA has no other
+dependencies.

@@ -4,11 +4,11 @@ All notable changes to AURA are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 AURA uses [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-11-12
 
 The first version of AURA (Advanced Unified Runtime Architecture): a
 statically typed language with a bytecode compiler and a stack-based
-virtual machine. It has not been released yet.
+virtual machine. Released 2026-11-12.
 
 ### Language
 
