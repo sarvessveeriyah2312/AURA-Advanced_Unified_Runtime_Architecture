@@ -158,7 +158,8 @@ func describe(t token.Token) string {
 
 func isStatementKeyword(k token.Kind) bool {
 	switch k {
-	case token.Let, token.Fn, token.If, token.Return, token.Module:
+	case token.Let, token.Fn, token.If, token.Return, token.Module,
+		token.While, token.For, token.Break, token.Continue:
 		return true
 	}
 	return false
@@ -221,7 +222,8 @@ func (p *parser) syncStatement() {
 				return
 			}
 			braces--
-		case token.Let, token.Fn, token.If, token.Return, token.Module:
+		case token.Let, token.Fn, token.If, token.Return, token.Module,
+			token.While, token.For, token.Break, token.Continue:
 			if depth > 0 {
 				return
 			}
@@ -512,6 +514,25 @@ func (p *parser) parseStatement() ast.Stmt {
 		return nil
 	case token.Return:
 		return p.parseReturn()
+	case token.While:
+		if s := p.parseWhile(); s != nil {
+			return s
+		}
+		return nil
+	case token.For:
+		if s := p.parseFor(); s != nil {
+			return s
+		}
+		return nil
+	case token.Break:
+		p.next()
+		return &ast.BreakStmt{Loc: t.Span}
+	case token.Continue:
+		p.next()
+		return &ast.ContinueStmt{Loc: t.Span}
+	case token.In:
+		p.errorf(diagnostic.UnexpectedToken, t.Span, "unexpected 'in' outside a 'for' loop header")
+		return nil
 	case token.LBrace:
 		if b := p.parseBlock(); b != nil {
 			return b
@@ -642,6 +663,93 @@ func (p *parser) parseIf() *ast.IfStmt {
 	return stmt
 }
 
+// headerBlock parses the block after a loop header (ADR-0012). After a
+// malformed header it first looks for the block's '{' (N10), as for an
+// 'if' condition.
+func (p *parser) headerBlock(before int, after string) *ast.Block {
+	if p.errorEvents > before {
+		p.parens = nil // a malformed header may leave '(' open
+		if !p.at(token.LBrace) && !p.scanToBrace() {
+			return nil
+		}
+	}
+	return p.expectBlock(after)
+}
+
+// parseWhile parses `while cond { }` (ADR-0012). It returns nil, without
+// consuming input, if the nesting limit is reached.
+func (p *parser) parseWhile() *ast.WhileStmt {
+	if !p.enter(p.cur()) {
+		return nil
+	}
+	defer p.leave()
+	kw := p.next()
+	before := p.errorEvents
+	cond := p.parseExpr()
+	stmt := &ast.WhileStmt{Cond: cond, Loc: source.Join(kw.Span, cond.Span())}
+	if p.unwinding {
+		return stmt
+	}
+	if stmt.Body = p.headerBlock(before, "'while' condition"); stmt.Body != nil {
+		stmt.Loc = source.Join(kw.Span, stmt.Body.Loc)
+	}
+	return stmt
+}
+
+// parseFor parses `for name in start..end { }` (ADR-0012). It returns
+// nil, without consuming input, if the nesting limit is reached.
+func (p *parser) parseFor() *ast.ForStmt {
+	if !p.enter(p.cur()) {
+		return nil
+	}
+	defer p.leave()
+	kw := p.next()
+	stmt := &ast.ForStmt{Loc: kw.Span}
+	before := p.errorEvents
+	if t := p.cur(); t.Kind == token.In {
+		// `for in ...`: report the missing name but keep the 'in'.
+		p.errorf(diagnostic.ExpectedIdentifier, t.Span, "expected loop variable name, found keyword 'in'")
+	} else if stmt.Var = p.parseIdent("loop variable name"); stmt.Var != nil {
+		stmt.Loc = source.Join(kw.Span, stmt.Var.Loc)
+	}
+	if stmt.Var != nil || p.at(token.In) {
+		if t := p.cur(); t.Kind == token.In {
+			p.next()
+			if !p.parseRange(stmt, kw, before) {
+				return stmt
+			}
+		} else if !p.unwindIfUnclosed(t) {
+			p.errorf(diagnostic.UnexpectedToken, t.Span, "expected 'in' after loop variable, found %s", describe(t))
+		}
+	}
+	if stmt.Body = p.headerBlock(before, "'for' range"); stmt.Body != nil {
+		stmt.Loc = source.Join(kw.Span, stmt.Body.Loc)
+	}
+	return stmt
+}
+
+// parseRange parses `start..end` after 'in'. It returns false if the
+// parser is unwinding (N10).
+func (p *parser) parseRange(stmt *ast.ForStmt, kw token.Token, before int) bool {
+	stmt.Start = p.parseExpr()
+	stmt.Loc = source.Join(kw.Span, stmt.Start.Span())
+	if p.unwinding {
+		return false
+	}
+	t := p.cur()
+	if t.Kind != token.DotDot {
+		if p.errorEvents == before {
+			p.errorf(diagnostic.UnexpectedToken, t.Span, "expected '..' in 'for' range, found %s", describe(t))
+		}
+		return true
+	}
+	p.next()
+	p.skipNewlines() // N3
+	stmt.End = p.parseExpr()
+	stmt.Loc = source.Join(kw.Span, stmt.End.Span())
+	return !p.unwinding
+}
+
 // scanToBrace skips tokens after a malformed condition until the branch's
 // '{'. It stops without consuming at '}', EOF or a statement keyword.
 func (p *parser) scanToBrace() bool {
@@ -650,7 +758,8 @@ func (p *parser) scanToBrace() bool {
 		switch p.toks[p.pos].Kind {
 		case token.LBrace:
 			return true
-		case token.RBrace, token.EOF, token.Let, token.Fn, token.If, token.Return, token.Module, token.Else:
+		case token.RBrace, token.EOF, token.Let, token.Fn, token.If, token.Return, token.Module, token.Else,
+			token.While, token.For, token.Break, token.Continue:
 			return false
 		}
 		p.pos++

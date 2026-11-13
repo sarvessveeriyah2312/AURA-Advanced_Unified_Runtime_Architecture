@@ -654,7 +654,8 @@ Welcome to Tread
 
 ### 9. Recursion
 
-Tread 0.3.0 has no loops, so repetition uses recursion:
+Tread 0.3.0 has no loops, so repetition uses recursion. (Loops are on
+`main` for the next release; see [Loops](#loops-unreleased-on-main).)
 
 ``` tread
 fn main() -> Unit {
@@ -689,6 +690,61 @@ Liftoff!
 
 Calls may nest up to 10,000 deep, including `main`. Deeper recursion
 stops with `TR-R003`.
+
+#### Loops (unreleased, on `main`)
+
+`while` repeats while a `Bool` condition holds. `for` counts through a
+half-open `Int` range: `for i in a..b` runs with `i` = `a`, `a + 1`, …,
+`b - 1`, and not at all if `a >= b`. `break` leaves the innermost loop,
+and `continue` starts its next iteration.
+
+``` tread
+fn main() -> Unit {
+    let mut n = 3
+    while n > 0 {
+        print(n)
+        n = n - 1
+    }
+    print("Liftoff!")
+
+    let mut total = 0
+    for i in 1..101 {
+        total = total + i
+    }
+    print(total)
+
+    for i in 0..10 {
+        if i % 2 == 0 {
+            continue
+        }
+        if i > 5 {
+            break
+        }
+        print("odd ${i}")
+    }
+}
+```
+
+``` text
+3
+2
+1
+Liftoff!
+5050
+odd 1
+odd 3
+odd 5
+```
+
+-   Both range bounds are evaluated once, before the first iteration, so
+    changing a variable used in them does not change the loop.
+-   The loop variable is an immutable `Int`; assigning to it is
+    `TR-T004`. It exists only inside the loop.
+-   `break` or `continue` outside a loop is `TR-T019`.
+-   A loop uses no call depth, so it can run any number of times. A loop
+    that never ends runs until you stop it (Ctrl+C).
+-   A function that returns a value may end with `while true { … }` if
+    that loop has no `break` of its own.
 
 ### 10. Built-in functions
 
@@ -861,9 +917,11 @@ tread check app.tr && tread run app.tr
 
 -   **In use:** `fn`, `let`, `mut`, `if`, `else`, `return`, `true`,
     `false`, `module`.
--   **Reserved for the future**, and not usable as names: `for`,
-    `while`, `match`, `class`, `interface`, `enum`, `import`, `pub`,
-    `async`, `await`.
+-   **Unreleased, on `main`:** `while`, `for`, `in`, `break`,
+    `continue` are loop keywords, so they cannot be used as names.
+-   **Reserved for the future**, and not usable as names: `match`,
+    `class`, `interface`, `enum`, `import`, `pub`, `async`, `await`
+    (and `for`, `while` in 0.3.0).
 
 **Names** use ASCII letters, digits, and `_`, and must not start with a
 digit. The type names (`Int`, `String`, …) are not keywords.
@@ -998,7 +1056,8 @@ Tread 0.3.0 is intentionally small.
 
 **Not yet in the language:**
 
--   loops: `for` and `while` are reserved; use recursion;
+-   loops: `for` and `while` are reserved; use recursion (loops are on
+    `main`, unreleased);
 -   arrays, maps, or other collections;
 -   structs, classes, enums, generics, or pattern matching;
 -   function values or closures;
@@ -1012,7 +1071,7 @@ Tread 0.3.0 is intentionally small.
 
 **Implementation limits:**
 
--   **Nesting:** limited to 10,000 levels of parentheses, blocks, or
+-   **Nesting:** limited to 10,000 levels of parentheses, blocks, loops, or
     `else if` chains (`TR-P014`).
 -   **Calls:** limited to 10,000 deep, including `main` (`TR-R003`).
 -   **Binaries** are not code-signed.
@@ -1027,7 +1086,7 @@ repository:
 | Core language, compiler, VM, and CLI | **Implemented** | Released in 0.1.0. |
 | Runtime stack traces | **Implemented** | Released in 0.2.0. See [Stack traces](#stack-traces). |
 | Rename to Tread (`tread`, `.tr`, `TR-` codes) | **Implemented** | Released in 0.3.0. |
-| Loops (`while`, then `for`) | **Planned** | The next language feature. They remove the need for recursion when repeating work. |
+| Loops (`while`, `for`, `break`, `continue`) | **Implemented on `main`** | Unreleased; in the next release. They remove the need for recursion when repeating work. |
 | Collections (arrays, maps) | Under consideration | |
 | Generics, enums, and pattern matching | Under consideration | |
 | Imports and multi-file programs | Under consideration | |

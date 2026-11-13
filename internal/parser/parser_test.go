@@ -155,6 +155,26 @@ var parseCases = []parseCase{
 	{id: "S84", mode: program, src: "fn main() {\nprint(1)", want: "(program (fn main () (block (call print 1))))", diags: []string{"P011@1:11"}},
 	{id: "S85", mode: program, src: "fn main() { let x = }\nfn g() { }", want: "(program (fn main () (block (let x <error>))) (fn g () (block)))", diags: []string{"P001@1:21"}},
 
+	// Loops (ADR-0012).
+	{id: "S95", mode: stmts, src: "while a { f() }", want: "(while a (block (call f)))"},
+	{id: "S96", mode: stmts, src: "for i in 0..n { f(i) }", want: "(for i 0 .. n (block (call f i)))"},
+	{id: "S97", mode: stmts, src: "for i in a + 1..b * 2 { }", want: "(for i (+ a 1) .. (* b 2) (block))"},
+	{id: "S98", mode: stmts, src: "for i in 0..\n    n { }", want: "(for i 0 .. n (block))"},
+	{id: "S99", mode: stmts, src: "while a\n{ }", want: "(while a (block))", diags: []string{"P005@2:1"}},
+	{id: "S100", mode: stmts, src: "for i in 0..n\n{ }", want: "(for i 0 .. n (block))", diags: []string{"P005@2:1"}},
+	{id: "S101", mode: stmts, src: "while a {\nbreak\ncontinue\n}", want: "(while a (block (break) (continue)))"},
+	{id: "S102", mode: stmts, src: "while a { break x }", want: "(while a (block (break)))", diags: []string{"P004@1:17"}},
+	{id: "S103", mode: stmts, src: "for i 0..n { f() }", want: "(for i <nil> .. <nil> (block (call f)))", diags: []string{"P012@1:7"}},
+	{id: "S104", mode: stmts, src: "for i in 0 { }", want: "(for i 0 .. <nil> (block))", diags: []string{"P012@1:12"}},
+	{id: "S105", mode: stmts, src: "for in 0..n { }", want: "(for <nil> 0 .. n (block))", diags: []string{"P002@1:5"}},
+	{id: "S106", mode: stmts, src: "for while in 0..n { }", want: "(for while 0 .. n (block))", diags: []string{"P002@1:5"}},
+	{id: "S107", mode: stmts, src: "while a >= { f() }\nk()", want: "(while (>= a <error>) (block (call f))) (call k)", diags: []string{"P001@1:12"}},
+	{id: "S108", mode: stmts, src: "f(1, 2\nwhile a { }\nk()", want: "(call f 1 2) (while a (block)) (call k)", diags: []string{"P010@1:2"}},
+	{id: "S109", mode: stmts, src: "let x = 0..1", want: "(let x 0)", diags: []string{"P004@1:10"}},
+	{id: "S110", mode: stmts, src: "in", diags: []string{"P012@1:1"}},
+	{id: "S111", mode: stmts, src: "while a { while b { } }", want: "(while a (block (while b (block))))"},
+	{id: "S112", mode: stmts, src: "while { }", want: "(while <error> (block))", diags: []string{"P001@1:7"}},
+
 	// Nesting limit (ADR-0006). n nested constructs plus the innermost
 	// operand use n+1 levels; the limit is MaxNestingDepth (10,000).
 	{id: "S87", mode: stmts, src: "let x = " + strings.Repeat("(", 9999) + "1" + strings.Repeat(")", 9999),

@@ -85,6 +85,9 @@ func (l *lexer) run() {
 			l.lineComment()
 		case c == '/' && next == '*':
 			l.blockComment()
+		case c == '.' && next == '.':
+			l.pos += 2
+			l.emit(token.DotDot, l.pos-2, l.pos) // ADR-0012
 		case isDigit(c) || (c == '.' && isDigit(next)):
 			l.number()
 		case isIdentStart(c):
@@ -173,10 +176,15 @@ func (l *lexer) skipCommentRune(reported bool) bool {
 }
 
 // number lexes a numeric literal (ADR-0004 item 1). It consumes the
-// maximal run of [0-9A-Za-z_.] and classifies it without converting it.
+// maximal run of [0-9A-Za-z_.] that does not contain "..", and classifies
+// it without converting it. The run stops before "..", so 0..10 is a
+// range (ADR-0012).
 func (l *lexer) number() {
 	start := l.pos
 	for l.pos < len(l.src) && isNumberRunByte(l.src[l.pos]) {
+		if l.src[l.pos] == '.' && l.peekByte(1) == '.' {
+			break
+		}
 		l.pos++
 	}
 	lexeme := string(l.src[start:l.pos])

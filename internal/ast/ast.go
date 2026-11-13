@@ -110,6 +110,35 @@ type ReturnStmt struct {
 	Loc   source.Span
 }
 
+// WhileStmt is `while cond { }` (ADR-0012).
+type WhileStmt struct {
+	Cond Expr
+	Body *Block
+	Loc  source.Span
+}
+
+// ForStmt is `for name in start..end { }` (ADR-0012). The range is
+// half-open: name takes each Int from start up to, but not including,
+// end.
+type ForStmt struct {
+	Var   *Ident
+	Start Expr
+	End   Expr
+	Body  *Block
+	Loc   source.Span
+}
+
+// BreakStmt is `break`; it leaves the innermost loop (ADR-0012).
+type BreakStmt struct {
+	Loc source.Span
+}
+
+// ContinueStmt is `continue`; it starts the next iteration of the
+// innermost loop (ADR-0012).
+type ContinueStmt struct {
+	Loc source.Span
+}
+
 // ExprStmt is a call used as a statement; the parser accepts no other
 // expression statements (ADR-0003 Q4).
 type ExprStmt struct {
@@ -207,6 +236,10 @@ func (n *LetStmt) Span() source.Span      { return n.Loc }
 func (n *AssignStmt) Span() source.Span   { return n.Loc }
 func (n *IfStmt) Span() source.Span       { return n.Loc }
 func (n *ReturnStmt) Span() source.Span   { return n.Loc }
+func (n *WhileStmt) Span() source.Span    { return n.Loc }
+func (n *ForStmt) Span() source.Span      { return n.Loc }
+func (n *BreakStmt) Span() source.Span    { return n.Loc }
+func (n *ContinueStmt) Span() source.Span { return n.Loc }
 func (n *ExprStmt) Span() source.Span     { return n.Loc }
 func (n *Ident) Span() source.Span        { return n.Loc }
 func (n *IntLit) Span() source.Span       { return n.Loc }
@@ -220,12 +253,16 @@ func (n *BinaryExpr) Span() source.Span   { return n.Loc }
 func (n *CallExpr) Span() source.Span     { return n.Loc }
 func (n *ErrorExpr) Span() source.Span    { return n.Loc }
 
-func (*Block) stmtNode()      {}
-func (*LetStmt) stmtNode()    {}
-func (*AssignStmt) stmtNode() {}
-func (*IfStmt) stmtNode()     {}
-func (*ReturnStmt) stmtNode() {}
-func (*ExprStmt) stmtNode()   {}
+func (*Block) stmtNode()        {}
+func (*LetStmt) stmtNode()      {}
+func (*AssignStmt) stmtNode()   {}
+func (*IfStmt) stmtNode()       {}
+func (*ReturnStmt) stmtNode()   {}
+func (*WhileStmt) stmtNode()    {}
+func (*ForStmt) stmtNode()      {}
+func (*BreakStmt) stmtNode()    {}
+func (*ContinueStmt) stmtNode() {}
+func (*ExprStmt) stmtNode()     {}
 
 func (*Ident) exprNode()        {}
 func (*IntLit) exprNode()       {}

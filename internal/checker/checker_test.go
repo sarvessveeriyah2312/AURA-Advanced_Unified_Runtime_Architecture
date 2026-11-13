@@ -161,6 +161,29 @@ var checkCases = []checkCase{
 	{id: "K77", body: "let a = toString()\nlet b = toString(1, 2)", want: []string{`T006 "toString()"`, `T006 "toString(1, 2)"`}},
 	{id: "K78", decls: "fn toString(x: Int) -> String { return \"\" }\n", body: "let t = toString",
 		want: []string{`T016 "toString"`, `T018 "toString"`}},
+
+	// Loops (ADR-0012).
+	{id: "K79", body: "let mut i = 0\nwhile i < 3 {\ni = i + 1\n}"},
+	{id: "K80", body: "while 1 { }\nwhile u() { }", want: []string{`T001 "1"`, `T001 "u()"`}},
+	{id: "K81", body: "for i in 0..10 {\nlet sq: Int = i * i\nprint(sq)\n}"},
+	{id: "K82", body: "for i in 0.5..\"s\" { }", want: []string{`T001 "0.5"`, `T001 "\"s\""`}},
+	{id: "K83", body: "for i in 0..3 {\ni = 1\n}", want: []string{`T004 "i = 1"`}},
+	{id: "K84", body: "for i in 0..3 { }\nprint(i)", want: []string{`T002 "i"`}},
+	{id: "K85", body: "let n = 3\nfor n in 0..n {\nlet n = \"shadow\"\nprint(n)\n}"},
+	{id: "K86", body: "for print in 0..3 { }", want: []string{`T016 "print"`}},
+	{id: "K87", body: "break\ncontinue\nif true {\nbreak\n}", want: []string{`T019 "break"`, `T019 "continue"`, `T019 "break"`}},
+	{id: "K88", body: "while true {\nbreak\n}\nfor i in 0..1 {\nif i == 0 {\ncontinue\n}\nwhile false { break }\n}"},
+	{id: "K89", decls: "fn g() -> Unit {\nwhile true { }\n}\n", body: "g()\nbreak", want: []string{`T019 "break"`}},
+	// Return paths (docs/12 §12.7): only `while true` without its own
+	// `break` counts as never completing.
+	{id: "K90", decls: "fn f() -> Int {\nwhile true {\nif u2() { return 1 }\n}\n}\nfn u2() -> Bool { return true }\n", body: "print(f())"},
+	{id: "K91", decls: "fn f() -> Int {\nwhile (true) { }\n}\n", body: "print(f())"},
+	{id: "K92", decls: "fn f() -> Int {\nwhile true {\nbreak\n}\n}\n", body: "print(f())", want: []string{`T008 "f"`}},
+	{id: "K93", decls: "fn f() -> Int {\nwhile true {\nif true { break }\n}\n}\n", body: "print(f())", want: []string{`T008 "f"`}},
+	{id: "K94", decls: "fn f() -> Int {\nwhile true {\nwhile true { break }\nfor i in 0..1 { break }\n}\n}\n", body: "print(f())"},
+	{id: "K95", decls: "fn f(b: Bool) -> Int {\nwhile b { return 1 }\n}\nfn g() -> Int {\nfor i in 0..1 { return i }\n}\n", body: "print(f(true) + g())",
+		want: []string{`T008 "f"`, `T008 "g"`}},
+	{id: "K96", decls: "fn f() -> Int {\nwhile !false { }\n}\n", body: "print(f())", want: []string{`T008 "f"`}},
 }
 
 // runCheck lexes, parses and checks src. It fails the test on unexpected

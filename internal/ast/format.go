@@ -88,6 +88,24 @@ func format(b *strings.Builder, n Node) {
 			format(b, n.Else)
 		}
 		b.WriteByte(')')
+	case *WhileStmt:
+		b.WriteString("(while ")
+		format(b, n.Cond)
+		b.WriteByte(' ')
+		formatBlock(b, n.Body)
+		b.WriteByte(')')
+	case *ForStmt:
+		fmt.Fprintf(b, "(for %s ", identName(n.Var))
+		format(b, n.Start)
+		b.WriteString(" .. ")
+		format(b, n.End)
+		b.WriteByte(' ')
+		formatBlock(b, n.Body)
+		b.WriteByte(')')
+	case *BreakStmt:
+		b.WriteString("(break)")
+	case *ContinueStmt:
+		b.WriteString("(continue)")
 	case *ReturnStmt:
 		if n.Value == nil {
 			b.WriteString("(return)")
@@ -146,6 +164,16 @@ func format(b *strings.Builder, n Node) {
 	default:
 		fmt.Fprintf(b, "<unknown %T>", n)
 	}
+}
+
+// formatBlock writes a possibly nil block; a nil *Block stored in the
+// Node interface would not match case nil.
+func formatBlock(b *strings.Builder, blk *Block) {
+	if blk == nil {
+		b.WriteString("<nil>")
+		return
+	}
+	format(b, blk)
 }
 
 func identName(id *Ident) string {

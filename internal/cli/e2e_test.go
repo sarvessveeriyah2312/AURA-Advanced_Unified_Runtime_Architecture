@@ -74,6 +74,20 @@ var e2eCases = []e2eCase{
 	{name: "trace_mutual", cmd: "run", exit: 1, stdout: str(""), stderrs: []string{"error[TR-R003]", "stack trace:\n", "  ... 9980 more frames not shown\n", "  9999: main"}},
 	{name: "trace_overflow", cmd: "run", exit: 1, stdout: str(""), stderrs: []string{"error[TR-R005]: integer overflow", "(in function 'double')", "stack trace:\n", "  0: double", "  1: main"}},
 	{name: "runtime_in_callee", cmd: "check", exit: 0, stdout: str("")}, // traces are runtime-only
+
+	// ADR-0012: loops.
+	{name: "loops", cmd: "run", exit: 0, stdout: str("countdown 3\ncountdown 2\ncountdown 1\ni = 1\ni = 2\ni = 4\ni = 5\ni = 7\n" +
+		"1 \n2 4 \n3 6 9 \nsumTo(100) = 5050\nsumTo(1000000) = 500000500000\nisqrt(99) = 9\n")},
+	{name: "loops", cmd: "check", exit: 0, stdout: str("")},
+	{name: "loop_errors", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{
+		"error[TR-T019]: 'break' outside of a loop", "loop_errors.tr:2:5",
+		"error[TR-T004]: cannot assign to loop variable 'i'", "loop_errors.tr:4:9",
+		"error[TR-T001]: condition must be Bool, found Int", "loop_errors.tr:6:11",
+		"error[TR-T001]: range bound must be Int, found Float", "loop_errors.tr:9:14",
+		"error[TR-T001]: range bound must be Int, found Float", "loop_errors.tr:9:19",
+		"error[TR-T008]", "loop_errors.tr:13:4"}},
+	{name: "loop_trace", cmd: "run", exit: 1, stdout: str("5\n10\n"), stderrs: []string{"error[TR-R001]: division by zero (in function 'average')",
+		"\n\nstack trace:\n", "  0: average  loop_trace.tr:8:12  return total / count\n", "  1: main     loop_trace.tr:3:15  print(average(10, 2 - i))\n"}},
 }
 
 func TestEndToEnd(t *testing.T) {
@@ -238,6 +252,8 @@ func TestDeepNestingDoesNotCrash(t *testing.T) {
 		"chain":       wrap(strings.Repeat("1+", n) + "1"),
 		"blocks":      "fn main() -> Unit {\n" + strings.Repeat("{", n) + strings.Repeat("}", n) + "\n}\n",
 		"else-if":     "fn main() -> Unit {\n    let x = 1\n    if x == 0 { }" + strings.Repeat(" else if x == 0 { }", n) + "\n}\n",
+		"while":       "fn main() -> Unit {\n" + strings.Repeat("while true { ", n) + strings.Repeat("}", n) + "\n}\n",
+		"for":         "fn main() -> Unit {\n" + strings.Repeat("for i in 0..1 { ", n) + strings.Repeat("}", n) + "\n}\n",
 	}
 	for name, src := range programs {
 		t.Run(name, func(t *testing.T) {

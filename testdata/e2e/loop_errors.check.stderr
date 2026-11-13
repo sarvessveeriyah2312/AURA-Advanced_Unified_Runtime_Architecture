@@ -1,0 +1,36 @@
+error[TR-T019]: 'break' outside of a loop
+  --> loop_errors.tr:2:5
+   |
+ 2 |     break
+   |     ^^^^^
+
+error[TR-T004]: cannot assign to loop variable 'i'
+  --> loop_errors.tr:4:9
+   |
+ 4 |         i = i + 1
+   |         ^^^^^^^^^
+   = note: loop variable declared here (loop_errors.tr:3:9)
+
+error[TR-T001]: condition must be Bool, found Int
+  --> loop_errors.tr:6:11
+   |
+ 6 |     while 1 {
+   |           ^
+
+error[TR-T001]: range bound must be Int, found Float
+  --> loop_errors.tr:9:14
+   |
+ 9 |     for x in 0.0..1.5 {
+   |              ^^^
+
+error[TR-T001]: range bound must be Int, found Float
+  --> loop_errors.tr:9:19
+   |
+ 9 |     for x in 0.0..1.5 {
+   |                   ^^^
+
+error[TR-T008]: function 'first' does not return a value on every path; expected Int
+   --> loop_errors.tr:13:4
+    |
+ 13 | fn first() -> Int {
+    |    ^^^^^

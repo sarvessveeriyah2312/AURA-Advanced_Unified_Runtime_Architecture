@@ -66,6 +66,14 @@ type compiler struct {
 	fn       *bytecode.Function
 	slots    map[*checker.Symbol]int
 	nextSlot int
+	loops    []*loop // enclosing loops, innermost last (ADR-0012)
+}
+
+// loop collects the jumps of `break` and `continue` statements until
+// their targets are known.
+type loop struct {
+	breaks    []int
+	continues []int
 }
 
 func (c *compiler) internal(span source.Span, format string, args ...any) {
@@ -135,6 +143,7 @@ func (c *compiler) function(fn *checker.Function) bytecode.Function {
 	}
 	out.Result = result
 	c.fn = &out
+	c.loops = nil
 	c.slots = map[*checker.Symbol]int{}
 	for i, p := range fn.Params {
 		c.slots[p] = i
@@ -213,6 +222,14 @@ func (c *compiler) stmt(s ast.Stmt) {
 			c.emit(bytecode.OpUnit, 0, s.Loc)
 		}
 		c.emit(bytecode.OpReturn, 0, s.Loc)
+	case *ast.WhileStmt:
+		c.whileStmt(s)
+	case *ast.ForStmt:
+		c.forStmt(s)
+	case *ast.BreakStmt:
+		c.loopJump(s.Loc, func(l *loop, pc int) { l.breaks = append(l.breaks, pc) })
+	case *ast.ContinueStmt:
+		c.loopJump(s.Loc, func(l *loop, pc int) { l.continues = append(l.continues, pc) })
 	case *ast.ExprStmt:
 		c.expr(s.Call)
 		c.emit(bytecode.OpPop, 0, s.Loc)
@@ -238,6 +255,100 @@ func (c *compiler) ifStmt(s *ast.IfStmt) {
 	c.patch(jumpElse)
 	c.stmt(s.Else) // a *ast.Block or a nested *ast.IfStmt
 	c.patch(jumpEnd)
+}
+
+// loopJump emits the jump of a `break` or `continue` and records it on
+// the innermost loop. The operand stack is empty between statements, so
+// the jump keeps every target's stack depth consistent (docs/05 §5.4).
+func (c *compiler) loopJump(span source.Span, record func(*loop, int)) {
+	if len(c.loops) == 0 {
+		c.internal(span, "loop control statement outside a loop")
+		return
+	}
+	record(c.loops[len(c.loops)-1], c.emit(bytecode.OpJump, 0, span))
+}
+
+// patchTo sets the targets of the jumps at pcs to target.
+func (c *compiler) patchTo(pcs []int, target int) {
+	for _, pc := range pcs {
+		c.fn.Code[pc].A = target
+	}
+}
+
+// loopBody compiles a loop body and returns its break and continue jumps.
+func (c *compiler) loopBody(b *ast.Block) *loop {
+	l := &loop{}
+	c.loops = append(c.loops, l)
+	c.block(b)
+	c.loops = c.loops[:len(c.loops)-1]
+	return l
+}
+
+// whileStmt compiles (ADR-0012, docs/05 §5.4):
+//
+//	top:  <cond>; JUMP_IF_FALSE end
+//	      <body>              ; continue -> top, break -> end
+//	      JUMP top
+//	end:
+func (c *compiler) whileStmt(s *ast.WhileStmt) {
+	if s.Body == nil {
+		c.internal(s.Loc, "while statement without a block")
+		return
+	}
+	top := len(c.fn.Code)
+	c.expr(s.Cond)
+	exit := c.emit(bytecode.OpJumpIfFalse, 0, s.Cond.Span())
+	l := c.loopBody(s.Body)
+	c.emit(bytecode.OpJump, top, s.Loc)
+	c.patch(exit)
+	c.patchTo(l.continues, top)
+	c.patchTo(l.breaks, len(c.fn.Code))
+}
+
+// forStmt compiles a half-open Int range (ADR-0012, docs/05 §5.4). Both
+// bounds are evaluated once, start first; the end bound is kept in a
+// hidden local. The increment cannot overflow, because it runs only
+// when the variable is below the end bound.
+//
+//	      <start>; STORE_LOCAL var
+//	      <end>;   STORE_LOCAL end
+//	top:  LOAD_LOCAL var; LOAD_LOCAL end; LT_INT; JUMP_IF_FALSE exit
+//	      <body>              ; continue -> next, break -> exit
+//	next: LOAD_LOCAL var; CONST 1; ADD_INT; STORE_LOCAL var
+//	      JUMP top
+//	exit:
+func (c *compiler) forStmt(s *ast.ForStmt) {
+	sym := c.cp.Defs[s.Var]
+	if sym == nil || s.Start == nil || s.End == nil || s.Body == nil {
+		c.internal(s.Loc, "for statement without a resolved variable, range or block")
+		return
+	}
+	header := source.Join(s.Var.Loc, s.End.Span())
+	c.expr(s.Start)
+	varSlot := c.nextSlot
+	c.nextSlot++
+	c.slots[sym] = varSlot
+	c.emit(bytecode.OpStoreLocal, varSlot, s.Start.Span())
+	c.expr(s.End)
+	endSlot := c.nextSlot
+	c.nextSlot++
+	c.emit(bytecode.OpStoreLocal, endSlot, s.End.Span())
+
+	top := len(c.fn.Code)
+	c.emit(bytecode.OpLoadLocal, varSlot, header)
+	c.emit(bytecode.OpLoadLocal, endSlot, header)
+	c.emit(bytecode.OpLtInt, 0, header)
+	exit := c.emit(bytecode.OpJumpIfFalse, 0, header)
+	l := c.loopBody(s.Body)
+	next := len(c.fn.Code)
+	c.emit(bytecode.OpLoadLocal, varSlot, header)
+	c.constant(bytecode.IntValue(1), header)
+	c.emit(bytecode.OpAddInt, 0, header)
+	c.emit(bytecode.OpStoreLocal, varSlot, header)
+	c.emit(bytecode.OpJump, top, s.Loc)
+	c.patch(exit)
+	c.patchTo(l.continues, next)
+	c.patchTo(l.breaks, len(c.fn.Code))
 }
 
 // ---------------------------------------------------------------------------

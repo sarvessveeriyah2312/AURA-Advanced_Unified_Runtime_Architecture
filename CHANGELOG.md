@@ -8,8 +8,25 @@ and 0.2.0 are kept as written, under the language's name at the time.
 ## [Unreleased]
 
 SDK and runtime editions, bytecode files, and installers (ADR-0011).
+Loops: `while`, `for`, `break` and `continue` (ADR-0012).
 
 ### Added
+
+-   **`while` loops.** `while cond { … }` repeats while a `Bool`
+    condition holds.
+-   **`for` loops** over a half-open `Int` range: `for i in a..b { … }`
+    runs with `i` from `a` up to, but not including, `b`. Both bounds
+    are evaluated once, `a` first. The loop variable is an immutable
+    `Int`; assigning to it is `TR-T004`.
+-   **`break` and `continue`** leave, or start the next iteration of,
+    the innermost loop. Outside a loop they are the new error
+    **TR-T019**.
+-   **Return paths.** A function that returns a value may end with
+    `while true { … }` when that loop has no `break` of its own. No
+    other loop counts as returning (docs/12 §12.7).
+-   Loops compile to the existing `JUMP` and `JUMP_IF_FALSE`
+    instructions. There are no new opcodes, and the `.tbc` format
+    version stays 1.
 
 -   **Bytecode files.** `tread build <file.tr> [-o <file.tbc>]` compiles
     a program to a `.tbc` file (format version 1, docs/05 §5.10), and
@@ -43,6 +60,14 @@ SDK and runtime editions, bytecode files, and installers (ADR-0011).
     and a `release` file.
 -   `tread run` with neither a `.tr` nor a `.tbc` argument now says
     `expected the .tr or .tbc extension`.
+
+### Changed (breaking)
+
+-   **New keywords.** `while`, `for`, `in`, `break` and `continue` are
+    keywords and can no longer be used as names. `for` and `while` were
+    already reserved; `in`, `break` and `continue` are new.
+-   **`..` is a token.** A number now stops before `..`, so `1..2` lexes
+    as `1`, `..`, `2` instead of one malformed number (`TR-L008`).
 
 ## [0.3.0] - 2026-11-13
 

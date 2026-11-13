@@ -30,6 +30,11 @@ const (
 	True
 	False
 	Return
+	While
+	For
+	In
+	Break
+	Continue
 	keywordEnd
 
 	Plus    // +
@@ -54,6 +59,7 @@ const (
 	RBrace  // }
 	Comma   // ,
 	Colon   // :
+	DotDot  // ..
 )
 
 var names = map[Kind]string{
@@ -63,10 +69,12 @@ var names = map[Kind]string{
 	Reserved: "RESERVED",
 	Module:   "module", Fn: "fn", Let: "let", Mut: "mut", If: "if", Else: "else",
 	True: "true", False: "false", Return: "return",
+	While: "while", For: "for", In: "in", Break: "break", Continue: "continue",
 	Plus: "+", Minus: "-", Star: "*", Slash: "/", Percent: "%",
 	Eq: "==", Ne: "!=", Lt: "<", Le: "<=", Gt: ">", Ge: ">=",
 	AndAnd: "&&", OrOr: "||", Not: "!", Assign: "=", Arrow: "->",
 	LParen: "(", RParen: ")", LBrace: "{", RBrace: "}", Comma: ",", Colon: ":",
+	DotDot: "..",
 }
 
 // String returns the keyword or operator spelling, or an upper-case name
@@ -84,11 +92,12 @@ func (k Kind) IsKeyword() bool { return k > keywordStart && k < keywordEnd }
 var keywords = map[string]Kind{
 	"module": Module, "fn": Fn, "let": Let, "mut": Mut, "if": If,
 	"else": Else, "true": True, "false": False, "return": Return,
+	"while": While, "for": For, "in": In, "break": Break, "continue": Continue,
 }
 
 var reserved = map[string]bool{
-	"class": true, "interface": true, "enum": true, "match": true, "for": true,
-	"while": true, "async": true, "await": true, "import": true, "pub": true,
+	"class": true, "interface": true, "enum": true, "match": true,
+	"async": true, "await": true, "import": true, "pub": true,
 }
 
 // Lookup classifies an identifier-shaped lexeme as a keyword, a reserved

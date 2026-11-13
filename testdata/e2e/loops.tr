@@ -1,0 +1,52 @@
+// Loops (ADR-0012): while, for over a half-open Int range, break and
+// continue.
+fn sumTo(n: Int) -> Int {
+    let mut total = 0
+    for i in 1..n + 1 {
+        total = total + i
+    }
+    return total
+}
+
+fn isqrt(n: Int) -> Int {
+    let mut r = 0
+    while true {
+        if (r + 1) * (r + 1) > n {
+            return r
+        }
+        r = r + 1
+    }
+}
+
+fn main() -> Unit {
+    let mut countdown = 3
+    while countdown > 0 {
+        print("countdown ${countdown}")
+        countdown = countdown - 1
+    }
+
+    for i in 0..10 {
+        if i % 3 == 0 {
+            continue
+        }
+        if i > 7 {
+            break
+        }
+        print("i = ${i}")
+    }
+
+    for row in 1..4 {
+        let mut line = ""
+        for col in 1..4 {
+            if col > row {
+                break
+            }
+            line = line + toString(row * col) + " "
+        }
+        print(line)
+    }
+
+    print("sumTo(100) = ${sumTo(100)}")
+    print("sumTo(1000000) = ${sumTo(1000000)}")
+    print("isqrt(99) = ${isqrt(99)}")
+}

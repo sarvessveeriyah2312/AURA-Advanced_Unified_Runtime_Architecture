@@ -56,6 +56,9 @@ const (
 	BuiltinRedeclared    Code = "TR-T016"
 	FloatLiteralRange    Code = "TR-T017"
 	FunctionAsValue      Code = "TR-T018"
+	// LoopControlOutsideLoop: `break` or `continue` outside a loop
+	// (ADR-0012).
+	LoopControlOutsideLoop Code = "TR-T019"
 )
 
 // Compiler and runtime codes (Phase 3). The VM cannot import this
@@ -88,6 +91,7 @@ func Registry() []Code {
 		MissingReturn, InvalidReturn, IntLiteralOutOfRange, NotDisplayable,
 		NotCallable, MissingMain, InvalidMainSignature, MissingReturnType,
 		BuiltinRedeclared, FloatLiteralRange, FunctionAsValue,
+		LoopControlOutsideLoop,
 		InternalCompilerError,
 		DivisionByZero, InvalidBytecode, CallDepthExceeded, InstructionLimit,
 		IntegerOverflow, BytecodeLoadError,

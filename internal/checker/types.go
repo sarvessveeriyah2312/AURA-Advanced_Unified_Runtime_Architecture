@@ -58,13 +58,14 @@ const (
 	FuncSymbol
 	ParamSymbol
 	VarSymbol
+	LoopVarSymbol // the variable of a `for` loop; immutable (ADR-0012)
 )
 
 // Symbol is a named entity in the value namespace.
 type Symbol struct {
 	Name    string
 	Kind    SymbolKind
-	Type    Type      // ParamSymbol and VarSymbol
+	Type    Type      // ParamSymbol, VarSymbol and LoopVarSymbol
 	Mutable bool      // VarSymbol declared with `let mut`
 	Func    *Function // FuncSymbol and BuiltinSymbol
 	Decl    source.Span

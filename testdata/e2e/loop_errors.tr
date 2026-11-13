@@ -1,0 +1,17 @@
+fn main() -> Unit {
+    break
+    for i in 0..3 {
+        i = i + 1
+    }
+    while 1 {
+        continue
+    }
+    for x in 0.0..1.5 {
+    }
+}
+
+fn first() -> Int {
+    for i in 0..3 {
+        return i
+    }
+}

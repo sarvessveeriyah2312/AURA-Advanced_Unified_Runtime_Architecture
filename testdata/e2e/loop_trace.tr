@@ -1,0 +1,9 @@
+fn main() -> Unit {
+    for i in 0..5 {
+        print(average(10, 2 - i))
+    }
+}
+
+fn average(total: Int, count: Int) -> Int {
+    return total / count
+}

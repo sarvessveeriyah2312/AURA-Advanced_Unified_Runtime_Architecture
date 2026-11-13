@@ -57,6 +57,9 @@ type checker struct {
 	// current function and scope while checking bodies
 	fn    *Function
 	scope *scope
+	// loops is the number of loops enclosing the current statement
+	// (ADR-0012).
+	loops int
 }
 
 func (c *checker) errorf(code diagnostic.Code, span source.Span, format string, args ...any) {
@@ -187,7 +190,7 @@ func (c *checker) checkFunction(fn *Function) {
 		c.errorf(diagnostic.MissingReturn, decl.Name.Loc,
 			"function '%s' does not return a value on every path; expected %s", fn.Name, fn.Result)
 	}
-	c.fn, c.scope = nil, nil
+	c.fn, c.scope, c.loops = nil, nil, 0
 }
 
 func (c *checker) checkBlock(b *ast.Block) {
@@ -214,6 +217,14 @@ func (c *checker) checkStmt(s ast.Stmt) {
 		c.checkIf(s)
 	case *ast.ReturnStmt:
 		c.checkReturn(s)
+	case *ast.WhileStmt:
+		c.checkWhile(s)
+	case *ast.ForStmt:
+		c.checkFor(s)
+	case *ast.BreakStmt:
+		c.checkLoopControl("break", s.Loc)
+	case *ast.ContinueStmt:
+		c.checkLoopControl("continue", s.Loc)
 	case *ast.ExprStmt:
 		if s.Call != nil {
 			c.expr(s.Call)
@@ -263,6 +274,11 @@ func (c *checker) checkAssign(s *ast.AssignStmt) {
 	case sym.Kind == ParamSymbol:
 		c.errorf(diagnostic.AssignToImmutable, s.Loc, "cannot assign to parameter '%s'", sym.Name)
 		return
+	case sym.Kind == LoopVarSymbol:
+		c.diags = append(c.diags, diagnostic.Errorf(diagnostic.AssignToImmutable, s.Loc,
+			"cannot assign to loop variable '%s'", sym.Name).
+			WithRelated(sym.Decl, "loop variable declared here"))
+		return
 	case !sym.Mutable:
 		c.diags = append(c.diags, diagnostic.Errorf(diagnostic.AssignToImmutable, s.Loc,
 			"cannot assign twice to immutable variable '%s'", sym.Name).
@@ -287,6 +303,52 @@ func (c *checker) checkIf(s *ast.IfStmt) {
 		c.checkBlock(e)
 	case *ast.IfStmt:
 		c.checkIf(e)
+	}
+}
+
+// checkWhile checks `while cond { }` (ADR-0012).
+func (c *checker) checkWhile(s *ast.WhileStmt) {
+	if s.Cond != nil {
+		if t := c.expr(s.Cond); !compatible(Bool, t) {
+			c.errorf(diagnostic.TypeMismatch, s.Cond.Span(), "condition must be Bool, found %s", t)
+		}
+	}
+	c.loops++
+	c.checkBlock(s.Body)
+	c.loops--
+}
+
+// checkFor checks `for name in start..end { }` (ADR-0012). The bounds
+// are checked in the enclosing scope, before the loop variable exists.
+// The loop variable lives in its own scope around the body, so the body
+// may shadow it like a parameter.
+func (c *checker) checkFor(s *ast.ForStmt) {
+	for _, bound := range []ast.Expr{s.Start, s.End} {
+		if bound == nil {
+			continue // parser already reported
+		}
+		if t := c.expr(bound); !compatible(Int, t) {
+			c.errorf(diagnostic.TypeMismatch, bound.Span(), "range bound must be Int, found %s", t)
+		}
+	}
+	saved := c.scope
+	c.scope = newScope(saved)
+	if s.Var != nil {
+		sym := &Symbol{Name: s.Var.Name, Kind: LoopVarSymbol, Type: Int, Decl: s.Var.Loc}
+		if c.declare(c.scope, sym, "loop variable") {
+			c.out.Defs[s.Var] = sym
+		}
+	}
+	c.loops++
+	c.checkBlock(s.Body)
+	c.loops--
+	c.scope = saved
+}
+
+// checkLoopControl reports `break` or `continue` outside a loop.
+func (c *checker) checkLoopControl(word string, span source.Span) {
+	if c.loops == 0 {
+		c.errorf(diagnostic.LoopControlOutsideLoop, span, "'%s' outside of a loop", word)
 	}
 }
 
@@ -326,6 +388,11 @@ func alwaysReturns(s ast.Stmt) bool {
 			return false
 		}
 		return alwaysReturns(s.Then) && alwaysReturns(s.Else)
+	case *ast.WhileStmt:
+		// ADR-0012: `while true` with no `break` of its own never
+		// completes, so control cannot fall off the end after it. No
+		// other loop counts: its body may run zero times.
+		return isTrueLiteral(s.Cond) && !breaks(s.Body)
 	}
 	return false
 }
@@ -567,4 +634,40 @@ func (c *checker) callBuiltin(e *ast.CallExpr, fn *Function) Type {
 			"'%s' cannot take a value of type Unit; it accepts Int, Float, Bool or String", fn.Name)
 	}
 	return fn.Result
+}
+
+// isTrueLiteral reports whether e is the literal `true`, possibly in
+// parentheses.
+func isTrueLiteral(e ast.Expr) bool {
+	for {
+		switch x := e.(type) {
+		case *ast.ParenExpr:
+			e = x.Inner
+		case *ast.BoolLit:
+			return x.Value
+		default:
+			return false
+		}
+	}
+}
+
+// breaks reports whether s contains a `break` that leaves the loop whose
+// body s is. A `break` inside a nested loop leaves only that loop.
+func breaks(s ast.Stmt) bool {
+	switch s := s.(type) {
+	case *ast.BreakStmt:
+		return true
+	case *ast.Block:
+		if s == nil {
+			return false
+		}
+		for _, st := range s.Stmts {
+			if breaks(st) {
+				return true
+			}
+		}
+	case *ast.IfStmt:
+		return (s.Then != nil && breaks(s.Then)) || (s.Else != nil && breaks(s.Else))
+	}
+	return false
 }

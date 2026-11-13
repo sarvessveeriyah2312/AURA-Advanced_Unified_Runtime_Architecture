@@ -1,0 +1,9 @@
+error[TR-R001]: division by zero (in function 'average')
+  --> loop_trace.tr:8:12
+   |
+ 8 |     return total / count
+   |            ^^^^^^^^^^^^^
+
+stack trace:
+  0: average  loop_trace.tr:8:12  return total / count
+  1: main     loop_trace.tr:3:15  print(average(10, 2 - i))

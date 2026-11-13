@@ -384,3 +384,58 @@ func TestEveryOpcodeIsEmitted(t *testing.T) {
 		t.Errorf("instruction set has %d opcodes, docs/05 §5.3 specifies 46", len(bytecode.AllOpcodes()))
 	}
 }
+
+// ADR-0012: loop layouts (docs/05 §5.4). break jumps to the exit,
+// continue to the condition (while) or the increment (for).
+func TestG16WhileLayout(t *testing.T) {
+	m := compileSrc(t, mainOf("let mut i = 0\nwhile i < 3 {\nif i == 1 {\nbreak\n}\ni = i + 1\ncontinue\n}"))
+	want := []string{
+		"CONST 0", "STORE_LOCAL 0", // let mut i = 0
+		"LOAD_LOCAL 0", "CONST 1", "LT_INT", "JUMP_IF_FALSE 17", // 2: top
+		"LOAD_LOCAL 0", "CONST 2", "EQ_INT", "JUMP_IF_FALSE 11",
+		"JUMP 17", // break
+		"LOAD_LOCAL 0", "CONST 2", "ADD_INT", "STORE_LOCAL 0",
+		"JUMP 2",         // continue
+		"JUMP 2",         // loop back
+		"UNIT", "RETURN", // 17: exit
+	}
+	if got := listing(t, m, "main"); strings.Join(got, "; ") != strings.Join(want, "; ") {
+		t.Errorf("listing:\n got  %v\n want %v", got, want)
+	}
+	if err := m.Verify(); err != nil {
+		t.Errorf("Verify: %v", err)
+	}
+}
+
+func TestG17ForLayout(t *testing.T) {
+	m := compileSrc(t, mainOf("for i in 0..3 {\nif i == 1 {\ncontinue\n}\nbreak\n}"))
+	want := []string{
+		"CONST 0", "STORE_LOCAL 0", // i = start
+		"CONST 1", "STORE_LOCAL 1", // hidden end bound
+		"LOAD_LOCAL 0", "LOAD_LOCAL 1", "LT_INT", "JUMP_IF_FALSE 19", // 4: top
+		"LOAD_LOCAL 0", "CONST 2", "EQ_INT", "JUMP_IF_FALSE 13",
+		"JUMP 14",                                             // continue
+		"JUMP 19",                                             // break
+		"LOAD_LOCAL 0", "CONST 2", "ADD_INT", "STORE_LOCAL 0", // 14: next
+		"JUMP 4",
+		"UNIT", "RETURN", // 19: exit
+	}
+	if got := listing(t, m, "main"); strings.Join(got, "; ") != strings.Join(want, "; ") {
+		t.Errorf("listing:\n got  %v\n want %v", got, want)
+	}
+	if err := m.Verify(); err != nil {
+		t.Errorf("Verify: %v", err)
+	}
+}
+
+func TestG18NestedLoopsAndInfiniteWhileVerify(t *testing.T) {
+	src := "fn f() -> Int {\nlet mut n = 0\nwhile true {\nfor i in 0..3 {\nfor j in 0..i {\nif j == 1 {\nbreak\n}\ncontinue\n}\n}\nn = n + 1\nif n > 2 {\nreturn n\n}\n}\n}\n" +
+		mainOf("print(f())")
+	m := compileSrc(t, src)
+	if err := m.Verify(); err != nil {
+		t.Errorf("Verify: %v", err)
+	}
+	if a, b := m.Disassemble(), compileSrc(t, src).Disassemble(); a != b {
+		t.Error("compilation is not deterministic")
+	}
+}

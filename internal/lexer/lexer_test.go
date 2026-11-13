@@ -111,10 +111,19 @@ var lexCases = []lexCase{
 	{id: "L65a", src: "007abc", tokens: "INVALID", diags: []string{"L008@1:1[0,6)"}},
 	{id: "L65b", src: "0abc", tokens: "INVALID", diags: []string{"L008@1:1[0,4)"}},
 	{id: "L66a", src: "1.2.3", tokens: "INVALID", diags: []string{"L008@1:1[0,5)"}},
-	{id: "L66b", src: "1..2", tokens: "INVALID", diags: []string{"L008@1:1[0,4)"}},
+	// ADR-0012: a number stops before "..", so 1..2 is a range.
+	{id: "L66b", src: "1..2", tokens: "INT(1) .. INT(2)"},
 	{id: "L66c", src: "1.5.", tokens: "INVALID", diags: []string{"L008@1:1[0,4)"}},
 	{id: "L67", src: "1e5 1_000 0x1F 1.5f", tokens: "INVALID INVALID INVALID INVALID", diags: []string{"L008@1:1", "L008@1:5", "L008@1:11", "L008@1:16"}},
 	{id: "L68", src: "1+.5", tokens: "INT(1) + INVALID", diags: []string{"L008@1:3[2,4)"}},
+
+	// Loops (ADR-0012).
+	{id: "L70", src: "while for in break continue", tokens: "while for in break continue"},
+	{id: "L71", src: "0..n a..b", tokens: "INT(0) .. IDENT(n) IDENT(a) .. IDENT(b)"},
+	{id: "L72", src: "1.5..2 0 .. 10", tokens: "FLOAT(1.5) .. INT(2) INT(0) .. INT(10)"},
+	{id: "L73", src: "1...2", tokens: "INT(1) .. INVALID", diags: []string{"L008@1:4[3,5)"}},
+	{id: "L74", src: "...", tokens: "..", diags: []string{"L001@1:3"}},
+	{id: "L75", src: "007..1", tokens: "INVALID .. INT(1)", diags: []string{"L009@1:1[0,3)"}},
 }
 
 func describeTokens(toks []token.Token) string {
