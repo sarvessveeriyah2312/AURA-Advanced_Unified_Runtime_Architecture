@@ -13,7 +13,7 @@ A small, statically typed programming language whose whole toolchain
 (lexer, parser, type checker, bytecode compiler, and virtual machine) is
 built to be read, one stage at a time. Written in Go.
 
-**Version 0.5.0** · macOS · Linux · Windows ·
+**Version 0.6.0** · macOS · Linux · Windows ·
 [Website](https://treadlang.vercel.app/) ·
 [Repository](https://github.com/sarvessveeriyah2312/Tread) ·
 [Latest release](https://github.com/sarvessveeriyah2312/Tread/releases/latest)
@@ -76,16 +76,17 @@ The design goals:
 | **Helpful errors** | Every error has a stable code (such as `TR-T001`), an exact line and column, and a pointer to the problem. |
 | **Small and understandable** | A compiler and runtime that one developer can read and extend. |
 
-> **Status: 0.5.0, released 2026-11-13.** A deliberately small language
-> core, tested on Linux, macOS, and Windows. 0.5.0 adds arrays, maps,
-> enums, pattern matching with `match`, and generics.
+> **Status: 0.6.0, released 2026-11-13.** A deliberately small language
+> core, tested on Linux, macOS, and Windows. 0.6.0 adds structs, methods
+> in `impl` blocks, and programs made of several files with `import`
+> and `pub`.
 > Tread 0.x is experimental, and the language may change between minor
 > versions. Every change is recorded in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Key features
 
-All of the following are implemented in Tread 0.5.0:
+All of the following are implemented in Tread 0.6.0:
 
 -   **Static typing with inference:** `Int`, `Float`, `Bool`, `String`,
     and `Unit`, with no implicit conversions.
@@ -99,13 +100,18 @@ All of the following are implemented in Tread 0.5.0:
     indexing, and methods such as `push`, `get`, and `keys`.
 -   **Enums and pattern matching:** variants that carry values, and a
     `match` that the compiler checks covers every case.
--   **Generics:** generic functions and enums, with types inferred from
-    the arguments, and the built-in `Option<T>`.
+-   **Generics:** generic functions, enums and structs, with types
+    inferred from the arguments, and the built-in `Option<T>`.
+-   **Structs and methods:** your own record types with value semantics,
+    and methods in `impl` blocks; `mut self` methods change their
+    receiver.
+-   **Modules:** split a program into files with `import`, and choose
+    what other files can use with `pub`.
 -   **Checked integer arithmetic:** overflow and division by zero are
     reported as errors, not silent wrong answers.
 -   **Strings:** escape sequences, and `${...}` interpolation of any
     expression.
--   **Diagnostics:** 47 stable error codes, precise positions, underlined
+-   **Diagnostics:** 69 stable error codes, precise positions, underlined
     source excerpts, and several errors reported per run.
 -   **Stack traces:** a runtime error inside a function shows every
     call that led to it.
@@ -157,13 +163,13 @@ Choose one of three methods:
 
 **A Tread release does not need Go or any other software.** Download
 from the
-[v0.5.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.5.0).
+[v0.6.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.6.0).
 Each platform gets two downloads, plus an installer for the SDK:
 
 | Download | What it is |
 |---|---|
-| `tread-sdk-0.5.0-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
-| `tread-runtime-0.5.0-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
+| `tread-sdk-0.6.0-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
+| `tread-runtime-0.6.0-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
 | `.msi` (Windows), `.pkg` (macOS), `.deb` / `.rpm` (Linux) | SDK installer |
 | `install.sh`, `install.ps1` | user-level install scripts (no administrator rights) |
 
@@ -212,8 +218,8 @@ the installer again with a newer version. `TREAD_HOME` is optional:
 platform's name):
 
 ``` bash
-ARCHIVE=tread-sdk-0.5.0-macos-arm64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.5.0
+ARCHIVE=tread-sdk-0.6.0-macos-arm64.tar.gz
+BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.6.0
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
 shasum -a 256 -c SHA256SUMS --ignore-missing      # Linux: sha256sum; expect: <archive>: OK
@@ -222,7 +228,7 @@ mv "${ARCHIVE%.tar.gz}" ~/tread-sdk               # any location works
 export PATH="$HOME/tread-sdk/bin:$PATH"           # add this to your shell profile
 ```
 
-On Windows, expand `tread-sdk-0.5.0-windows-x64.zip` and add its `bin`
+On Windows, expand `tread-sdk-0.6.0-windows-x64.zip` and add its `bin`
 folder to your user `PATH`. If you download in a browser on macOS,
 Gatekeeper may block `tread`; after checking the checksum, run
 `xattr -d com.apple.quarantine <path>/bin/tread`.
@@ -255,7 +261,7 @@ This method needs **Go 1.25 or later**; `go.mod` declares `go 1.25.0`.
 Go 1.21 or later can download the required toolchain automatically.
 
 ``` bash
-go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.5.0
+go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.6.0
 ```
 
 Go installs `tread` into `$(go env GOBIN)`, or into
@@ -264,7 +270,7 @@ That directory must be on your `PATH`:
 
 ``` bash
 export PATH="$PATH:$(go env GOPATH)/bin"   # add this to your shell profile
-tread version                              # tread 0.5.0
+tread version                              # tread 0.6.0
 ```
 
 ### Method C: Build from source
@@ -276,12 +282,12 @@ dependencies.
 git clone https://github.com/sarvessveeriyah2312/Tread.git
 cd Tread
 go build -o ./bin/tread ./cmd/tread
-./bin/tread version                      # tread 0.5.0
+./bin/tread version                      # tread 0.6.0
 ./bin/tread run examples/hello.tr        # Hello, Tread!
 ```
 
 The source on the `main` branch may be ahead of the latest release. To
-build exactly 0.5.0, run `git checkout v0.5.0` first.
+build exactly 0.6.0, run `git checkout v0.6.0` first.
 
 ## Quick start
 
@@ -290,7 +296,7 @@ build exactly 0.5.0, run `git checkout v0.5.0` first.
 
     ``` text
     $ tread version
-    tread 0.5.0
+    tread 0.6.0
     ```
 
 3.  **Create** a file named `hello.tr`:
@@ -320,7 +326,7 @@ Next, work through the [Language tutorial](#language-tutorial).
 ## Language tutorial
 
 Each lesson is a complete program. Save it as a `.tr` file and run it
-with `tread run`. The output shown is exactly what Tread 0.5.0 prints.
+with `tread run`. The output shown is exactly what Tread 0.6.0 prints.
 
 1.  [Program structure and comments](#1-program-structure-and-comments)
 2.  [Variables and mutability](#2-variables-and-mutability)
@@ -335,8 +341,10 @@ with `tread run`. The output shown is exactly what Tread 0.5.0 prints.
 11. [Maps](#11-maps)
 12. [Enums and pattern matching](#12-enums-and-pattern-matching)
 13. [Generics](#13-generics)
-14. [Built-in functions](#14-built-in-functions)
-15. [Putting it together: FizzBuzz](#15-putting-it-together-fizzbuzz)
+14. [Structs and methods](#14-structs-and-methods)
+15. [Modules and imports](#15-modules-and-imports)
+16. [Built-in functions](#16-built-in-functions)
+17. [Putting it together: FizzBuzz](#17-putting-it-together-fizzbuzz)
 
 ### 1. Program structure and comments
 
@@ -361,8 +369,9 @@ Hello from Tread
     may continue on the next line after an operator such as `+`, or
     inside parentheses.
 -   **`module`:** an optional `module` declaration may appear first. In
-    Tread 0.5.0, a program is a single file and the name has no other
-    effect.
+    a file that other files import, it must match the file's name (see
+    [Modules and imports](#15-modules-and-imports)); otherwise it has no
+    other effect.
 -   **Order:** functions may appear in any order.
 
 ### 2. Variables and mutability
@@ -882,7 +891,141 @@ Pair.Of("one", 1)
 -   Where Tread cannot work out a type, such as `Option.None` on its
     own, write it down: `let x: Option<Int> = Option.None`.
 
-### 14. Built-in functions
+### 14. Structs and methods
+
+A struct groups named fields into one value. Methods go in an `impl`
+block.
+
+``` tread
+struct Point {
+    x: Int
+    y: Int
+}
+
+impl Point {
+    fn origin() -> Point {
+        return Point { x: 0, y: 0 }
+    }
+
+    fn dist2(self, other: Point) -> Int {
+        let dx = self.x - other.x
+        let dy = self.y - other.y
+        return dx * dx + dy * dy
+    }
+
+    fn move(mut self, dx: Int, dy: Int) -> Unit {
+        self.x = self.x + dx
+        self.y = self.y + dy
+    }
+}
+
+struct Box<T> {
+    value: T
+}
+
+impl Box {
+    fn get(self) -> T {
+        return self.value
+    }
+}
+
+fn main() -> Unit {
+    let mut p = Point { x: 3, y: 4 }
+    let start = p
+    p.move(1, 1)
+    print(p)
+    print(start)
+    print(p.dist2(Point.origin()))
+
+    p.x = 10
+    print("x is now ${p.x}")
+
+    let b = Box { value: "tread" }
+    print(b.get())
+    print(Box { value: [1, 2] })
+}
+```
+
+``` text
+Point { x: 4, y: 5 }
+Point { x: 3, y: 4 }
+41
+x is now 10
+tread
+Box { value: [1, 2] }
+```
+
+-   **Build** a struct by naming every field, in any order:
+    `Point { x: 3, y: 4 }`. Fields are separated by newlines or commas.
+-   **Value semantics:** like arrays and maps, `let start = p` makes an
+    independent copy, so changing `p` does not change `start`.
+-   **Fields:** read with `p.x`; change with `p.x = 10` when `p` is
+    `let mut`. This also works inside other values: `line.to.x = 9`,
+    `points[0].x = 1`.
+-   **Methods:** `self` gives read-only access to the value the method
+    is called on. A `mut self` method can change it, so it can only be
+    called on a `let mut` variable (or a field or element of one).
+-   **Associated functions** have no `self` and are called on the type:
+    `Point.origin()`.
+-   **Generic structs** such as `Box<T>` work like generic enums; inside
+    `impl Box`, `T` is in scope.
+-   A struct literal cannot appear directly after `if`, `while`, `match`
+    or `for`, where `{` starts the block: write `if p == (Point { x: 0, y: 0 }) {`.
+
+### 15. Modules and imports
+
+A program can be split into several files. Each file is a module.
+
+``` tread
+// shapes/circle.tr
+pub struct Circle {
+    pub radius: Float
+}
+
+impl Circle {
+    pub fn area(self) -> Float {
+        return pi() * self.radius * self.radius
+    }
+}
+
+fn pi() -> Float {
+    return 3.14159
+}
+```
+
+``` tread
+// main.tr
+import shapes.circle
+
+fn main() -> Unit {
+    let c = circle.Circle { radius: 2.0 }
+    print(c.area())
+}
+```
+
+``` text
+12.56636
+```
+
+-   **`import shapes.circle`** loads `shapes/circle.tr`, relative to the
+    directory of the file you run. Imports come first in a file, after
+    an optional `module` declaration.
+-   **Qualified names:** everything from the file is used through its
+    last name part: `circle.Circle`, `circle.area(...)`, and for enum variants
+    `module.Enum.Variant`.
+-   **`pub`:** only `pub` functions, structs, enums, fields and methods
+    can be used from other files. Using `circle.pi()` above is an error:
+
+    ``` text
+    error[TR-T034]: function 'pi' is private to module 'shapes.circle'
+    ```
+
+-   Each file is loaded once, however many files import it. Files may
+    not import each other in a cycle (`TR-T035`).
+-   Only the file you run needs `main`. `tread build` puts every file
+    into the `.tbc` file, so the program runs without its sources.
+
+### 16. Built-in functions
 
 ``` tread
 fn main() -> Unit {
@@ -911,11 +1054,12 @@ text
 
 A `Float` always prints with a decimal point (`3.0`), using the shortest
 text that reads back as the same value. Collections and enums print as
-you would write them: `[1, 2]`, `["a": 1]`, `[:]`, `Shape.Circle(1.0)`;
+you would write them: `[1, 2]`, `["a": 1]`, `[:]`, `Shape.Circle(1.0)`,
+`Point { x: 1, y: 2 }`;
 strings inside them are quoted. Built-in names cannot be
 redefined.
 
-### 15. Putting it together: FizzBuzz
+### 17. Putting it together: FizzBuzz
 
 ``` tread
 // FizzBuzz from 1 to 15, using recursion instead of a loop.
@@ -968,7 +1112,7 @@ tread <command> [arguments]
 |---|---|---|---|
 | `tread run <file.tr>` | Check, compile, and run a program. It runs only if there are no compile-time errors. | Program output on stdout; errors on stderr | `0`, `1`, `2`, or `3` |
 | `tread check <file.tr>` | Check a program without running it. | Nothing on success; errors on stderr | `0`, `1`, or `2` |
-| `tread version` | Print the version. | `tread 0.5.0` on stdout | `0` |
+| `tread version` | Print the version. | `tread 0.6.0` on stdout | `0` |
 | `tread help` | Print usage. | Usage on stdout | `0` |
 
 Flags: `--version` is the same as `tread version`; `-h` and `--help` are
@@ -1035,17 +1179,18 @@ tread check app.tr && tread run app.tr
 | `Map<K, V>` | `K` to `V`, in insertion order; `K` is `Int`, `String` or `Bool` | `["a": 1]`, `[:]` |
 | `Option<T>` | `Option.Some(value)` or `Option.None` | `Option.Some(3)` |
 | enums | Declared with `enum`, optionally generic | `Shape.Circle(1.0)` |
+| structs | Declared with `struct`, optionally generic (value semantics) | `Point { x: 1, y: 2 }` |
 
 **Operators**, from highest to lowest precedence:
 
 | Precedence | Operators | Operands |
 |---|---|---|
-| 1 | `( )`, calls, indexing `a[i]`, methods `a.len()` | none |
+| 1 | `( )`, calls, indexing `a[i]`, fields `p.x`, methods `a.len()` | none |
 | 2 | `!`, unary `-` | `Bool`; `Int` or `Float` |
 | 3 | `*` `/` `%` | `Int` or `Float` (`%`: `Int` only) |
 | 4 | `+` `-` | `Int` or `Float`; `+` also joins two `String`s |
 | 5 | `<` `<=` `>` `>=` | `Int` or `Float` |
-| 6 | `==` `!=` | two values of the same type, except `Unit` (collections and enums compare by contents) |
+| 6 | `==` `!=` | two values of the same type, except `Unit` (collections, enums and structs compare by contents) |
 | 7 | `&&` | `Bool` |
 | 8 | `\|\|` | `Bool` |
 
@@ -1058,10 +1203,12 @@ tread check app.tr && tread run app.tr
 **Keywords:**
 
 -   **In use:** `fn`, `let`, `mut`, `if`, `else`, `return`, `true`,
-    `false`, `module`, `enum`, `match`, and the loop keywords `while`,
-    `for`, `in`, `break`, `continue`.
+    `false`, `module`, `enum`, `match`, `struct`, `impl`, `pub`,
+    `import`, and the loop keywords `while`, `for`, `in`, `break`,
+    `continue`.
 -   **Reserved for the future**, and not usable as names: `class`,
-    `interface`, `import`, `pub`, `async`, `await`.
+    `interface`, `async`, `await`.
+-   `self` is not a keyword: it names a method's receiver.
 
 **Names** use ASCII letters, digits, and `_`, and must not start with a
 digit. The type names (`Int`, `String`, …) are not keywords.
@@ -1192,16 +1339,17 @@ problem:
 
 ## Current limitations
 
-Tread 0.5.0 is intentionally small.
+Tread 0.6.0 is intentionally small.
 
 **Not yet in the language:**
 
--   structs or classes, and methods on your own types;
+-   classes, inheritance or interfaces, and methods on enums;
+-   struct patterns in `match` (match a struct with a name or `_`);
 -   bounds on type parameters (a generic `T` cannot use arithmetic), and
     type parameters as map keys;
 -   `match` as an expression (it is a statement, like `if`);
 -   function values or closures;
--   imports or multi-file programs;
+-   import aliases, and a package manager for code from other projects;
 -   input, file access, or networking (the only output is `print`).
 
 **Tooling:**
@@ -1230,8 +1378,8 @@ repository:
 | Loops (`while`, `for`, `break`, `continue`) | **Implemented** | Released in 0.4.0. See [Loops](#loops). |
 | Collections (arrays, maps) | **Implemented** | Released in 0.5.0. See [Arrays](#10-arrays) and [Maps](#11-maps). |
 | Generics, enums, and pattern matching | **Implemented** | Released in 0.5.0. See [Enums](#12-enums-and-pattern-matching) and [Generics](#13-generics). |
-| Structs and user-defined types | Planned | |
-| Imports and multi-file programs | Planned | |
+| Structs and user-defined methods | **Implemented** | Released in 0.6.0. See [Structs and methods](#14-structs-and-methods). |
+| Imports and multi-file programs | **Implemented** | Released in 0.6.0. See [Modules and imports](#15-modules-and-imports). |
 | File and network I/O | Planned | |
 | Structured error handling (`Result`) | Planned | |
 | Package ecosystem | Planned | |
