@@ -5,7 +5,7 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 Tread uses [Semantic Versioning](https://semver.org/). Entries for 0.1.0
 and 0.2.0 are kept as written, under the language's name at the time.
 
-## [Unreleased]
+## [0.7.0] - 2026-11-13
 
 Tooling: a formatter, a test runner and editor support (ADR-0015).
 

@@ -13,7 +13,7 @@ A small, statically typed programming language whose whole toolchain
 (lexer, parser, type checker, bytecode compiler, and virtual machine) is
 built to be read, one stage at a time. Written in Go.
 
-**Version 0.6.0** · macOS · Linux · Windows ·
+**Version 0.7.0** · macOS · Linux · Windows ·
 [Website](https://treadlang.vercel.app/) ·
 [Repository](https://github.com/sarvessveeriyah2312/Tread) ·
 [Latest release](https://github.com/sarvessveeriyah2312/Tread/releases/latest)
@@ -43,6 +43,7 @@ Hello, Tread!
 -   [Quick start](#quick-start)
 -   [Language tutorial](#language-tutorial)
 -   [CLI reference](#cli-reference)
+-   [Editor support](#editor-support)
 -   [Language reference](#language-reference)
 -   [Errors and diagnostics](#errors-and-diagnostics)
 -   [Current limitations](#current-limitations)
@@ -76,17 +77,18 @@ The design goals:
 | **Helpful errors** | Every error has a stable code (such as `TR-T001`), an exact line and column, and a pointer to the problem. |
 | **Small and understandable** | A compiler and runtime that one developer can read and extend. |
 
-> **Status: 0.6.0, released 2026-11-13.** A deliberately small language
-> core, tested on Linux, macOS, and Windows. 0.6.0 adds structs, methods
-> in `impl` blocks, and programs made of several files with `import`
-> and `pub`.
+> **Status: 0.7.0, released 2026-11-13.** A deliberately small language
+> core, tested on Linux, macOS, and Windows. 0.7.0 adds tooling: a
+> formatter (`tread fmt`), tests (`test` blocks and `tread test`), and
+> editor support through a language server (`tread lsp`) and a VS Code
+> extension.
 > Tread 0.x is experimental, and the language may change between minor
 > versions. Every change is recorded in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Key features
 
-All of the following are implemented in Tread 0.6.0:
+All of the following are implemented in Tread 0.7.0:
 
 -   **Static typing with inference:** `Int`, `Float`, `Bool`, `String`,
     and `Unit`, with no implicit conversions.
@@ -107,11 +109,15 @@ All of the following are implemented in Tread 0.6.0:
     receiver.
 -   **Modules:** split a program into files with `import`, and choose
     what other files can use with `pub`.
+-   **Tooling:** `tread fmt` formats code in one standard style;
+    `test` blocks run with `tread test`; `tread lsp` gives editors
+    errors as you type, hover, go to definition and completion, with a
+    ready-made [VS Code extension](#editor-support).
 -   **Checked integer arithmetic:** overflow and division by zero are
     reported as errors, not silent wrong answers.
 -   **Strings:** escape sequences, and `${...}` interpolation of any
     expression.
--   **Diagnostics:** 69 stable error codes, precise positions, underlined
+-   **Diagnostics:** 70 stable error codes, precise positions, underlined
     source excerpts, and several errors reported per run.
 -   **Stack traces:** a runtime error inside a function shows every
     call that led to it.
@@ -163,13 +169,13 @@ Choose one of three methods:
 
 **A Tread release does not need Go or any other software.** Download
 from the
-[v0.6.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.6.0).
+[v0.7.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.7.0).
 Each platform gets two downloads, plus an installer for the SDK:
 
 | Download | What it is |
 |---|---|
-| `tread-sdk-0.6.0-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
-| `tread-runtime-0.6.0-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
+| `tread-sdk-0.7.0-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
+| `tread-runtime-0.7.0-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
 | `.msi` (Windows), `.pkg` (macOS), `.deb` / `.rpm` (Linux) | SDK installer |
 | `install.sh`, `install.ps1` | user-level install scripts (no administrator rights) |
 
@@ -218,8 +224,8 @@ the installer again with a newer version. `TREAD_HOME` is optional:
 platform's name):
 
 ``` bash
-ARCHIVE=tread-sdk-0.6.0-macos-arm64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.6.0
+ARCHIVE=tread-sdk-0.7.0-macos-arm64.tar.gz
+BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.7.0
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
 shasum -a 256 -c SHA256SUMS --ignore-missing      # Linux: sha256sum; expect: <archive>: OK
@@ -228,7 +234,7 @@ mv "${ARCHIVE%.tar.gz}" ~/tread-sdk               # any location works
 export PATH="$HOME/tread-sdk/bin:$PATH"           # add this to your shell profile
 ```
 
-On Windows, expand `tread-sdk-0.6.0-windows-x64.zip` and add its `bin`
+On Windows, expand `tread-sdk-0.7.0-windows-x64.zip` and add its `bin`
 folder to your user `PATH`. If you download in a browser on macOS,
 Gatekeeper may block `tread`; after checking the checksum, run
 `xattr -d com.apple.quarantine <path>/bin/tread`.
@@ -261,7 +267,7 @@ This method needs **Go 1.25 or later**; `go.mod` declares `go 1.25.0`.
 Go 1.21 or later can download the required toolchain automatically.
 
 ``` bash
-go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.6.0
+go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.7.0
 ```
 
 Go installs `tread` into `$(go env GOBIN)`, or into
@@ -270,7 +276,7 @@ That directory must be on your `PATH`:
 
 ``` bash
 export PATH="$PATH:$(go env GOPATH)/bin"   # add this to your shell profile
-tread version                              # tread 0.6.0
+tread version                              # tread 0.7.0
 ```
 
 ### Method C: Build from source
@@ -282,12 +288,12 @@ dependencies.
 git clone https://github.com/sarvessveeriyah2312/Tread.git
 cd Tread
 go build -o ./bin/tread ./cmd/tread
-./bin/tread version                      # tread 0.6.0
+./bin/tread version                      # tread 0.7.0
 ./bin/tread run examples/hello.tr        # Hello, Tread!
 ```
 
 The source on the `main` branch may be ahead of the latest release. To
-build exactly 0.6.0, run `git checkout v0.6.0` first.
+build exactly 0.7.0, run `git checkout v0.7.0` first.
 
 ## Quick start
 
@@ -296,7 +302,7 @@ build exactly 0.6.0, run `git checkout v0.6.0` first.
 
     ``` text
     $ tread version
-    tread 0.6.0
+    tread 0.7.0
     ```
 
 3.  **Create** a file named `hello.tr`:
@@ -326,7 +332,7 @@ Next, work through the [Language tutorial](#language-tutorial).
 ## Language tutorial
 
 Each lesson is a complete program. Save it as a `.tr` file and run it
-with `tread run`. The output shown is exactly what Tread 0.6.0 prints.
+with `tread run`. The output shown is exactly what Tread 0.7.0 prints.
 
 1.  [Program structure and comments](#1-program-structure-and-comments)
 2.  [Variables and mutability](#2-variables-and-mutability)
@@ -343,8 +349,9 @@ with `tread run`. The output shown is exactly what Tread 0.6.0 prints.
 13. [Generics](#13-generics)
 14. [Structs and methods](#14-structs-and-methods)
 15. [Modules and imports](#15-modules-and-imports)
-16. [Built-in functions](#16-built-in-functions)
-17. [Putting it together: FizzBuzz](#17-putting-it-together-fizzbuzz)
+16. [Tests](#16-tests)
+17. [Built-in functions](#17-built-in-functions)
+18. [Putting it together: FizzBuzz](#18-putting-it-together-fizzbuzz)
 
 ### 1. Program structure and comments
 
@@ -1025,7 +1032,73 @@ fn main() -> Unit {
 -   Only the file you run needs `main`. `tread build` puts every file
     into the `.tbc` file, so the program runs without its sources.
 
-### 16. Built-in functions
+### 16. Tests
+
+Write tests next to the code they check, in `test` blocks, and run them
+with `tread test`.
+
+``` tread
+fn mean(xs: Array<Int>) -> Int {
+    let mut total = 0
+    for x in xs {
+        total = total + x
+    }
+    return total / xs.len()
+}
+
+fn main() -> Unit {
+    print(mean([2, 4, 9]))
+}
+
+test "mean of three numbers" {
+    assertEqual(mean([2, 4, 9]), 5)
+}
+
+test "mean of one number" {
+    assert(mean([7]) == 7)
+}
+
+test "mean of nothing" {
+    let empty: Array<Int> = []
+    assertEqual(mean(empty), 0)
+}
+```
+
+`tread run stats.tr` runs `main` and ignores the tests:
+
+``` text
+5
+```
+
+`tread test stats.tr` runs each test on its own:
+
+``` text
+ok    mean of three numbers
+ok    mean of one number
+FAIL  mean of nothing
+      error[TR-R001]: division by zero (in function 'mean')
+        --> stats.tr:6:12
+         |
+       6 |     return total / xs.len()
+         |            ^^^^^^^^^^^^^^^^
+
+      stack trace:
+        0: mean                    stats.tr:6:12   return total / xs.len()
+        1: test "mean of nothing"  stats.tr:23:17  assertEqual(mean(empty), 0)
+3 tests: 2 passed, 1 failed
+```
+
+-   **`assert(condition)`** fails when the condition is `false`;
+    **`assertEqual(actual, expected)`** fails when the values differ and
+    shows both. A failure is the runtime error `TR-R009`.
+-   The third test found a bug: `mean` divides by zero for an empty
+    array. Any runtime error fails the test that caused it.
+-   A test's printed output is shown only when it fails. `tread test`
+    exits with `1` when any test fails.
+-   A file of only tests needs no `main`. `tread check` checks tests too,
+    and `tread build` leaves them out of `.tbc` files.
+
+### 17. Built-in functions
 
 ``` tread
 fn main() -> Unit {
@@ -1051,6 +1124,8 @@ text
 |---|---|
 | `print(value)` | Prints any value except `Unit`, followed by a newline. |
 | `toString(value)` | Returns the text of any value except `Unit`. |
+| `assert(condition)` | Fails with `TR-R009` when `condition` is `false`. |
+| `assertEqual(actual, expected)` | Fails with `TR-R009` when the two values (of the same type) differ. |
 
 A `Float` always prints with a decimal point (`3.0`), using the shortest
 text that reads back as the same value. Collections and enums print as
@@ -1059,7 +1134,7 @@ you would write them: `[1, 2]`, `["a": 1]`, `[:]`, `Shape.Circle(1.0)`,
 strings inside them are quoted. Built-in names cannot be
 redefined.
 
-### 17. Putting it together: FizzBuzz
+### 18. Putting it together: FizzBuzz
 
 ``` tread
 // FizzBuzz from 1 to 15, using recursion instead of a loop.
@@ -1112,8 +1187,12 @@ tread <command> [arguments]
 |---|---|---|---|
 | `tread run <file.tr>` | Check, compile, and run a program. It runs only if there are no compile-time errors. | Program output on stdout; errors on stderr | `0`, `1`, `2`, or `3` |
 | `tread check <file.tr>` | Check a program without running it. | Nothing on success; errors on stderr | `0`, `1`, or `2` |
-| `tread version` | Print the version. | `tread 0.6.0` on stdout | `0` |
+| `tread version` | Print the version. | `tread 0.7.0` on stdout | `0` |
 | `tread help` | Print usage. | Usage on stdout | `0` |
+| `tread fmt <file.tr>...` | Format files in place. Files with syntax errors are not changed. | Nothing on success; errors on stderr | `0`, `1`, or `2` |
+| `tread fmt --check <file.tr>...` | Change nothing; list the files that are not formatted (for CI). | File names on stdout | `0`, `1`, or `2` |
+| `tread test <file.tr>...` | Run the files' `test` blocks. | `ok` or `FAIL` per test and a summary on stdout | `0`, `1`, or `2` |
+| `tread lsp` | Start the language server on stdin and stdout, for editors. | Protocol messages | `0` or `1` |
 
 Flags: `--version` is the same as `tread version`; `-h` and `--help` are
 the same as `tread help`.
@@ -1164,6 +1243,31 @@ Exit codes make `tread` easy to script:
 tread check app.tr && tread run app.tr
 ```
 
+## Editor support
+
+**VS Code:** download `tread-vscode-0.7.0.vsix` from the
+[release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.7.0)
+and install it with **Extensions: Install from VSIX...** (or
+`code --install-extension tread-vscode-0.7.0.vsix`). It highlights `.tr`
+files and, with the Tread SDK installed, shows errors as you type, types
+and signatures on hover, go to definition, completion, an outline, and
+**Format Document**. If `tread` is not on your `PATH`, set **Tread:
+Path** (`tread.path`).
+
+**Other editors:** any editor with Language Server Protocol support can
+run `tread lsp` (it talks over stdin and stdout) for `.tr` files. For
+example, in Neovim:
+
+``` lua
+vim.filetype.add({ extension = { tr = "tread" } })
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "tread",
+  callback = function()
+    vim.lsp.start({ name = "tread", cmd = { "tread", "lsp" } })
+  end,
+})
+```
+
 ## Language reference
 
 **Types**
@@ -1204,8 +1308,8 @@ tread check app.tr && tread run app.tr
 
 -   **In use:** `fn`, `let`, `mut`, `if`, `else`, `return`, `true`,
     `false`, `module`, `enum`, `match`, `struct`, `impl`, `pub`,
-    `import`, and the loop keywords `while`, `for`, `in`, `break`,
-    `continue`.
+    `import`, `test`, and the loop keywords `while`, `for`, `in`,
+    `break`, `continue`.
 -   **Reserved for the future**, and not usable as names: `class`,
     `interface`, `async`, `await`.
 -   `self` is not a keyword: it names a method's receiver.
@@ -1339,7 +1443,7 @@ problem:
 
 ## Current limitations
 
-Tread 0.6.0 is intentionally small.
+Tread 0.7.0 is intentionally small.
 
 **Not yet in the language:**
 
@@ -1354,7 +1458,8 @@ Tread 0.6.0 is intentionally small.
 
 **Tooling:**
 
--   no REPL, formatter, debugger, or editor (LSP) support;
+-   no REPL or debugger; editor support is a VS Code extension and a
+    language server, not a full IDE;
 -   no native compilation (`.tbc` files are bytecode for the Tread VM).
 
 **Implementation limits:**
@@ -1383,7 +1488,7 @@ repository:
 | File and network I/O | Planned | |
 | Structured error handling (`Result`) | Planned | |
 | Package ecosystem | Planned | |
-| Formatter, test runner, and editor support (LSP) | Under consideration | |
+| Formatter, test runner, and editor support (LSP) | **Implemented** | Released in 0.7.0. See [Tests](#16-tests) and [Editor support](#editor-support). |
 | Native compilation | Under consideration | |
 
 ## Repository structure

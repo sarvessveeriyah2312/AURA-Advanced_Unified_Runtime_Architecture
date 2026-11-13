@@ -39,7 +39,7 @@ func TestBinary(t *testing.T) {
 		{args: []string{"run", "hello.nova"}, exit: 2, stdout: "", stderrHas: "is not a Tread program: expected the .tr or .tbc extension"},
 		{args: []string{"run"}, exit: 2, stdout: "", stderrHas: "run requires exactly one file argument"},
 		{args: []string{"frobnicate"}, exit: 2, stdout: "", stderrHas: `unknown command "frobnicate"`},
-		{args: []string{"version"}, exit: 0, stdout: "tread 0.6.0\n", stderrNone: true},
+		{args: []string{"version"}, exit: 0, stdout: "tread 0.7.0\n", stderrNone: true},
 	}
 	for _, tt := range tests {
 		cmd := exec.Command(bin, tt.args...)
