@@ -3,7 +3,7 @@
 # WebAssembly (cmd/tread-playground), plus Go's wasm_exec.js loader.
 #
 # The outputs are committed under website/public/playground/, because the
-# website host does not have Go. The build is reproducible (-trimpath and
+# website host does not have Go. The build is reproducible (-trimpath, no VCS stamp and
 # an empty build ID, with the Go version from go.mod), so CI rebuilds it
 # with --check and fails if the committed files are out of date.
 #
@@ -28,7 +28,7 @@ esac
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-GOOS=js GOARCH=wasm CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -buildid=" \
+GOOS=js GOARCH=wasm CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags="-s -w -buildid=" \
 	-o "$tmp/tread.wasm" ./cmd/tread-playground
 cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$tmp/wasm_exec.js"
 
