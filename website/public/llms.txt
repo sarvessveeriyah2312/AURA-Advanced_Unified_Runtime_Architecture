@@ -25,6 +25,7 @@ Key facts (updated 2026-11-13):
 
 ## Optional
 
+- [Playground](https://treadlang.vercel.app/compile/): run Tread in the browser with the real compiler and VM (WebAssembly); shows tokens, AST and bytecode
 - [Download](https://treadlang.vercel.app/download/): Tread SDK and Tread Runtime installers (.msi, .pkg, .deb, .rpm), archives, and install scripts
 - [Changelog](https://treadlang.vercel.app/changelog/): every user-visible change, by release ([source](https://github.com/sarvessveeriyah2312/Tread/blob/main/CHANGELOG.md))
 - [Source code](https://github.com/sarvessveeriyah2312/Tread/tree/main): compiler, virtual machine, CLI, and tests

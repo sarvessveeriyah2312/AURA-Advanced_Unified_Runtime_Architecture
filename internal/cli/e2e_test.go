@@ -12,6 +12,7 @@ import (
 	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
 	"github.com/sarvessveeriyah2312/Tread/internal/pipeline"
 	"github.com/sarvessveeriyah2312/Tread/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/vm"
 )
 
 // update rewrites golden files. Golden changes must be reviewed before
@@ -180,7 +181,7 @@ func TestD8ExitCodeMapping(t *testing.T) {
 // to exit code 3.
 func TestInvalidBytecodeIsInternal(t *testing.T) {
 	bad := &bytecode.Module{Main: 5}
-	failure, err := execute(bad, &strings.Builder{})
+	failure, err := execute(bad, &strings.Builder{}, vm.Config{})
 	if err != nil || failure == nil || failure.withSource || failure.diag.Code != diagnostic.InvalidBytecode {
 		t.Fatalf("got %+v, %v", failure, err)
 	}

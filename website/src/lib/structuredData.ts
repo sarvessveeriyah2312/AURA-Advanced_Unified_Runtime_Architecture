@@ -120,3 +120,29 @@ export function downloadStructuredData() {
   }
   return { "@context": "https://schema.org", "@graph": graph };
 }
+
+export function compileStructuredData() {
+  const url = `${SITE_URL}compile/`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${url}#webpage`,
+        url,
+        name: "Tread Playground · run Tread in your browser",
+        description: "Write and run Tread programs in the browser with the real Tread compiler and virtual machine, compiled to WebAssembly.",
+        isPartOf: { "@id": `${SITE_URL}#website` },
+        about: { "@id": `${SITE_URL}#language` },
+        inLanguage: "en",
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Tread", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name: "Playground", item: url },
+        ],
+      },
+    ],
+  };
+}

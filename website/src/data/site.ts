@@ -38,9 +38,11 @@ export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`; // the source
 export const CHANGELOG_PAGE = "/changelog/";
 export const releaseAnchor = (version: string) => `${CHANGELOG_PAGE}#v${version.replace(/[^0-9A-Za-z]+/g, "-")}`;
 
-export type PageId = "home" | "changelog" | "download";
+export type PageId = "home" | "changelog" | "download" | "compile";
 // The download page: SDK, Runtime and installers (src/data/downloads.ts).
 export const DOWNLOAD_PAGE = "/download/";
+// The playground: the real compiler, as WebAssembly (src/pages/Playground.tsx).
+export const PLAYGROUND_PAGE = "/compile/";
 export const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 export const SOURCE_URL = `${REPO_URL}/tree/main`;
 export const ISSUES_URL = `${REPO_URL}/issues`;

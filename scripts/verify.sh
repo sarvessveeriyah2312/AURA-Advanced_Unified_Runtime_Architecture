@@ -22,6 +22,9 @@ go test ./...
 echo "==> go build"
 go build ./...
 
+echo "==> playground WebAssembly is up to date"
+sh scripts/build-playground.sh --check
+
 echo "==> tread smoke test"
 output=$(go run ./cmd/tread run examples/hello.tr)
 if [ "$output" != "Hello, Tread!" ]; then

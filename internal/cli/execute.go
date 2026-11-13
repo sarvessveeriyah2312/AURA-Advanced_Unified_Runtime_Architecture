@@ -23,8 +23,8 @@ type runtimeFailure struct {
 // execute runs a compiled module, writing program output to out. It
 // returns a runtimeFailure for a Tread runtime error, or a plain error if
 // writing program output failed.
-func execute(m *bytecode.Module, out io.Writer) (*runtimeFailure, error) {
-	err := vm.Run(m, out, vm.Config{})
+func execute(m *bytecode.Module, out io.Writer, limits vm.Config) (*runtimeFailure, error) {
+	err := vm.Run(m, out, limits)
 	if err == nil {
 		return nil, nil
 	}

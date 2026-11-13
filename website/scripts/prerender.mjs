@@ -13,6 +13,7 @@ const PAGES = [
   { file: "index.html", path: "", render: server.render, jsonLd: server.structuredData },
   { file: "changelog/index.html", path: "changelog/", render: server.renderChangelog, jsonLd: server.changelogStructuredData },
   { file: "download/index.html", path: "download/", render: server.renderDownload, jsonLd: server.downloadStructuredData },
+  { file: "compile/index.html", path: "compile/", render: server.renderCompile, jsonLd: server.compileStructuredData },
 ];
 
 const ROOT = '<div id="root"></div>';

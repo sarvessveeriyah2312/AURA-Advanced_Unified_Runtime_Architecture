@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { MouseEvent } from "react";
 import { Download, Menu, Moon, Sun, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CHANGELOG_PAGE, DOWNLOAD_PAGE, NAV_LINKS, REPO_URL, type PageId } from "../../data/site";
+import { CHANGELOG_PAGE, DOWNLOAD_PAGE, PLAYGROUND_PAGE, NAV_LINKS, REPO_URL, type PageId } from "../../data/site";
 import { INSTALLERS_RELEASED } from "../../data/downloads";
 import { useActiveSection } from "../../hooks/useActiveSection";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
@@ -122,6 +122,18 @@ export function Navbar({ page = "home" }: { page?: PageId }) {
             ))}
             <li>
               <a
+                href={PLAYGROUND_PAGE}
+                aria-current={page === "compile" ? "page" : undefined}
+                className={cn(
+                  "rounded-md px-3 py-2 text-sm transition-colors",
+                  page === "compile" ? "text-fg" : "text-muted hover:text-fg",
+                )}
+              >
+                Playground
+              </a>
+            </li>
+            <li>
+              <a
                 href={CHANGELOG_PAGE}
                 aria-current={page === "changelog" ? "page" : undefined}
                 className={cn(
@@ -202,6 +214,19 @@ export function Navbar({ page = "home" }: { page?: PageId }) {
                     </a>
                   </li>
                 ))}
+                <li>
+                  <a
+                    href={PLAYGROUND_PAGE}
+                    aria-current={page === "compile" ? "page" : undefined}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "block rounded-lg px-3 py-3 text-[15px]",
+                      page === "compile" ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
+                    )}
+                  >
+                    Playground
+                  </a>
+                </li>
                 <li>
                   <a
                     href={CHANGELOG_PAGE}

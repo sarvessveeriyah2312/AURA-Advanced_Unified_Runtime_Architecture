@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Download, Monitor, Scale, Tag } from "lucide-react";
+import { ArrowRight, Download, Monitor, Play, Scale, Tag } from "lucide-react";
 import { HERO_EXAMPLE } from "../../data/examples";
-import { MOTTO, RELEASED, REPO_URL, VERSION, releaseAnchor } from "../../data/site";
+import { MOTTO, PLAYGROUND_PAGE, RELEASED, REPO_URL, VERSION, releaseAnchor } from "../../data/site";
 import { ButtonLink } from "../ui/Button";
 import { TreadCode, CopyButton, TerminalText, WindowBar } from "../ui/CodeBlock";
 import { GitHubIcon } from "../ui/GitHubIcon";
@@ -50,6 +50,10 @@ export function Hero() {
             <ButtonLink href="#download" size="lg">
               <Download className="size-[18px]" aria-hidden />
               Download Tread
+            </ButtonLink>
+            <ButtonLink href={PLAYGROUND_PAGE} variant="secondary" size="lg">
+              <Play className="size-[18px]" aria-hidden />
+              Try it in your browser
             </ButtonLink>
             <ButtonLink href={REPO_URL} variant="secondary" size="lg">
               <GitHubIcon className="size-[18px]" />

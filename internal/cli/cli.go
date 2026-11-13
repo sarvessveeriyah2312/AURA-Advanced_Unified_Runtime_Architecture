@@ -23,6 +23,7 @@ import (
 	"github.com/sarvessveeriyah2312/Tread/internal/doctor"
 	"github.com/sarvessveeriyah2312/Tread/internal/project"
 	"github.com/sarvessveeriyah2312/Tread/internal/source"
+	"github.com/sarvessveeriyah2312/Tread/internal/vm"
 )
 
 // Exit codes, as specified in docs/07-cli-and-tooling.md.
@@ -85,6 +86,9 @@ Flags:
 type tool struct {
 	compiler       Compiler
 	stdout, stderr io.Writer
+	// limits bounds execution. The CLI sets none; the web playground
+	// does (RunSource).
+	limits vm.Config
 }
 
 func (t *tool) sdk() bool { return t.compiler != nil }
@@ -296,7 +300,7 @@ func (t *tool) runBytecode(path string) int {
 // runModule executes a module and renders any runtime failure. file is
 // nil when no source is available.
 func (t *tool) runModule(module *bytecode.Module, file *source.File) int {
-	failure, err := execute(module, t.stdout)
+	failure, err := execute(module, t.stdout, t.limits)
 	if err != nil {
 		fmt.Fprintf(t.stderr, "error: cannot write program output: %v\n", err)
 		return ExitInternal
@@ -447,6 +451,21 @@ func (t *tool) doctor() int {
 		return ExitFailure
 	}
 	return ExitOK
+}
+
+// RunSource checks, compiles and runs Tread source held in memory, as
+// `tread run` does for a file: the same diagnostics, stack traces and
+// exit codes, with name as the file name in messages. limits bounds
+// execution (the web playground stops runaway loops with
+// MaxInstructions, TR-R004). With check set it only checks, as
+// `tread check` does.
+func RunSource(compiler Compiler, name string, src []byte, check bool, limits vm.Config, stdout, stderr io.Writer) int {
+	t := &tool{compiler: compiler, stdout: stdout, stderr: stderr, limits: limits}
+	file := source.NewFile(1, name, src)
+	if check {
+		return t.runCheck(file)
+	}
+	return t.runSource(file)
 }
 
 // renderAll writes diagnostics with the shared renderer, separated by a
