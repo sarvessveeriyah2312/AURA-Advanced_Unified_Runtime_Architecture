@@ -45,16 +45,20 @@ const MILESTONES: { title: string; status: Status; version?: string; items: stri
     version: "0.5.0",
     items: ["Array<T> and Map<K, V>", "Enums and exhaustive match", "Generic functions and Option<T>"],
   },
+  {
+    title: "Next up",
+    status: "Planned",
+    items: [
+      "Structs and user-defined types",
+      "Imports and multi-file programs",
+      "File and network I/O",
+      "Structured error handling (Result)",
+      "Package ecosystem",
+    ],
+  },
 ];
 
-const CONSIDERING = [
-  "Structs and user-defined methods",
-  "Imports and multi-file programs",
-  "Structured error handling (Result)",
-  "Formatter, test runner, and editor support (LSP)",
-  "File and network APIs",
-  "Native compilation",
-];
+const CONSIDERING = ["Formatter, test runner, and editor support (LSP)", "Native compilation"];
 
 const STYLE: Record<Status, { icon: typeof Circle; className: string }> = {
   Released: { icon: CircleCheck, className: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25" },

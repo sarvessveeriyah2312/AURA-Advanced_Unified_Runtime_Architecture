@@ -1230,11 +1230,12 @@ repository:
 | Loops (`while`, `for`, `break`, `continue`) | **Implemented** | Released in 0.4.0. See [Loops](#loops). |
 | Collections (arrays, maps) | **Implemented** | Released in 0.5.0. See [Arrays](#10-arrays) and [Maps](#11-maps). |
 | Generics, enums, and pattern matching | **Implemented** | Released in 0.5.0. See [Enums](#12-enums-and-pattern-matching) and [Generics](#13-generics). |
-| Structs and user-defined methods | Under consideration | |
-| Imports and multi-file programs | Under consideration | |
-| Structured error handling (`Result`) | Under consideration | |
+| Structs and user-defined types | Planned | |
+| Imports and multi-file programs | Planned | |
+| File and network I/O | Planned | |
+| Structured error handling (`Result`) | Planned | |
+| Package ecosystem | Planned | |
 | Formatter, test runner, and editor support (LSP) | Under consideration | |
-| File and network APIs | Under consideration | |
 | Native compilation | Under consideration | |
 
 ## Repository structure
