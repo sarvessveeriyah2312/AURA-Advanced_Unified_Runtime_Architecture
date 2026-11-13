@@ -35,7 +35,8 @@ export function usePlayground() {
       const msg = e.data as { type: string; id?: number; version?: string; message?: string } & Omit<PlayResult, "check">;
       if (msg.type === "ready") {
         setVersion(msg.version ?? null);
-        setStatus("ready");
+        // A run requested while loading is already queued in the worker.
+        setStatus(pending.current ? "running" : "ready");
       } else if (msg.type === "error") {
         setError(msg.message ?? "unknown error");
         setStatus("failed");

@@ -1,5 +1,5 @@
 import { Check, CircleAlert, Link2, LoaderCircle, Play, RotateCcw, ScanSearch, Square } from "lucide-react";
-import { useCallback, useId, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { CodeEditor } from "../components/ui/CodeEditor";
@@ -70,15 +70,29 @@ export function PlaygroundPage() {
   const share = useCopy();
   const tabsId = useId();
 
-  const busy = status !== "ready";
+  // While the compiler is still loading, Run and Check are queued: the
+  // worker starts them as soon as it is ready.
+  const busy = status === "running" || status === "failed";
   const go = useCallback(
     async (check: boolean) => {
-      if (status !== "ready") return;
+      if (status === "running" || status === "failed") return;
       const r = await run(code, check);
       if (r) setResult(r);
     },
     [code, run, status],
   );
+
+  // Ctrl/⌘ + Enter runs the program from anywhere on the page, not only
+  // from inside the editor (which handles it itself).
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.defaultPrevented || e.key !== "Enter" || !(e.metaKey || e.ctrlKey)) return;
+      e.preventDefault();
+      void go(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [go]);
 
   const choose = (id: string) => {
     const p = PROGRAMS.find((x) => x.id === id);
@@ -159,7 +173,7 @@ export function PlaygroundPage() {
             <div className="flex h-11 items-center justify-between gap-3 border-b border-code-line bg-code-bar px-4">
               <span className="font-mono text-xs text-code-dim">main.tr</span>
               <span id="editor-keys" className="hidden font-mono text-[11px] text-code-dim sm:inline">
-                Ctrl/⌘ + Enter to run · Esc, then Tab, to leave the editor
+                Ctrl/⌘ + Enter runs · Esc, then Tab, leaves the editor
               </span>
             </div>
             <CodeEditor value={code} onChange={setCode} onRun={() => void go(false)} label="Tread program, main.tr" className="h-[26rem] lg:h-[32rem]" />
