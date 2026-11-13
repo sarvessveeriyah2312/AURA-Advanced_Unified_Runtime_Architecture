@@ -52,6 +52,12 @@ const MILESTONES: { title: string; status: Status; version?: string; items: stri
     items: ["Structs with value semantics", "Methods in impl blocks", "Multi-file programs with import and pub"],
   },
   {
+    title: "Formatter, tests, editor support",
+    status: "Released",
+    version: "0.7.0",
+    items: ["tread fmt", "test blocks and tread test", "tread lsp and a VS Code extension"],
+  },
+  {
     title: "Next up",
     status: "Planned",
     items: [
@@ -62,7 +68,7 @@ const MILESTONES: { title: string; status: Status; version?: string; items: stri
   },
 ];
 
-const CONSIDERING = ["Formatter, test runner, and editor support (LSP)", "Native compilation"];
+const CONSIDERING = ["Native compilation"];
 
 const STYLE: Record<Status, { icon: typeof Circle; className: string }> = {
   Released: { icon: CircleCheck, className: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25" },

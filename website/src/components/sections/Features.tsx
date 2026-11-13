@@ -1,4 +1,4 @@
-import { Binary, Boxes, Braces, Cpu, Layers, ListTree, Shapes, ShieldCheck, SquareTerminal, TriangleAlert } from "lucide-react";
+import { Binary, Boxes, Braces, Cpu, Layers, ListTree, Shapes, ShieldCheck, SquareTerminal, TriangleAlert, Wrench } from "lucide-react";
 import { VERSION } from "../../data/site";
 import { Card, IconBadge } from "../ui/Card";
 import { Reveal } from "../ui/Reveal";
@@ -31,7 +31,7 @@ const FEATURES = [
     title: "Tread Virtual Machine",
     points: [
       "Stack-based execution",
-      "70 bytecode instructions",
+      "72 bytecode instructions",
       "Bytecode validated before it runs",
       "Never panics on a user program",
     ],
@@ -40,7 +40,7 @@ const FEATURES = [
     icon: ListTree,
     title: "Structured diagnostics",
     points: [
-      "69 stable codes, such as TR-T001",
+      "70 stable codes, such as TR-T001",
       "Exact line and column positions",
       "Underlined source excerpts and help text",
       "Several errors reported in one run",
@@ -96,6 +96,17 @@ const FEATURES = [
       "Methods in impl blocks, with mut self",
       "Programs split across files with import",
       "pub controls what other files can use",
+    ],
+  },
+  {
+    icon: Wrench,
+    title: "Formatter, tests, and editor support",
+    badge: "Since 0.7.0",
+    points: [
+      "tread fmt: one standard style, comments kept",
+      "test blocks, run with tread test",
+      "tread lsp: errors as you type, hover, go to definition",
+      "A VS Code extension",
     ],
   },
   {

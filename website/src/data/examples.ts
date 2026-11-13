@@ -1,5 +1,5 @@
 // Tread programs shown on the site. Every program and its output was run
-// with the `tread` 0.6.0 binary; `output` is copied verbatim.
+// with the `tread` 0.7.0 binary; `output` is copied verbatim.
 // Keep this file free of imports so the verification script can read it.
 
 export interface Example {
@@ -356,12 +356,15 @@ stack trace:
   },
 ];
 
-// Real output of the CLI commands (tread 0.6.0).
+// Real output of the CLI commands (tread 0.7.0).
 export const CLI_HELP = `Usage: tread <command> [arguments]
 
 Commands:
   new <name>                       Create a new project in the directory <name>
   check <file.tr>                  Check a program for errors without running it
+  fmt [--check] <file.tr>...       Format files in place (--check: list unformatted files)
+  test <file.tr>...                Run the tests in files
+  lsp                              Start the language server (used by editors)
   build <file.tr> [-o <file.tbc>]  Compile a program to a bytecode file
   run <file.tr|file.tbc>           Run a program from source or bytecode
   doctor                           Diagnose the Tread installation

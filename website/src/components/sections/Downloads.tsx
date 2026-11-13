@@ -1,5 +1,5 @@
-import { ArrowRight, CircleCheck, Clock, Download, ExternalLink, FileText, Laptop, Monitor, Package, Server, ShieldCheck } from "lucide-react";
-import { INSTALLERS_RELEASED, INSTALLERS_VERSION } from "../../data/downloads";
+import { ArrowRight, CircleCheck, Clock, Code, Download, ExternalLink, FileText, Laptop, Monitor, Package, Server, ShieldCheck } from "lucide-react";
+import { INSTALLERS_RELEASED, INSTALLERS_VERSION, downloadUrl } from "../../data/downloads";
 import {
   BUILD_FROM_SOURCE,
   CHECKSUMS_URL,
@@ -157,6 +157,30 @@ export function Downloads() {
           </span>
         </a>
       </Reveal>
+
+      {RELEASED && (
+        <Reveal className="mt-4">
+          <a
+            href={downloadUrl(`tread-vscode-${VERSION}.vsix`)}
+            className="group flex flex-col gap-3 rounded-2xl border border-line bg-surface p-5 shadow-card transition-colors hover:border-accent/60 sm:flex-row sm:items-center"
+          >
+            <IconBadge>
+              <Code className="size-5" />
+            </IconBadge>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">VS Code extension</span>
+              <span className="mt-1 block text-sm text-muted">
+                tread-vscode-{VERSION}.vsix: highlighting, errors as you type, hover, go to definition and formatting. Install
+                it with Extensions: Install from VSIX. It needs the Tread SDK.
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent">
+              Download .vsix
+              <Download className="size-4" aria-hidden />
+            </span>
+          </a>
+        </Reveal>
+      )}
 
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         {PLATFORMS.map((p, i) => (

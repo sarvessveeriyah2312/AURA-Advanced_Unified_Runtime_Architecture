@@ -40,9 +40,10 @@ const KEYWORDS = new Set([
   "impl",
   "pub",
   "import",
+  "test",
 ]);
 const TYPES = new Set(["Int", "Float", "Bool", "String", "Unit"]);
-const BUILTINS = new Set(["print", "toString"]);
+const BUILTINS = new Set(["print", "toString", "assert", "assertEqual"]);
 const PUNCT = new Set(["{", "}", "(", ")", ",", ":"]);
 
 const isIdentStart = (c: string) => /[A-Za-z_]/.test(c);
