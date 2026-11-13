@@ -4,6 +4,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { CodeEditor } from "../components/ui/CodeEditor";
 import { TerminalText } from "../components/ui/CodeBlock";
+import { ExamplePicker, type ExampleGroup } from "../components/ui/ExamplePicker";
 import { Container } from "../components/ui/SectionHeading";
 import { EXAMPLES, HERO_EXAMPLE, type Example } from "../data/examples";
 import { VERSION, readmeSection } from "../data/site";
@@ -11,8 +12,27 @@ import { useCopy } from "../hooks/useCopy";
 import { cn } from "../lib/cn";
 import { encodeProgram, sharedProgram, subscribeHash, usePlayground, type PlayResult } from "../lib/playground";
 
-// The examples shown on the home page, verified against the real binary.
+// The examples shown on the home page, verified against the real binary,
+// grouped for the example picker.
 const PROGRAMS: Example[] = [HERO_EXAMPLE, ...EXAMPLES];
+const byId = (...ids: string[]) => ids.map((id) => PROGRAMS.find((p) => p.id === id)).filter((p): p is Example => p !== undefined);
+const GROUPS: ExampleGroup[] = [
+  { title: "Basics", examples: byId("hero", "variables", "functions", "interpolation") },
+  { title: "Control flow", examples: byId("conditionals", "loops", "recursion") },
+  { title: "Data", examples: byId("collections", "enums", "generics") },
+  { title: "Errors", examples: byId("typing", "traces") },
+].map((g) => ({
+  ...g,
+  // "New in 0.5.0: arrays and ..." reads as "Arrays and ..." in the picker.
+  examples: g.examples.map((e) => {
+    const s = e.summary.replace(/^New in [\d.]+: /, "");
+    return { ...e, summary: s.charAt(0).toUpperCase() + s.slice(1) };
+  }),
+}));
+// Any example missing from a group would be unreachable from the picker.
+const grouped = new Set(GROUPS.flatMap((g) => g.examples.map((e) => e.id)));
+const UNGROUPED = PROGRAMS.filter((p) => !grouped.has(p.id));
+if (UNGROUPED.length > 0) GROUPS.push({ title: "More", examples: UNGROUPED });
 const DEFAULT = PROGRAMS.find((p) => p.id === "loops") ?? HERO_EXAMPLE;
 
 type View = "output" | "tokens" | "ast" | "bytecode";
@@ -110,22 +130,7 @@ export function PlaygroundPage() {
 
       <Container className="py-10">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor="example">
-            Example program
-          </label>
-          <select
-            id="example"
-            value={example}
-            onChange={(e) => choose(e.target.value)}
-            className="h-10 rounded-lg border border-line-strong bg-surface px-3 text-sm text-fg"
-          >
-            {example === "" && <option value="">Your program</option>}
-            {PROGRAMS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.id === "hero" ? "Hello" : p.label}
-              </option>
-            ))}
-          </select>
+          <ExamplePicker groups={GROUPS} value={example} onChange={choose} />
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <Button variant="ghost" size="md" onClick={shareLink} aria-label={share.copied ? "Link copied" : "Copy a link to this program"}>
               {share.copied ? <Check className="size-4" aria-hidden /> : <Link2 className="size-4" aria-hidden />}
