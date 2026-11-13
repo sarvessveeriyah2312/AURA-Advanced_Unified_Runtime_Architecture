@@ -66,6 +66,8 @@ func (c *checker) exprType(e ast.Expr, want Type) Type {
 		return c.index(e)
 	case *ast.MemberExpr:
 		return c.member(e, want)
+	case *ast.StructLit:
+		return c.structLit(e, want)
 	}
 	return Invalid
 }
@@ -114,10 +116,20 @@ func (c *checker) ident(e *ast.Ident) Type {
 				"'%s' is an enum type, not a value; use one of its variants, such as %s.%s", e.Name, e.Name, en.Variants[0].Name)
 			return Invalid
 		}
+		if c.structs[e.Name] != nil {
+			c.errorf(diagnostic.EnumAsValue, e.Loc,
+				"'%s' is a struct type, not a value; build one with %s { ... }", e.Name, e.Name)
+			return Invalid
+		}
 		c.errorf(diagnostic.UndefinedName, e.Loc, "undefined name '%s'", e.Name)
 		return Invalid
 	}
 	c.out.Uses[e] = sym
+	if sym.Kind == ModuleSymbol {
+		c.errorf(diagnostic.EnumAsValue, e.Loc,
+			"'%s' is a module, not a value; use one of its items, such as %s.name", e.Name, e.Name)
+		return Invalid
+	}
 	if sym.Kind == FuncSymbol || sym.Kind == BuiltinSymbol {
 		c.errorf(diagnostic.FunctionAsValue, e.Loc,
 			"function '%s' cannot be used as a value; functions can only be called", e.Name)
@@ -211,6 +223,10 @@ func (c *checker) call(e *ast.CallExpr, want Type) Type {
 		switch sym.Kind {
 		case BuiltinSymbol:
 			return c.callBuiltin(e, sym.Func)
+		case ModuleSymbol:
+			c.errorf(diagnostic.NotCallable, callee.Loc, "'%s' is a module, not a function; call one of its functions, as in %s.name()", callee.Name, callee.Name)
+			c.checkArgs(e.Args)
+			return Invalid
 		case FuncSymbol:
 			fn := sym.Func
 			paramTypes := make([]Type, len(fn.Params))
@@ -231,10 +247,23 @@ func (c *checker) call(e *ast.CallExpr, want Type) Type {
 			return Invalid
 		}
 	case *ast.MemberExpr:
-		if id, ok := callee.X.(*ast.Ident); ok && c.enums[id.Name] != nil {
-			return c.construct(e, callee, c.enums[id.Name], e.Args, true, want)
+		if en, st, isType, ok := c.typeRef(callee.X); isType {
+			switch {
+			case !ok:
+				c.checkArgs(e.Args)
+				return Invalid
+			case en != nil:
+				return c.construct(e, callee, en, e.Args, true, want)
+			default:
+				return c.associatedCall(e, st, callee, want)
+			}
 		}
-		return c.methodCall(e, callee)
+		if id, ok := callee.X.(*ast.Ident); ok {
+			if m := c.moduleNamed(id); m != nil {
+				return c.qualifiedCall(e, m, callee, want)
+			}
+		}
+		return c.methodCall(e, callee, want)
 	}
 	// Not a name: e.g. f()() or (f)(1). Tread has no function values.
 	if t := c.expr(e.Callee); t != Invalid {
@@ -261,6 +290,7 @@ type call struct {
 	arity      func(got int) string // the T006 message
 	argName    string               // for "argument 1 of 'f'"
 	what       string               // for "type parameter 'T' of function 'f'"
+	labels     []string             // names the arguments, as "field 'x'"; nil for "argument 1"
 }
 
 // instantiate checks a call: arity, argument types, and, for a generic
@@ -292,13 +322,25 @@ func (c *checker) instantiate(k call, want Type) Type {
 	checkArg := func(i int) {
 		arg, pt := k.args[i], k.paramTypes[i]
 		expected := subst(pt, bind)
-		if mentions(expected, isParam) {
+		// Only parameters not yet bound are unknown. One bound to itself
+		// (inside its own struct's impl, ADR-0014) is a known type there.
+		unbound := map[*TypeParam]bool{}
+		for p := range isParam {
+			if _, ok := bind[p]; !ok {
+				unbound[p] = true
+			}
+		}
+		if mentions(expected, unbound) {
 			expected = nil
 		}
 		at := c.exprWant(arg, expected)
 		if !unify(pt, at, bind, isParam) {
+			label := "argument " + strconv.Itoa(i+1)
+			if k.labels != nil {
+				label = k.labels[i]
+			}
 			c.errorf(diagnostic.TypeMismatch, arg.Span(),
-				"argument %d of %s: expected %s but found %s", i+1, k.argName, displayType(subst(pt, bind)), at)
+				"%s of %s: expected %s but found %s", label, k.argName, displayType(subst(pt, bind)), at)
 		}
 	}
 	var deferred []int
@@ -360,7 +402,7 @@ func unify(p, a Type, bind map[*TypeParam]Type, isParam map[*TypeParam]bool) boo
 		bind[p.Param] = a
 		return true
 	}
-	if p.Kind != a.Kind || p.Enum != a.Enum || p.Param != a.Param || len(p.Args) != len(a.Args) {
+	if p.Kind != a.Kind || p.Enum != a.Enum || p.Param != a.Param || p.Struct != a.Struct || len(p.Args) != len(a.Args) {
 		return false
 	}
 	for i := range p.Args {
@@ -388,8 +430,23 @@ func (c *checker) needsContext(e ast.Expr) bool {
 	case *ast.MapLit:
 		return len(x.Keys) == 0
 	case *ast.MemberExpr:
-		id, ok := x.X.(*ast.Ident)
-		return ok && c.enums[id.Name] != nil && len(c.enums[id.Name].Params) > 0
+		switch y := x.X.(type) {
+		case *ast.Ident:
+			return c.enums[y.Name] != nil && len(c.enums[y.Name].Params) > 0
+		case *ast.MemberExpr:
+			// module.Enum.Variant (ADR-0014)
+			id, ok := y.X.(*ast.Ident)
+			if !ok || c.enums[id.Name] != nil || c.structs[id.Name] != nil {
+				return false
+			}
+			sym := c.lookup(id.Name)
+			if sym == nil || sym.Kind != ModuleSymbol {
+				return false
+			}
+			en := sym.mod.enums[y.Name.Name]
+			return en != nil && len(en.Params) > 0
+		}
+		return false
 	case *ast.CallExpr:
 		m, ok := x.Callee.(*ast.MemberExpr)
 		if !ok || !c.needsContext(m) {
@@ -553,12 +610,41 @@ func (c *checker) index(e *ast.IndexExpr) Type {
 // member checks `X.name` outside a call: a variant without fields, such as
 // Shape.Empty or Option.None.
 func (c *checker) member(e *ast.MemberExpr, want Type) Type {
-	if id, ok := e.X.(*ast.Ident); ok && c.enums[id.Name] != nil {
-		return c.construct(e, e, c.enums[id.Name], nil, false, want)
+	if en, st, isType, ok := c.typeRef(e.X); isType {
+		switch {
+		case !ok:
+			return Invalid
+		case en != nil:
+			return c.construct(e, e, en, nil, false, want)
+		default:
+			if fn := st.Methods[e.Name.Name]; fn != nil {
+				c.errorf(diagnostic.FunctionAsValue, e.Loc, "'%s.%s' is a function and cannot be used as a value; call it with ()", st.Name, e.Name.Name)
+			} else {
+				c.errorf(diagnostic.UnknownMethod, e.Name.Loc, "struct '%s' has no associated function '%s'", qualified(st.Module, st.Name), e.Name.Name)
+			}
+			return Invalid
+		}
+	}
+	if id, ok := e.X.(*ast.Ident); ok {
+		if m := c.moduleNamed(id); m != nil {
+			name := e.Name.Name
+			switch sym := m.scope.names[name]; {
+			case sym != nil && sym.Kind == FuncSymbol:
+				c.errorf(diagnostic.FunctionAsValue, e.Loc, "function '%s.%s' cannot be used as a value; functions can only be called", id.Name, name)
+			case (m.enums[name] != nil && m.enums[name].Decl != nil) || m.structs[name] != nil:
+				c.errorf(diagnostic.EnumAsValue, e.Loc, "'%s.%s' is a type, not a value", id.Name, name)
+			default:
+				c.errorf(diagnostic.UndefinedName, e.Name.Loc, "module '%s' has no item '%s'", m.path, name)
+			}
+			return Invalid
+		}
 	}
 	t := c.expr(e.X)
 	if t == Invalid {
 		return Invalid
+	}
+	if t.Kind == KStruct {
+		return c.field(e, t)
 	}
 	if _, ok := methodSig(t, e.Name.Name, c.enums["Option"]); ok {
 		c.errorf(diagnostic.UnknownMethod, e.Loc, "'%s' is a method; call it with parentheses: %s()", e.Name.Name, e.Name.Name)
@@ -652,11 +738,14 @@ func methodNames(t Type) string {
 	return ""
 }
 
-func (c *checker) methodCall(e *ast.CallExpr, m *ast.MemberExpr) Type {
+func (c *checker) methodCall(e *ast.CallExpr, m *ast.MemberExpr, want Type) Type {
 	recv := c.expr(m.X)
 	if recv == Invalid {
 		c.checkArgs(e.Args)
 		return Invalid
+	}
+	if recv.Kind == KStruct {
+		return c.structMethodCall(e, m, recv, want)
 	}
 	name := m.Name.Name
 	sig, ok := methodSig(recv, name, c.enums["Option"])

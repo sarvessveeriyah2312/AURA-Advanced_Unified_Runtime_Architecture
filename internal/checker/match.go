@@ -153,9 +153,23 @@ func (c *checker) checkVariantPattern(p *ast.VariantPat, t Type) (space, bool) {
 			c.checkPattern(a, Invalid)
 		}
 	}
-	en := c.enums[p.Enum.Name]
-	if en == nil {
-		c.errorf(diagnostic.UnknownVariant, p.Enum.Loc, "unknown enum '%s'", p.Enum.Name)
+	var en *Enum
+	if p.Module != nil {
+		e, st, ok := c.qualifiedType(p.Module, p.Enum)
+		if ok && st != nil {
+			c.errorf(diagnostic.InvalidPattern, p.Enum.Loc, "'%s' is a struct; match it with a name or '_' and read its fields", p.Enum.Name)
+		}
+		if !ok || e == nil {
+			bindAll()
+			return space{}, false
+		}
+		en = e
+	} else if en = c.enums[p.Enum.Name]; en == nil {
+		if c.structs[p.Enum.Name] != nil {
+			c.errorf(diagnostic.InvalidPattern, p.Enum.Loc, "'%s' is a struct; match it with a name or '_' and read its fields", p.Enum.Name)
+		} else {
+			c.errorf(diagnostic.UnknownVariant, p.Enum.Loc, "unknown enum '%s'", p.Enum.Name)
+		}
 		bindAll()
 		return space{}, false
 	}
@@ -166,7 +180,7 @@ func (c *checker) checkVariantPattern(p *ast.VariantPat, t Type) (space, bool) {
 		return space{}, false
 	}
 	c.out.Variants[p] = v
-	name := en.Name + "." + v.Name
+	name := qualified(en.Module, en.Name) + "." + v.Name
 	fieldTypes := make([]Type, len(v.Fields))
 	if t != Invalid && (t.Kind != KEnum || t.Enum != en) {
 		c.errorf(diagnostic.TypeMismatch, p.Loc, "the pattern %s cannot match a value of type %s", name, t)

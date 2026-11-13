@@ -1,0 +1,9 @@
+error[TR-R001]: division by zero (in function 'geometry.ratio')
+   --> lib/geometry.tr:24:12
+    |
+ 24 |     return a.x / a.y
+    |            ^^^^^^^^^
+
+stack trace:
+  0: geometry.ratio  lib/geometry.tr:24:12  return a.x / a.y
+  1: main            modules.tr:19:11       print(geometry.ratio(geometry.Point.new(1, 0)))

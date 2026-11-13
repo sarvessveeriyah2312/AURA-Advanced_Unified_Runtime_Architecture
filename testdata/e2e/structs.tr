@@ -1,0 +1,76 @@
+// Structs and methods (ADR-0014).
+struct Point {
+    x: Int
+    y: Int
+}
+
+impl Point {
+    fn origin() -> Point {
+        return Point { x: 0, y: 0 }
+    }
+
+    fn len2(self) -> Int {
+        return self.x * self.x + self.y * self.y
+    }
+
+    fn shift(mut self, dx: Int, dy: Int) -> Unit {
+        self.x = self.x + dx
+        self.y = self.y + dy
+    }
+}
+
+struct Stack<T> {
+    items: Array<T>
+}
+
+impl Stack {
+    fn new() -> Stack<T> {
+        return Stack { items: [] }
+    }
+
+    fn push(mut self, value: T) -> Unit {
+        self.items.push(value)
+    }
+
+    fn pop(mut self) -> Option<T> {
+        return self.items.pop()
+    }
+
+    fn size(self) -> Int {
+        return self.items.len()
+    }
+}
+
+struct Line {
+    from: Point
+    to: Point
+}
+
+fn main() -> Unit {
+    let mut p = Point { x: 3, y: 4 }
+    let saved = p
+    p.shift(1, 1)
+    print(p)
+    print("saved ${saved}, len2 ${saved.len2()}")
+    print(Point.origin() == Point { x: 0, y: 0 })
+
+    let mut line = Line { to: Point { x: 5, y: 5 }, from: Point.origin() }
+    line.to.x = 9
+    line.from.shift(2, 0)
+    print(line)
+
+    let mut points = [Point.origin(), p]
+    points[0].shift(-1, -1)
+    print(points)
+
+    let mut s: Stack<String> = Stack.new()
+    for word in ["a", "b", "c"] {
+        s.push(word)
+    }
+    print(s.size())
+    match s.pop() {
+        Option.Some(top) => { print("top ${top}") }
+        Option.None => { print("empty") }
+    }
+    print(s)
+}

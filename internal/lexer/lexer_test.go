@@ -41,7 +41,7 @@ var lexCases = []lexCase{
 	{id: "L4", src: "Foo foo FOO", tokens: "IDENT(Foo) IDENT(foo) IDENT(FOO)"},
 	{id: "L5", src: "let café = 1", tokens: "let IDENT(caf) = INT(1)", diags: []string{"L001@1:8"}},
 	{id: "L6", src: "let 日本 = 1", tokens: "let = INT(1)", diags: []string{"L001@1:5", "L001@1:6"}},
-	{id: "L7", src: "class interface pub", tokens: "RESERVED(class) RESERVED(interface) RESERVED(pub)"},
+	{id: "L7", src: "class interface pub", tokens: "RESERVED(class) RESERVED(interface) pub"},
 	{id: "L8", src: "a\nb", tokens: "IDENT(a) NEWLINE IDENT(b)", checks: []tokCheck{{idx: 2, pos: "2:1"}}},
 	{id: "L9", src: "a\r\nb", tokens: "IDENT(a) NEWLINE IDENT(b)", checks: []tokCheck{{idx: 1, span: "[1,3)"}, {idx: 2, pos: "2:1"}}},
 	{id: "L10", src: "a\rb", tokens: "IDENT(a) NEWLINE IDENT(b)", checks: []tokCheck{{idx: 1, span: "[1,2)"}, {idx: 2, pos: "2:1"}}},

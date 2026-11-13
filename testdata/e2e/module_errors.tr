@@ -1,0 +1,7 @@
+import lib.geometry
+
+fn main() -> Unit {
+    print(geometry.secret())
+    print(geometry.missing())
+    let s: geometry.Square = geometry.Point.new(1, 1)
+}

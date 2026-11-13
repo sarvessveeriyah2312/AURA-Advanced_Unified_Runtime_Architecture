@@ -34,6 +34,8 @@ const (
 	UnexpectedToken    Code = "TR-P012"
 	ExpectedTypeName   Code = "TR-P013"
 	NestingTooDeep     Code = "TR-P014"
+	// ImportNotFirst: an import after another declaration (ADR-0014).
+	ImportNotFirst Code = "TR-P015"
 )
 
 // Type checker codes (Phase 2).
@@ -72,6 +74,14 @@ const (
 	UnreachablePattern  Code = "TR-T028" // match arm can never run
 	InvalidPattern      Code = "TR-T029" // Float pattern, wrong field count
 	UnitInCompositeType Code = "TR-T030" // Unit inside a collection, payload or type argument
+
+	// Structs, methods and imports (ADR-0014).
+	InvalidStructLiteral Code = "TR-T031" // missing, unknown or repeated field
+	RecursiveStruct      Code = "TR-T032" // struct contains itself directly
+	ModuleNameMismatch   Code = "TR-T033" // imported file's module name differs
+	PrivateItem          Code = "TR-T034" // not pub in its module
+	ImportCycle          Code = "TR-T035" // modules import each other
+	ImportNotFound       Code = "TR-T036" // imported file cannot be read
 )
 
 // Compiler and runtime codes (Phase 3). The VM cannot import this
@@ -101,7 +111,7 @@ func Registry() []Code {
 		ExpectedExpression, ExpectedIdentifier, ReservedWord, ExpectedNewline,
 		SameLine, NonCallStatement, TrailingComma, DuplicateModule,
 		ModuleNotFirst, MissingRParen, MissingRBrace, UnexpectedToken,
-		ExpectedTypeName, NestingTooDeep,
+		ExpectedTypeName, NestingTooDeep, ImportNotFirst,
 		TypeMismatch, UndefinedName, UnknownType, AssignToImmutable,
 		DuplicateDeclaration, WrongArgumentCount, InvalidOperandTypes,
 		MissingReturn, InvalidReturn, IntLiteralOutOfRange, NotDisplayable,
@@ -111,6 +121,8 @@ func Registry() []Code {
 		CannotInfer, WrongTypeArguments, InvalidMapKey, NotIndexable, UnknownMethod,
 		EnumAsValue, UnknownVariant, NonExhaustiveMatch, UnreachablePattern,
 		InvalidPattern, UnitInCompositeType,
+		InvalidStructLiteral, RecursiveStruct, ModuleNameMismatch, PrivateItem,
+		ImportCycle, ImportNotFound,
 		InternalCompilerError,
 		DivisionByZero, InvalidBytecode, CallDepthExceeded, InstructionLimit,
 		IntegerOverflow, BytecodeLoadError, IndexOutOfRange, KeyNotFound,

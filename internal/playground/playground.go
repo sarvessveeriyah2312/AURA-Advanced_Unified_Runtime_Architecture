@@ -50,7 +50,7 @@ func Run(src string, check bool) Result {
 	}
 	var stdout limitedWriter
 	var stderr strings.Builder
-	exit := cli.RunSource(pipeline.Compiler{}, FileName, []byte(src), check,
+	exit := cli.RunSource(compiler, FileName, []byte(src), check,
 		vm.Config{MaxInstructions: MaxInstructions}, &stdout, &stderr)
 	r := Result{Stdout: stdout.b.String(), Stderr: stderr.String(), Exit: exit}
 	r.Tokens, r.AST, r.Bytecode = stages(src)
@@ -59,6 +59,14 @@ func Run(src string, check bool) Result {
 
 // errOutputLimit is returned once a program has printed MaxOutput bytes.
 // The CLI reports it as "cannot write program output" (exit 3).
+// compiler is the playground's compiler. The playground has no file
+// system, so imports cannot be loaded (ADR-0014).
+var compiler = pipeline.Compiler{Load: func(rel string) (string, []byte, error) {
+	return rel, nil, errNoImports
+}}
+
+var errNoImports = errors.New("imports are not available in the playground")
+
 var errOutputLimit = errors.New("the playground's output limit of 1 MiB was reached")
 
 type limitedWriter struct{ b strings.Builder }
@@ -80,7 +88,7 @@ func stages(src string) (tokens, tree, code string) {
 	if len(lexDiags)+len(parseDiags) == 0 {
 		tree = PrettyAST(ast.Format(prog))
 	}
-	if m, diags := pipeline.Build(file); len(diags) == 0 && m != nil {
+	if m, _, diags := compiler.Compile(file); len(diags) == 0 && m != nil {
 		code = m.Disassemble()
 	}
 	return tokens, tree, code

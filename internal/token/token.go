@@ -37,6 +37,11 @@ const (
 	Continue
 	Enum
 	Match
+	// Structs, methods and imports (ADR-0014).
+	Struct
+	Impl
+	Pub
+	Import
 	keywordEnd
 
 	Plus    // +
@@ -78,6 +83,7 @@ var names = map[Kind]string{
 	True: "true", False: "false", Return: "return",
 	While: "while", For: "for", In: "in", Break: "break", Continue: "continue",
 	Enum: "enum", Match: "match",
+	Struct: "struct", Impl: "impl", Pub: "pub", Import: "import",
 	Plus: "+", Minus: "-", Star: "*", Slash: "/", Percent: "%",
 	Eq: "==", Ne: "!=", Lt: "<", Le: "<=", Gt: ">", Ge: ">=",
 	AndAnd: "&&", OrOr: "||", Not: "!", Assign: "=", Arrow: "->",
@@ -102,11 +108,12 @@ var keywords = map[string]Kind{
 	"else": Else, "true": True, "false": False, "return": Return,
 	"while": While, "for": For, "in": In, "break": Break, "continue": Continue,
 	"enum": Enum, "match": Match,
+	"struct": Struct, "impl": Impl, "pub": Pub, "import": Import,
 }
 
 var reserved = map[string]bool{
 	"class": true, "interface": true,
-	"async": true, "await": true, "import": true, "pub": true,
+	"async": true, "await": true,
 }
 
 // Lookup classifies an identifier-shaped lexeme as a keyword, a reserved

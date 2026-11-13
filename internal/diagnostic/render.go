@@ -23,6 +23,18 @@ import (
 // (a diagnostic without a source location, such as a bytecode validation
 // error), only the header line and help text are written.
 func Render(w io.Writer, file *source.File, d Diagnostic) error {
+	if file == nil {
+		return RenderSet(w, nil, d)
+	}
+	return RenderSet(w, source.Set{file}, d)
+}
+
+// RenderSet is Render for a program of several files (ADR-0014): the
+// excerpt comes from the file of d's span, and each related note names
+// its own file. A diagnostic whose file is not in files is rendered
+// without an excerpt.
+func RenderSet(w io.Writer, files source.Set, d Diagnostic) error {
+	file := files.Lookup(d.Span.File)
 	var b strings.Builder
 	if file == nil {
 		fmt.Fprintf(&b, "%s[%s]: %s\n", d.Severity, d.Code, d.Message)
@@ -58,8 +70,12 @@ func Render(w io.Writer, file *source.File, d Diagnostic) error {
 		fmt.Fprintf(&b, " %s = help: %s\n", pad, d.Help)
 	}
 	for _, r := range d.Related {
-		rp := file.Position(r.Span.Start)
-		fmt.Fprintf(&b, " %s = note: %s (%s:%d:%d)\n", pad, r.Message, file.Name(), rp.Line, rp.Column)
+		rf := files.Lookup(r.Span.File)
+		if rf == nil {
+			rf = file
+		}
+		rp := rf.Position(r.Span.Start)
+		fmt.Fprintf(&b, " %s = note: %s (%s:%d:%d)\n", pad, r.Message, rf.Name(), rp.Line, rp.Column)
 	}
 	_, err := io.WriteString(w, b.String())
 	return err

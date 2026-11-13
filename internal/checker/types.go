@@ -24,17 +24,20 @@ const (
 	KMap   // Args[0] is the key type, Args[1] the value type
 	KEnum  // Enum, with type arguments in Args
 	KParam // a generic type parameter
+	// KStruct is a struct, with type arguments in Args (ADR-0014).
+	KStruct
 )
 
 // TypeInfo is a Tread type. Types are interned (see intern), so two
 // types are identical exactly when their pointers are equal; == works
 // for every type, including Array<Int> and Option<String>.
 type TypeInfo struct {
-	Kind  TypeKind
-	Args  []Type
-	Enum  *Enum
-	Param *TypeParam
-	key   string
+	Kind   TypeKind
+	Args   []Type
+	Enum   *Enum
+	Param  *TypeParam
+	Struct *Struct
+	key    string
 }
 
 // Type is an interned Tread type.
@@ -67,6 +70,8 @@ func intern(t *TypeInfo) Type {
 		fmt.Fprintf(&b, "e%d", t.Enum.id)
 	case KParam:
 		fmt.Fprintf(&b, "p%d", t.Param.id)
+	case KStruct:
+		fmt.Fprintf(&b, "s%d", t.Struct.id)
 	}
 	for _, a := range t.Args {
 		b.WriteString("(" + a.key + ")")
@@ -92,6 +97,11 @@ func EnumOf(e *Enum, args []Type) Type {
 	return intern(&TypeInfo{Kind: KEnum, Enum: e, Args: append([]Type(nil), args...)})
 }
 
+// StructOf returns the struct type s<args...> (ADR-0014).
+func StructOf(s *Struct, args []Type) Type {
+	return intern(&TypeInfo{Kind: KStruct, Struct: s, Args: append([]Type(nil), args...)})
+}
+
 // ParamType returns the type of a type parameter.
 func ParamType(p *TypeParam) Type { return intern(&TypeInfo{Kind: KParam, Param: p}) }
 
@@ -111,19 +121,34 @@ func (t *TypeInfo) String() string {
 		return "Array<" + t.Args[0].String() + ">"
 	case KMap:
 		return "Map<" + t.Args[0].String() + ", " + t.Args[1].String() + ">"
-	case KEnum:
+	case KEnum, KStruct:
+		name := ""
+		if t.Kind == KEnum {
+			name = qualified(t.Enum.Module, t.Enum.Name)
+		} else {
+			name = qualified(t.Struct.Module, t.Struct.Name)
+		}
 		if len(t.Args) == 0 {
-			return t.Enum.Name
+			return name
 		}
 		parts := make([]string, len(t.Args))
 		for i, a := range t.Args {
 			parts[i] = a.String()
 		}
-		return t.Enum.Name + "<" + strings.Join(parts, ", ") + ">"
+		return name + "<" + strings.Join(parts, ", ") + ">"
 	case KParam:
 		return t.Param.Name
 	}
 	return "_" // unknown: an error was already reported
+}
+
+// qualified prefixes name with the module qualifier of a declaration
+// outside the root file (ADR-0014).
+func qualified(module, name string) string {
+	if module == "" {
+		return name
+	}
+	return module + "." + name
 }
 
 // isDisplayable reports whether values of t can be printed or
@@ -185,7 +210,12 @@ func newTypeParam(name string, decl source.Span) *TypeParam {
 
 // Enum is an enum declaration, or the built-in Option<T>.
 type Enum struct {
-	Name     string
+	Name string
+	// Module is the qualifier of the declaring module, "" for the root
+	// file and for Option (ADR-0014).
+	Module   string
+	Pub      bool
+	mod      *moduleInfo
 	Params   []*TypeParam
 	Variants []*Variant
 	Decl     *ast.EnumDecl // nil for Option
@@ -239,21 +269,64 @@ func subst(t Type, m map[*TypeParam]Type) Type {
 	for i, a := range t.Args {
 		args[i] = subst(a, m)
 	}
-	return intern(&TypeInfo{Kind: t.Kind, Enum: t.Enum, Param: t.Param, Args: args})
+	return intern(&TypeInfo{Kind: t.Kind, Enum: t.Enum, Param: t.Param, Struct: t.Struct, Args: args})
 }
 
-// enumArgs maps an enum type's parameters to its arguments.
+// enumArgs maps an enum or struct type's parameters to its arguments.
 func enumArgs(t Type) map[*TypeParam]Type {
-	if t.Kind != KEnum {
+	var params []*TypeParam
+	switch t.Kind {
+	case KEnum:
+		params = t.Enum.Params
+	case KStruct:
+		params = t.Struct.Params
+	default:
 		return nil
 	}
 	m := make(map[*TypeParam]Type, len(t.Args))
-	for i, p := range t.Enum.Params {
+	for i, p := range params {
 		if i < len(t.Args) {
 			m[p] = t.Args[i]
 		}
 	}
 	return m
+}
+
+// Struct is a struct declaration (ADR-0014).
+type Struct struct {
+	Name   string
+	Module string // qualifier of the declaring module; "" for the root file
+	Pub    bool
+	Params []*TypeParam
+	Fields []*Field
+	Decl   *ast.StructDecl
+	// Methods holds the methods and associated functions of its impl
+	// blocks, by name.
+	Methods map[string]*Function
+	// Index is the struct's position in CheckedProgram.Structs.
+	Index int
+	mod   *moduleInfo
+	id    int64
+}
+
+// Field is one struct field. Its type may mention the struct's type
+// parameters.
+type Field struct {
+	Name  string
+	Type  Type
+	Index int
+	Pub   bool
+	Decl  source.Span
+}
+
+// Field returns the field named name, or nil.
+func (s *Struct) Field(name string) *Field {
+	for _, f := range s.Fields {
+		if f.Name == name {
+			return f
+		}
+	}
+	return nil
 }
 
 // SymbolKind classifies a value-namespace symbol.
@@ -266,6 +339,7 @@ const (
 	VarSymbol
 	LoopVarSymbol // the variable of a `for` loop; immutable (ADR-0012)
 	MatchVarSymbol
+	ModuleSymbol // an imported module's qualifier (ADR-0014)
 )
 
 // Symbol is a named entity in the value namespace.
@@ -276,15 +350,37 @@ type Symbol struct {
 	Mutable bool      // VarSymbol declared with `let mut`
 	Func    *Function // FuncSymbol and BuiltinSymbol
 	Decl    source.Span
+	mod     *moduleInfo // ModuleSymbol
 }
 
 // Function is a resolved function signature.
 type Function struct {
-	Name       string
+	Name string
+	// TypeParams are the function's own type parameters; a method's
+	// struct's parameters are in Struct.Params (ADR-0014).
 	TypeParams []*TypeParam
-	Params     []*Symbol
-	Result     Type
-	Decl       *ast.FuncDecl // nil for built-ins
+	// Params are the parameters; for a method with a receiver, Params[0]
+	// is `self`.
+	Params []*Symbol
+	Result Type
+	Decl   *ast.FuncDecl // nil for built-ins
+	// ADR-0014.
+	Pub     bool
+	Module  string  // qualifier of the declaring module; "" for the root
+	Struct  *Struct // the struct of an impl function; nil otherwise
+	HasSelf bool    // a method: Params[0] is the receiver
+	SelfMut bool    // the receiver is `mut self`
+	mod     *moduleInfo
+}
+
+// FullName is the function's name in bytecode and stack traces, such as
+// "dist", "Point.shift" or "geometry.Point.shift".
+func (f *Function) FullName() string {
+	name := f.Name
+	if f.Struct != nil {
+		name = f.Struct.Name + "." + name
+	}
+	return qualified(f.Module, name)
 }
 
 // scope is one level of the value namespace. The map is used only for
@@ -352,4 +448,13 @@ type CheckedProgram struct {
 	Methods map[*ast.CallExpr]Method
 	// Exhaustive records the match statements that cover every case.
 	Exhaustive map[*ast.MatchStmt]bool
+	// ADR-0014.
+	// Structs lists every struct of the program, in Index order.
+	Structs []*Struct
+	// Calls maps calls of user functions that are not plain names
+	// (geometry.dist(p), p.len(), Point.new()) to their function. For a
+	// method with a receiver, the receiver is the callee's X.
+	Calls map[*ast.CallExpr]*Function
+	// Fields maps field accesses to their field.
+	Fields map[*ast.MemberExpr]*Field
 }

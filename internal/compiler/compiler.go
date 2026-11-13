@@ -33,6 +33,13 @@ func Compile(cp *checker.CheckedProgram) (*bytecode.Module, []diagnostic.Diagnos
 	for i, fn := range cp.Functions {
 		c.funcIndex[fn] = i
 	}
+	for _, s := range cp.Structs {
+		info := bytecode.StructInfo{Name: s.Name}
+		for _, f := range s.Fields {
+			info.Fields = append(info.Fields, f.Name)
+		}
+		c.mod.Structs = append(c.mod.Structs, info)
+	}
 	for _, e := range cp.Enums {
 		info := bytecode.EnumInfo{Name: e.Name}
 		for _, v := range e.Variants {
@@ -136,6 +143,8 @@ func kindOf(t checker.Type) (bytecode.Kind, bool) {
 		return bytecode.KindMap, true
 	case checker.KEnum:
 		return bytecode.KindEnum, true
+	case checker.KStruct:
+		return bytecode.KindStruct, true
 	case checker.KParam:
 		return bytecode.KindAny, true // a type parameter: any value
 	}
@@ -164,10 +173,10 @@ func (c *compiler) typeOf(e ast.Expr) (bytecode.Kind, bool) {
 // Functions and statements
 
 func (c *compiler) function(fn *checker.Function) bytecode.Function {
-	out := bytecode.Function{Name: fn.Name, NumParams: len(fn.Params)}
+	out := bytecode.Function{Name: fn.FullName(), NumParams: len(fn.Params), MutSelf: fn.SelfMut}
 	result, ok := kindOf(fn.Result)
 	if !ok || fn.Decl == nil || fn.Decl.Body == nil {
-		c.internal(source.Span{}, "function %s has no valid checked signature or body", fn.Name)
+		c.internal(source.Span{}, "function %s has no valid checked signature or body", fn.FullName())
 		return out
 	}
 	out.Result = result
@@ -245,16 +254,14 @@ func (c *compiler) stmt(s ast.Stmt) {
 			c.emit(bytecode.OpStoreLocal, slot, s.Loc)
 			return
 		}
-		// An element (ADR-0013): the keys, the value, then one
-		// copy-on-write store through the variable.
+		// An element or a field (ADR-0013, ADR-0014): the keys, the value,
+		// then one copy-on-write store through the variable.
 		slot, keys, ok := c.path(s.Target)
 		if !ok {
 			c.internal(s.Loc, "assignment target is not a variable path")
 			return
 		}
-		for _, k := range keys {
-			c.expr(k)
-		}
+		c.keys(keys)
 		c.expr(s.Value)
 		c.emit2(bytecode.OpStorePath, slot, len(keys), s.Loc)
 	case *ast.MatchStmt:
@@ -452,7 +459,13 @@ func (c *compiler) expr(e ast.Expr) {
 	case *ast.IndexExpr:
 		c.index(e)
 	case *ast.MemberExpr:
+		if f := c.cp.Fields[e]; f != nil {
+			c.field(e, f)
+			return
+		}
 		c.construct(e, nil)
+	case *ast.StructLit:
+		c.structLit(e)
 	case nil:
 		c.internal(source.Span{}, "missing expression")
 	default:
@@ -603,6 +616,10 @@ func (c *compiler) call(e *ast.CallExpr) {
 		c.method(e, m)
 		return
 	}
+	if fn := c.cp.Calls[e]; fn != nil {
+		c.userCall(e, fn)
+		return
+	}
 	id, ok := e.Callee.(*ast.Ident)
 	sym := c.cp.Uses[id]
 	if !ok || sym == nil || sym.Func == nil {
@@ -659,13 +676,40 @@ func (c *compiler) builtin(e *ast.CallExpr, name string) {
 // ---------------------------------------------------------------------------
 // Collections, enums and pattern matching (ADR-0013)
 
-// path splits an index expression rooted in a local variable, such as
-// grid[r][c], into the variable's slot and the keys, outermost first.
-func (c *compiler) path(e ast.Expr) (slot int, keys []ast.Expr, ok bool) {
+// pathKey is one step of a variable path: an index expression, or a
+// struct field (ADR-0014), whose key is the field's index.
+type pathKey struct {
+	index ast.Expr
+	field int
+	span  source.Span
+}
+
+// keys emits the keys of a path.
+func (c *compiler) keys(keys []pathKey) {
+	for _, k := range keys {
+		if k.index != nil {
+			c.expr(k.index)
+		} else {
+			c.constant(bytecode.IntValue(int64(k.field)), k.span)
+		}
+	}
+}
+
+// path splits an index or field expression rooted in a local variable,
+// such as grid[r][c] or p.pos.x, into the variable's slot and the keys,
+// outermost first.
+func (c *compiler) path(e ast.Expr) (slot int, keys []pathKey, ok bool) {
 	for {
 		switch x := e.(type) {
 		case *ast.IndexExpr:
-			keys = append([]ast.Expr{x.Index}, keys...)
+			keys = append([]pathKey{{index: x.Index}}, keys...)
+			e = x.X
+		case *ast.MemberExpr:
+			f := c.cp.Fields[x]
+			if f == nil {
+				return 0, nil, false
+			}
+			keys = append([]pathKey{{field: f.Index, span: x.Name.Loc}}, keys...)
 			e = x.X
 		case *ast.Ident:
 			sym := c.cp.Uses[x]
@@ -684,15 +728,150 @@ func (c *compiler) path(e ast.Expr) (slot int, keys []ast.Expr, ok bool) {
 // LOAD_PATH, which does not copy anything on the way (ADR-0013).
 func (c *compiler) index(e *ast.IndexExpr) {
 	if slot, keys, ok := c.path(e); ok {
-		for _, k := range keys {
-			c.expr(k)
-		}
+		c.keys(keys)
 		c.emit2(bytecode.OpLoadPath, slot, len(keys), e.Loc)
 		return
 	}
 	c.expr(e.X)
 	c.expr(e.Index)
 	c.emit(bytecode.OpIndex, 0, e.Loc)
+}
+
+// field compiles a field read x.f (ADR-0014): one LOAD_PATH when x is a
+// variable path, otherwise GET_FIELD on the value.
+func (c *compiler) field(e *ast.MemberExpr, f *checker.Field) {
+	if slot, keys, ok := c.path(e); ok {
+		c.keys(keys)
+		c.emit2(bytecode.OpLoadPath, slot, len(keys), e.Loc)
+		return
+	}
+	c.expr(e.X)
+	c.emit(bytecode.OpGetField, f.Index, e.Loc)
+}
+
+// structLit compiles Name { field: value, ... } (ADR-0014). The values
+// are evaluated in source order; MAKE_STRUCT takes them in declaration
+// order, so values written in another order go through hidden locals.
+func (c *compiler) structLit(e *ast.StructLit) {
+	t := c.cp.Types[e]
+	if t == nil || t.Kind != checker.KStruct {
+		c.internal(e.Loc, "struct literal without a struct type")
+		return
+	}
+	st := t.Struct
+	inOrder := len(e.Fields) == len(st.Fields)
+	order := make([]int, len(e.Fields))
+	for i, fi := range e.Fields {
+		f := st.Field(fi.Name.Name)
+		if f == nil {
+			c.internal(e.Loc, "struct literal with unknown field %s", fi.Name.Name)
+			return
+		}
+		order[i] = f.Index
+		inOrder = inOrder && f.Index == i
+	}
+	if inOrder {
+		for _, fi := range e.Fields {
+			c.expr(fi.Value)
+		}
+	} else {
+		slots := make([]int, len(st.Fields))
+		for i, fi := range e.Fields {
+			c.expr(fi.Value)
+			slots[order[i]] = c.newSlot()
+			c.emit(bytecode.OpStoreLocal, slots[order[i]], fi.Value.Span())
+		}
+		for _, s := range slots {
+			c.emit(bytecode.OpLoadLocal, s, e.Loc)
+		}
+	}
+	c.emit(bytecode.OpMakeStruct, st.Index, e.Loc)
+}
+
+// userCall compiles a call of a module function, an associated function
+// or a method (ADR-0014).
+func (c *compiler) userCall(e *ast.CallExpr, fn *checker.Function) {
+	idx, ok := c.funcIndex[fn]
+	if !ok {
+		c.internal(e.Loc, "call to unknown function '%s'", fn.FullName())
+		return
+	}
+	if !fn.HasSelf {
+		for _, a := range e.Args {
+			c.expr(a)
+		}
+		c.emit(bytecode.OpCall, idx, e.Loc)
+		return
+	}
+	recv := e.Callee.(*ast.MemberExpr).X
+	if !fn.SelfMut {
+		// A read-only receiver is passed like the receiver of a built-in
+		// read method: in place, without marking it shared. The method
+		// cannot change `self`, and copying it inside marks it.
+		argsPure := true
+		for _, a := range e.Args {
+			argsPure = argsPure && pure(a)
+		}
+		if slot, keys, ok := c.path(recv); ok && argsPure {
+			c.keys(keys)
+			c.emit2(bytecode.OpPeekPath, slot, len(keys), recv.Span())
+		} else {
+			c.expr(recv)
+		}
+		for _, a := range e.Args {
+			c.expr(a)
+		}
+		c.emit(bytecode.OpCall, idx, e.Loc)
+		return
+	}
+	// A mut self call. The keys and the arguments are evaluated first,
+	// into hidden locals; then the receiver is taken from its variable
+	// path, the method runs, and the changed receiver is put back:
+	//
+	//	<keys>, <args> -> hidden locals
+	//	<keys>                        ; for PUT_PATH
+	//	<keys>; TAKE_PATH slot n      ; the receiver, exclusively owned
+	//	<args>; CALL f                ; -> receiver', result
+	//	STORE_LOCAL r; PUT_PATH slot n; LOAD_LOCAL r
+	slot, keys, ok := c.path(recv)
+	if !ok {
+		c.internal(e.Loc, "mut self method on a value that is not a variable path")
+		return
+	}
+	keySlots := make([]int, len(keys))
+	for i, k := range keys {
+		if k.index != nil {
+			c.expr(k.index)
+			keySlots[i] = c.newSlot()
+			c.emit(bytecode.OpStoreLocal, keySlots[i], k.index.Span())
+		}
+	}
+	argSlots := make([]int, len(e.Args))
+	for i, a := range e.Args {
+		c.expr(a)
+		argSlots[i] = c.newSlot()
+		c.emit(bytecode.OpStoreLocal, argSlots[i], a.Span())
+	}
+	loadKeys := func() {
+		for i, k := range keys {
+			if k.index != nil {
+				c.emit(bytecode.OpLoadLocal, keySlots[i], k.index.Span())
+			} else {
+				c.constant(bytecode.IntValue(int64(k.field)), k.span)
+			}
+		}
+	}
+	loadKeys()
+	loadKeys()
+	c.emit2(bytecode.OpTakePath, slot, len(keys), recv.Span())
+	for i, a := range e.Args {
+		c.emit(bytecode.OpLoadLocal, argSlots[i], a.Span())
+	}
+	c.emit(bytecode.OpCall, idx, e.Loc)
+	result := c.newSlot()
+	c.emit(bytecode.OpStoreLocal, result, e.Loc)
+	c.emit2(bytecode.OpPutPath, slot, len(keys), e.Loc)
+	c.emit(bytecode.OpLoadLocal, result, e.Loc)
 }
 
 // construct compiles Enum.Variant(args) or Enum.Variant.
@@ -744,7 +923,14 @@ func pure(e ast.Expr) bool {
 		}
 		return true
 	case *ast.MemberExpr:
-		return true // a variant without fields
+		return pure(x.X) // a variant without fields, or a field read
+	case *ast.StructLit:
+		for _, fi := range x.Fields {
+			if !pure(fi.Value) {
+				return false
+			}
+		}
+		return true
 	}
 	return true
 }
@@ -759,9 +945,7 @@ func (c *compiler) method(e *ast.CallExpr, m checker.Method) {
 			c.internal(e.Loc, "mutating method on a value that is not a variable path")
 			return
 		}
-		for _, k := range keys {
-			c.expr(k)
-		}
+		c.keys(keys)
 		for _, a := range e.Args {
 			c.expr(a)
 		}
@@ -779,9 +963,7 @@ func (c *compiler) method(e *ast.CallExpr, m checker.Method) {
 		argsPure = argsPure && pure(a)
 	}
 	if slot, keys, ok := c.path(recv); ok && argsPure {
-		for _, k := range keys {
-			c.expr(k)
-		}
+		c.keys(keys)
 		c.emit2(bytecode.OpPeekPath, slot, len(keys), recv.Span())
 	} else {
 		c.expr(recv)

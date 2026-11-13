@@ -274,6 +274,12 @@ func (m *machine) step(fr *frame, in bytecode.Instr) (done bool, err error) {
 		if len(m.frames) == 0 {
 			return true, nil
 		}
+		if fr.fn.MutSelf {
+			// The changed receiver goes back to the caller, below the
+			// result (ADR-0014). The frame is gone, so the receiver has no
+			// other owner: it stays unmarked.
+			m.push(fr.locals[0])
+		}
 		m.push(v)
 
 	case bytecode.OpPrintInt, bytecode.OpPrintFloat, bytecode.OpPrintString, bytecode.OpPrintBool:

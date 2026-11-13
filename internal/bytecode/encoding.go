@@ -22,9 +22,10 @@ const (
 	// FormatVersion is the only bytecode format version this build reads
 	// and writes. It changes whenever the encoding, the opcode numbering,
 	// an opcode's semantics, or the value kinds change (ADR-0011).
-	// Version 2 adds collections, enums and generics (ADR-0013).
+	// Version 2 adds collections, enums and generics (ADR-0013); version
+	// 3 adds structs, methods and multi-file programs (ADR-0014).
 	// scripts/build-release.sh reads the next line; keep it bare.
-	FormatVersion = 2
+	FormatVersion = 3
 
 	headerLen   = len(Magic) + 2 + 2
 	checksumLen = 4
@@ -33,8 +34,9 @@ const (
 	maxCount = math.MaxInt32
 )
 
-// SourceFileID is the file ID of every span in a decoded module. The CLI
-// gives the embedded source this ID when it renders diagnostics.
+// SourceFileID is the file ID of the root source file's spans in a
+// decoded module; imported file i has ID SourceFileID+1+i (ADR-0014). The
+// CLI gives the embedded sources these IDs when it renders diagnostics.
 const SourceFileID source.FileID = 1
 
 // File is the content of a bytecode file: a module, the source text it
@@ -45,7 +47,35 @@ type File struct {
 	Producer   string
 	SourceName string
 	Source     []byte
-	Module     *Module
+	// Imports are the program's other source files (ADR-0014).
+	Imports []SourceFile
+	Module  *Module
+}
+
+// SourceFile is an embedded source file.
+type SourceFile struct {
+	Name   string
+	Source []byte
+}
+
+// sourceLen returns the length of the embedded file whose spans have
+// file ID id, and whether it exists.
+func (f *File) sourceLen(i int) (int, bool) {
+	switch {
+	case i == 0:
+		return len(f.Source), true
+	case i-1 < len(f.Imports):
+		return len(f.Imports[i-1].Source), true
+	}
+	return 0, false
+}
+
+// fileIndex returns the embedded file index of a function's spans.
+func fileIndex(fn *Function) int {
+	if len(fn.Spans) == 0 || fn.Spans[0].File <= SourceFileID {
+		return 0
+	}
+	return int(fn.Spans[0].File - SourceFileID)
 }
 
 // FormatError reports a bytecode file that cannot be loaded. Its message
@@ -70,7 +100,7 @@ func Encode(f *File) ([]byte, error) {
 	if err := m.Validate(); err != nil {
 		return nil, fmt.Errorf("encode: %w", err)
 	}
-	if err := checkSpans(m, len(f.Source)); err != nil {
+	if err := checkSpans(m, f); err != nil {
 		return nil, fmt.Errorf("encode: %w", err)
 	}
 
@@ -81,6 +111,11 @@ func Encode(f *File) ([]byte, error) {
 	b = appendString(b, f.Producer)
 	b = appendString(b, f.SourceName)
 	b = appendBytes(b, f.Source)
+	b = binary.AppendUvarint(b, uint64(len(f.Imports)))
+	for _, s := range f.Imports {
+		b = appendString(b, s.Name)
+		b = appendBytes(b, s.Source)
+	}
 
 	b = binary.AppendUvarint(b, uint64(len(m.Constants)))
 	for _, c := range m.Constants {
@@ -110,6 +145,12 @@ func Encode(f *File) ([]byte, error) {
 		b = binary.AppendUvarint(b, uint64(fn.NumParams))
 		b = binary.AppendUvarint(b, uint64(fn.NumLocals))
 		b = append(b, byte(fn.Result))
+		var flags byte
+		if fn.MutSelf {
+			flags = 1
+		}
+		b = append(b, flags)
+		b = binary.AppendUvarint(b, uint64(fileIndex(&fn)))
 		b = binary.AppendUvarint(b, uint64(len(fn.Code)))
 		for pc, in := range fn.Code {
 			b = append(b, byte(in.Op))
@@ -127,6 +168,14 @@ func Encode(f *File) ([]byte, error) {
 		for _, v := range e.Variants {
 			b = appendString(b, v.Name)
 			b = binary.AppendUvarint(b, uint64(v.Fields))
+		}
+	}
+	b = binary.AppendUvarint(b, uint64(len(m.Structs)))
+	for _, s := range m.Structs {
+		b = appendString(b, s.Name)
+		b = binary.AppendUvarint(b, uint64(len(s.Fields)))
+		for _, name := range s.Fields {
+			b = appendString(b, name)
 		}
 	}
 	b = binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
@@ -169,6 +218,14 @@ func Decode(data []byte) (*File, error) {
 	f.Producer = r.str("producer")
 	f.SourceName = r.str("source name")
 	f.Source = r.bytes("source text")
+	// An imported file needs at least 2 bytes: name and text lengths.
+	nImports := r.count("source file", 2)
+	if r.err == nil && nImports > 0 {
+		f.Imports = make([]SourceFile, nImports)
+	}
+	for i := 0; i < nImports && r.err == nil; i++ {
+		f.Imports[i] = SourceFile{Name: r.str("source name"), Source: r.bytes("source text")}
+	}
 	m := &Module{}
 	f.Module = m
 
@@ -180,9 +237,9 @@ func Decode(data []byte) (*File, error) {
 		m.Constants[i] = r.value(i)
 	}
 
-	// A function needs at least 5 bytes: name length, params, locals,
-	// result and instruction count.
-	nFunc := r.count("function", 5)
+	// A function needs at least 7 bytes: name length, params, locals,
+	// result, flags, file and instruction count.
+	nFunc := r.count("function", 7)
 	if r.err == nil {
 		m.Functions = make([]Function, nFunc)
 	}
@@ -192,6 +249,17 @@ func Decode(data []byte) (*File, error) {
 		fn.NumParams = r.int("parameter count")
 		fn.NumLocals = r.int("local count")
 		fn.Result = r.resultKind()
+		switch flags := r.u8(); flags {
+		case 0:
+		case 1:
+			fn.MutSelf = true
+		default:
+			r.fail("unknown function flags %#02x", flags)
+		}
+		fileIdx := r.int("source file index")
+		if _, ok := f.sourceLen(fileIdx); r.err == nil && !ok {
+			r.fail("function source file %d out of range", fileIdx)
+		}
 		// An instruction needs at least 5 bytes.
 		n := r.count("instruction", 5)
 		if r.err != nil {
@@ -203,7 +271,7 @@ func Decode(data []byte) (*File, error) {
 			fn.Code[pc] = Instr{Op: Opcode(r.u8()), A: r.int("operand"), B: r.int("second operand")}
 			start := r.int("span start")
 			end := r.int("span end")
-			fn.Spans[pc] = source.Span{File: SourceFileID, Start: start, End: end}
+			fn.Spans[pc] = source.Span{File: SourceFileID + source.FileID(fileIdx), Start: start, End: end}
 		}
 	}
 	m.Main = r.int("main index")
@@ -224,13 +292,30 @@ func Decode(data []byte) (*File, error) {
 			e.Variants[j] = VariantInfo{Name: r.str("variant name"), Fields: r.int("field count")}
 		}
 	}
+	// A struct needs at least 2 bytes: name length and field count.
+	nStruct := r.count("struct", 2)
+	if r.err == nil && nStruct > 0 {
+		m.Structs = make([]StructInfo, nStruct)
+	}
+	for i := 0; i < nStruct && r.err == nil; i++ {
+		s := &m.Structs[i]
+		s.Name = r.str("struct name")
+		nf := r.count("field", 1)
+		if r.err != nil {
+			break
+		}
+		s.Fields = make([]string, nf)
+		for j := 0; j < nf && r.err == nil; j++ {
+			s.Fields[j] = r.str("field name")
+		}
+	}
 	if r.err != nil {
 		return nil, r.err
 	}
 	if r.off != len(body) {
 		return nil, formatErr("bytecode file has %d unexpected trailing bytes", len(body)-r.off)
 	}
-	if err := checkSpans(m, len(f.Source)); err != nil {
+	if err := checkSpans(m, f); err != nil {
 		return nil, formatErr("invalid bytecode: %v", err)
 	}
 	if err := m.Verify(); err != nil {
@@ -239,11 +324,19 @@ func Decode(data []byte) (*File, error) {
 	return f, nil
 }
 
-// checkSpans requires every span to lie within a source of n bytes, so
-// the diagnostic renderer can trust decoded spans.
-func checkSpans(m *Module, n int) error {
+// checkSpans requires every span to lie within its function's embedded
+// source file, so the diagnostic renderer can trust decoded spans.
+func checkSpans(m *Module, f *File) error {
 	for _, fn := range m.Functions {
+		idx := fileIndex(&fn)
+		n, ok := f.sourceLen(idx)
+		if !ok {
+			return &ValidationError{Function: fn.Name, PC: -1, Msg: fmt.Sprintf("source file %d is not embedded", idx)}
+		}
 		for pc, s := range fn.Spans {
+			if s.File != fn.Spans[0].File {
+				return &ValidationError{Function: fn.Name, PC: pc, Msg: "spans from more than one source file"}
+			}
 			if s.Start < 0 || s.Start > s.End || s.End > n {
 				return &ValidationError{Function: fn.Name, PC: pc, Msg: fmt.Sprintf("source span [%d,%d) outside the %d-byte source", s.Start, s.End, n)}
 			}

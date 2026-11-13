@@ -1,0 +1,20 @@
+import lib.geometry
+import lib.text
+
+fn describe(s: geometry.Shape) -> String {
+    match s {
+        geometry.Shape.Dot(p) => { return "dot at ${p.x},${p.y}" }
+        geometry.Shape.Segment(a, b) => { return "segment ${a} to ${b}" }
+    }
+}
+
+fn main() -> Unit {
+    let mut p = geometry.Point.new(2, 3)
+    p.scale(10)
+    print(p)
+    print(describe(geometry.Shape.Dot(p)))
+    print(describe(geometry.Shape.Segment(p, geometry.Point { x: 0, y: 1 })))
+    print(text.shout("hello"))
+    print(geometry.ratio(p))
+    print(geometry.ratio(geometry.Point.new(1, 0)))
+}

@@ -24,6 +24,18 @@ func format(b *strings.Builder, n Node) {
 			b.WriteByte(' ')
 			format(b, n.Module)
 		}
+		for _, d := range n.Imports {
+			b.WriteByte(' ')
+			format(b, d)
+		}
+		for _, d := range n.Structs {
+			b.WriteByte(' ')
+			format(b, d)
+		}
+		for _, d := range n.Impls {
+			b.WriteByte(' ')
+			format(b, d)
+		}
 		for _, e := range n.Enums {
 			b.WriteByte(' ')
 			format(b, e)
@@ -35,8 +47,55 @@ func format(b *strings.Builder, n Node) {
 		b.WriteByte(')')
 	case *ModuleDecl:
 		fmt.Fprintf(b, "(module %s)", identName(n.Name))
+	case *ImportDecl:
+		fmt.Fprintf(b, "(import %s)", n.PathString())
+	case *StructDecl:
+		b.WriteString("(")
+		if n.Pub {
+			b.WriteString("pub ")
+		}
+		fmt.Fprintf(b, "struct %s%s", identName(n.Name), typeParams(n.TypeParams))
+		for _, f := range n.Fields {
+			b.WriteByte(' ')
+			if f.Pub {
+				b.WriteString("pub ")
+			}
+			b.WriteString(identName(f.Name) + ":" + TypeString(f.Type))
+		}
+		b.WriteByte(')')
+	case *ImplDecl:
+		fmt.Fprintf(b, "(impl %s", identName(n.Name))
+		for _, f := range n.Funcs {
+			b.WriteByte(' ')
+			format(b, f)
+		}
+		b.WriteByte(')')
+	case *StructLit:
+		b.WriteString("(struct ")
+		if n.Module != nil {
+			b.WriteString(n.Module.Name + ".")
+		}
+		b.WriteString(identName(n.Name))
+		for _, f := range n.Fields {
+			b.WriteString(" " + identName(f.Name) + ":")
+			format(b, f.Value)
+		}
+		b.WriteByte(')')
 	case *FuncDecl:
-		fmt.Fprintf(b, "(fn %s%s (", identName(n.Name), typeParams(n.TypeParams))
+		pub := ""
+		if n.Pub {
+			pub = "pub "
+		}
+		fmt.Fprintf(b, "(%sfn %s%s (", pub, identName(n.Name), typeParams(n.TypeParams))
+		if n.Self != nil {
+			if n.Self.Mutable {
+				b.WriteString("mut ")
+			}
+			b.WriteString("self")
+			if len(n.Params) > 0 {
+				b.WriteByte(' ')
+			}
+		}
 		for i, p := range n.Params {
 			if i > 0 {
 				b.WriteByte(' ')
@@ -173,6 +232,16 @@ func format(b *strings.Builder, n Node) {
 	case *ErrorExpr:
 		b.WriteString("<error>")
 	case *EnumDecl:
+		if n.Pub {
+			b.WriteString("(pub ")
+			fmt.Fprintf(b, "enum %s%s", identName(n.Name), typeParams(n.TypeParams))
+			for _, v := range n.Variants {
+				b.WriteByte(' ')
+				format(b, v)
+			}
+			b.WriteByte(')')
+			return
+		}
 		fmt.Fprintf(b, "(enum %s%s", identName(n.Name), typeParams(n.TypeParams))
 		for _, v := range n.Variants {
 			b.WriteByte(' ')
@@ -211,6 +280,9 @@ func format(b *strings.Builder, n Node) {
 		format(b, n.Value)
 	case *VariantPat:
 		name := identName(n.Enum) + "." + identName(n.Variant)
+		if n.Module != nil {
+			name = n.Module.Name + "." + name
+		}
 		if n.Args == nil {
 			b.WriteString(name)
 			return
@@ -274,14 +346,18 @@ func TypeString(t *TypeName) string {
 	if t == nil {
 		return "<nil>"
 	}
+	name := t.Name
+	if t.Module != nil {
+		name = t.Module.Name + "." + name
+	}
 	if len(t.Args) == 0 {
-		return t.Name
+		return name
 	}
 	parts := make([]string, len(t.Args))
 	for i, a := range t.Args {
 		parts[i] = TypeString(a)
 	}
-	return t.Name + "<" + strings.Join(parts, ", ") + ">"
+	return name + "<" + strings.Join(parts, ", ") + ">"
 }
 
 func typeParams(ps []*Ident) string {

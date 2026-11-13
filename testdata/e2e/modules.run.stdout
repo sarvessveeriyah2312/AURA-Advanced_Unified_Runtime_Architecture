@@ -1,0 +1,5 @@
+Point { x: 20, y: 30 }
+dot at 20,30
+segment Point { x: 20, y: 30 } to Point { x: 0, y: 1 }
+hello!
+0

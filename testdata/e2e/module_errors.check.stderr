@@ -1,0 +1,18 @@
+error[TR-T034]: function 'secret' is private to module 'lib.geometry'
+  --> module_errors.tr:4:20
+   |
+ 4 |     print(geometry.secret())
+   |                    ^^^^^^
+   = help: mark it 'pub' in lib.geometry to use it from other files
+
+error[TR-T002]: module 'lib.geometry' has no function 'missing'
+  --> module_errors.tr:5:20
+   |
+ 5 |     print(geometry.missing())
+   |                    ^^^^^^^
+
+error[TR-T003]: module 'lib.geometry' has no type 'Square'
+  --> module_errors.tr:6:12
+   |
+ 6 |     let s: geometry.Square = geometry.Point.new(1, 1)
+   |            ^^^^^^^^^^^^^^^

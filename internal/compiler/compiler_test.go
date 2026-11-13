@@ -356,7 +356,7 @@ func TestG15LetAndAssign(t *testing.T) {
 }
 
 // TestEveryOpcodeIsEmitted: across representative programs, the compiler
-// emits all 46 opcodes (docs/10 §10.6).
+// emits every opcode (docs/10 §10.6).
 func TestEveryOpcodeIsEmitted(t *testing.T) {
 	programs := []string{
 		mainOf(s68),
@@ -368,6 +368,9 @@ func TestEveryOpcodeIsEmitted(t *testing.T) {
 		// ADR-0013 instructions.
 		mainOf("let mut xs = [1]\nlet mut m = [\"a\": 1]\nxs[0] = xs[0]\nxs.push(2)\nprint(xs.pop())\nprint(m.remove(\"a\"))\nprint(m.get(\"a\"))\nprint(m.keys())\n" +
 			"print(xs.len() + [1][0])\nprint(xs.contains(1))\nprint(xs == xs)\nprint(xs != xs)\nlet t = toString(xs)\nmatch Option.Some(1) {\nOption.Some(v) => { }\nOption.None => { }\n}"),
+		// ADR-0014 instructions.
+		"struct P {\n    x: Int\n}\nimpl P {\n    fn inc(mut self) -> Unit {\n        self.x = self.x + 1\n    }\n}\nfn mk() -> P {\n    return P { x: 1 }\n}\n" +
+			mainOf("let mut p = P { x: 1 }\np.inc()\nprint(mk().x)"),
 	}
 	seen := map[bytecode.Opcode]bool{}
 	for _, src := range programs {
@@ -383,8 +386,8 @@ func TestEveryOpcodeIsEmitted(t *testing.T) {
 			t.Errorf("opcode %s is never emitted", op)
 		}
 	}
-	if len(bytecode.AllOpcodes()) != 66 {
-		t.Errorf("instruction set has %d opcodes, docs/05 §5.3 specifies 66", len(bytecode.AllOpcodes()))
+	if len(bytecode.AllOpcodes()) != 70 {
+		t.Errorf("instruction set has %d opcodes, docs/05 §5.3 specifies 70", len(bytecode.AllOpcodes()))
 	}
 }
 
@@ -440,5 +443,27 @@ func TestG18NestedLoopsAndInfiniteWhileVerify(t *testing.T) {
 	}
 	if a, b := m.Disassemble(), compileSrc(t, src).Disassemble(); a != b {
 		t.Error("compilation is not deterministic")
+	}
+}
+
+// TestStructCompilation checks field paths, out-of-order struct literals
+// and the mut self call sequence (ADR-0014).
+func TestStructCompilation(t *testing.T) {
+	src := "struct P {\n    x: Int\n    y: Int\n}\nimpl P {\n    fn inc(mut self, d: Int) -> Int {\n        self.x = self.x + d\n        return self.x\n    }\n}\n" +
+		mainOf("let mut p = P { y: 2, x: 1 }\np.y = 3\nprint(p.inc(4))")
+	m := compileSrc(t, src)
+	if got := strings.Join(listing(t, m, "P.inc"), "; "); got != "CONST 4; CONST 4; LOAD_PATH 0; LOAD_LOCAL 1; ADD_INT; STORE_PATH 0; CONST 4; LOAD_PATH 0; RETURN" {
+		t.Errorf("P.inc = %s", got)
+	}
+	if !m.Functions[1].MutSelf || m.Functions[1].Name != "P.inc" || m.Functions[0].MutSelf {
+		t.Errorf("function records = %s, %s", m.Functions[0].Name, m.Functions[1].Name)
+	}
+	// y is written first, so the values go through hidden locals; field
+	// y is key 1 (CONST 1); the mut self call takes and puts p back.
+	want := "CONST 0; STORE_LOCAL 0; CONST 1; STORE_LOCAL 1; LOAD_LOCAL 1; LOAD_LOCAL 0; MAKE_STRUCT 0; STORE_LOCAL 2; " +
+		"CONST 1; CONST 2; STORE_PATH 2; " +
+		"CONST 3; STORE_LOCAL 3; TAKE_PATH 2; LOAD_LOCAL 3; CALL 1; STORE_LOCAL 4; PUT_PATH 2; LOAD_LOCAL 4; PRINT_INT; POP; UNIT; RETURN"
+	if got := strings.Join(listing(t, m, "main"), "; "); got != want {
+		t.Errorf("main =\n %s\nwant\n %s", got, want)
 	}
 }

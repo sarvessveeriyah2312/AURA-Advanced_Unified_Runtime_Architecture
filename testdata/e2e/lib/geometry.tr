@@ -1,0 +1,29 @@
+// Imported by modules.tr as lib.geometry (ADR-0014).
+pub struct Point {
+    pub x: Int
+    pub y: Int
+}
+
+impl Point {
+    pub fn new(x: Int, y: Int) -> Point {
+        return Point { x: x, y: y }
+    }
+
+    pub fn scale(mut self, k: Int) -> Unit {
+        self.x = self.x * k
+        self.y = self.y * k
+    }
+}
+
+pub enum Shape {
+    Dot(Point)
+    Segment(Point, Point)
+}
+
+pub fn ratio(a: Point) -> Int {
+    return a.x / a.y
+}
+
+fn secret() -> Int {
+    return 42
+}

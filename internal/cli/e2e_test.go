@@ -99,6 +99,22 @@ var e2eCases = []e2eCase{
 		"error[TR-T027]: this match does not cover every Light value: Light.Amber is not matched", "error[TR-T022]"}},
 	{name: "index_error", cmd: "run", exit: 1, stdout: str("3\n"), stderrs: []string{"error[TR-R007]: index 2 is out of range for an array of length 2 (in function 'third')",
 		"stack trace:\n", "  0: third  index_error.tr:2:12  return xs[2]\n", "  1: main   index_error.tr:7:11  print(third([1, 2]))\n"}},
+
+	// ADR-0014: structs, methods and imports.
+	{name: "structs", cmd: "run", exit: 0, stdout: str("Point { x: 4, y: 5 }\nsaved Point { x: 3, y: 4 }, len2 25\ntrue\n" +
+		"Line { from: Point { x: 2, y: 0 }, to: Point { x: 9, y: 5 } }\n[Point { x: -1, y: -1 }, Point { x: 4, y: 5 }]\n3\ntop c\nStack { items: [\"a\", \"b\"] }\n")},
+	{name: "struct_errors", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{
+		"error[TR-T004]: cannot change 'self' in a method that takes 'self'", "error[TR-T032]", "error[TR-T031]: missing field(s) 'y' in 'Point'",
+		"error[TR-T031]: struct 'Point' has no field 'z'", "error[TR-T004]: cannot change immutable variable 'q'", "error[TR-T024]: Point has no field 'z'",
+		"error[TR-T024]: Point has no method 'nope'"}},
+	{name: "modules", cmd: "run", exit: 1, stdout: str("Point { x: 20, y: 30 }\ndot at 20,30\nsegment Point { x: 20, y: 30 } to Point { x: 0, y: 1 }\nhello!\n0\n"),
+		stderrs: []string{"error[TR-R001]: division by zero (in function 'geometry.ratio')", "--> lib/geometry.tr:24:12", "stack trace:\n",
+			"  0: geometry.ratio  lib/geometry.tr:24:12  return a.x / a.y\n", "  1: main            modules.tr:19:11"}},
+	{name: "modules", cmd: "check", exit: 0, stdout: str("")},
+	{name: "module_errors", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{
+		"error[TR-T034]: function 'secret' is private to module 'lib.geometry'", "error[TR-T002]", "error[TR-T003]: module 'lib.geometry' has no type 'Square'"}},
+	{name: "import_missing", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{"error[TR-T036]: cannot import 'lib.nowhere': lib/nowhere.tr:", "import_missing.tr:1:1"}},
+	{name: "import_cycle", cmd: "run", exit: 1, stdout: str(""), stderrs: []string{"error[TR-T035]: import cycle: lib.cycle_a imports lib.cycle_b imports lib.cycle_a", "--> lib/cycle_b.tr:1:1"}},
 }
 
 func TestEndToEnd(t *testing.T) {
@@ -107,6 +123,8 @@ func TestEndToEnd(t *testing.T) {
 			path := filepath.Join(fixtures, tc.name+".tr")
 			stdout, stderr, code := invoke(tc.cmd, path)
 			stderr = strings.ReplaceAll(stderr, path, tc.name+".tr")
+			// Imported modules are named relative to the fixtures (ADR-0014).
+			stderr = strings.ReplaceAll(stderr, filepath.Join(fixtures, "lib")+string(filepath.Separator), "lib/")
 
 			if code != tc.exit {
 				t.Errorf("exit code = %d, want %d\nstderr:\n%s", code, tc.exit, stderr)
@@ -241,7 +259,7 @@ func TestDeterministicDiagnostics(t *testing.T) {
 func TestRenderAllSeparatesWithBlankLine(t *testing.T) {
 	f := source.NewFile(1, "t.tr", []byte("ab"))
 	var b strings.Builder
-	renderAll(&b, f, []diagnostic.Diagnostic{
+	renderAll(&b, source.Set{f}, []diagnostic.Diagnostic{
 		diagnostic.Errorf(diagnostic.InvalidCharacter, f.Span(0, 1), "one"),
 		diagnostic.Errorf(diagnostic.InvalidCharacter, f.Span(1, 2), "two"),
 	})

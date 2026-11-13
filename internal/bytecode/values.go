@@ -29,6 +29,22 @@ type EnumValue struct {
 	Fields  []Value
 }
 
+// StructValue is the payload of a KindStruct value (ADR-0014). Like
+// arrays and maps, structs have value semantics with copy-on-write.
+type StructValue struct {
+	Struct int // index in Module.Structs
+	Fields []Value
+	Shared bool
+}
+
+// StructOf returns a struct value.
+func StructOf(s int, fields []Value) Value {
+	return Value{Kind: KindStruct, Ref: &StructValue{Struct: s, Fields: fields}}
+}
+
+// AsStruct returns the payload of a struct value.
+func (v Value) AsStruct() *StructValue { s, _ := v.Ref.(*StructValue); return s }
+
 // MapKey is the comparable form of a map key.
 type MapKey struct {
 	Kind Kind
@@ -75,6 +91,8 @@ func MarkShared(v Value) {
 	case *Array:
 		r.Shared = true
 	case *Map:
+		r.Shared = true
+	case *StructValue:
 		r.Shared = true
 	}
 }
@@ -144,6 +162,12 @@ func Clone(v Value) Value {
 			MarkShared(e)
 		}
 		return Value{Kind: KindMap, Ref: c}
+	case *StructValue:
+		fields := append([]Value(nil), r.Fields...)
+		for _, f := range fields {
+			MarkShared(f)
+		}
+		return Value{Kind: KindStruct, Ref: &StructValue{Struct: r.Struct, Fields: fields}}
 	}
 	return v
 }
@@ -201,8 +225,25 @@ func Equal(a, b Value) bool {
 			}
 		}
 		return true
+	case KindStruct:
+		x, y := a.AsStruct(), b.AsStruct()
+		if x.Struct != y.Struct || len(x.Fields) != len(y.Fields) {
+			return false
+		}
+		for i := range x.Fields {
+			if !Equal(x.Fields[i], y.Fields[i]) {
+				return false
+			}
+		}
+		return true
 	}
 	return false
+}
+
+// StructInfo describes a struct for display and validation (ADR-0014).
+type StructInfo struct {
+	Name   string
+	Fields []string
 }
 
 // EnumInfo describes an enum for display and validation.

@@ -208,8 +208,27 @@ func init() {
 		collCase("EQ_VALUE", setArray, []bytecode.Instr{ld, ld, in(bytecode.OpEqValue), in(pBool), pop}, "true\n"),
 		collCase("NE_VALUE", setArray, []bytecode.Instr{ld, in(bytecode.OpConst, 0), in(bytecode.OpMakeArray, 1), in(bytecode.OpNeValue), in(pBool), pop}, "true\n"),
 		collCase("TO_STRING_VALUE", setMap, []bytecode.Instr{ld, in(bytecode.OpToStringValue), in(pString), pop}, `["a": 1]`+"\n"),
+		// ADR-0014: local 0 = P { x: 1, y: 2 }.
+		collCase("MAKE_STRUCT", setStruct, []bytecode.Instr{ld, in(pValue), pop}, "P { x: 1, y: 2 }\n"),
+		collCase("GET_FIELD", setStruct, []bytecode.Instr{ld, in(bytecode.OpGetField, 1), in(pInt), pop}, "2\n"),
+		collCase("STORE_PATH field", setStruct, []bytecode.Instr{in(bytecode.OpConst, 3), in(bytecode.OpConst, 4), in(bytecode.OpStorePath, 0, 1), ld, in(pValue), pop}, "P { x: 9, y: 2 }\n"),
+		func() opCase {
+			// A mut self call: set(mut self) stores 9 into field x.
+			c := collCase("TAKE_PATH+mut self CALL+PUT_PATH", setStruct, []bytecode.Instr{
+				in(bytecode.OpTakePath, 0, 0), in(bytecode.OpCall, 1), pop, in(bytecode.OpPutPath, 0, 0), ld, in(pValue), pop}, "P { x: 9, y: 2 }\n")
+			set := fn("P.set", 1, 1, in(bytecode.OpConst, 3), in(bytecode.OpConst, 4), in(bytecode.OpStorePath, 0, 1), in(bytecode.OpUnit), in(bytecode.OpReturn))
+			set.MutSelf = true
+			c.extra = []bytecode.Function{set}
+			return c
+		}(),
 	)
 }
+
+// setStruct sets local 0 = P { x: 1, y: 2 } (ADR-0014).
+var setStruct = []bytecode.Instr{in(bytecode.OpConst, 0), in(bytecode.OpConst, 1), in(bytecode.OpMakeStruct, 0), in(bytecode.OpStoreLocal, 0)}
+
+// structInfo is the struct table of the opcode tests.
+var structInfo = []bytecode.StructInfo{{Name: "P", Fields: []string{"x", "y"}}}
 
 // optionInfo is the module enum table every compiled program has.
 var optionInfo = []bytecode.EnumInfo{{Name: "Option", Variants: []bytecode.VariantInfo{{Name: "Some", Fields: 1}, {Name: "None"}}}}
@@ -217,7 +236,7 @@ var optionInfo = []bytecode.EnumInfo{{Name: "Option", Variants: []bytecode.Varia
 func (c opCase) module() *bytecode.Module {
 	code := append(append([]bytecode.Instr(nil), c.code...), in(bytecode.OpUnit), in(bytecode.OpReturn))
 	fns := append([]bytecode.Function{fn("main", 0, c.locals, code...)}, c.extra...)
-	return &bytecode.Module{Constants: c.consts, Functions: fns, Enums: optionInfo}
+	return &bytecode.Module{Constants: c.consts, Functions: fns, Enums: optionInfo, Structs: structInfo}
 }
 
 func TestV20OpcodeStackEffects(t *testing.T) {

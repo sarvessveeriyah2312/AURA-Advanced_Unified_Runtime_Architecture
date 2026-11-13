@@ -91,6 +91,12 @@ const (
 	OpPrintValue    // print any value
 	OpToStringValue // text of any value
 
+	// Structs and methods (ADR-0014).
+	OpMakeStruct // A = struct: field values in declaration order -> struct
+	OpGetField   // A = field: struct -> field value
+	OpTakePath   // A = slot, B = depth: unshare the path and push its value, unmarked
+	OpPutPath    // A = slot, B = depth >= 0: store a value at the path, unmarked
+
 	opCount
 )
 
@@ -109,6 +115,7 @@ const (
 	PathOperand    // A = local slot, B = path depth
 	VariantOperand // A = enum index, B = variant index
 	FieldOperand   // A >= 0: a field index, checked at run time
+	StructOperand  // A = struct index (ADR-0014)
 )
 
 type opInfo struct {
@@ -142,6 +149,8 @@ var opTable = [opCount]opInfo{
 	OpIsVariant: {"IS_VARIANT", VariantOperand}, OpEnumField: {"ENUM_FIELD", FieldOperand},
 	OpEqValue: {"EQ_VALUE", NoOperand}, OpNeValue: {"NE_VALUE", NoOperand},
 	OpPrintValue: {"PRINT_VALUE", NoOperand}, OpToStringValue: {"TO_STRING_VALUE", NoOperand},
+	OpMakeStruct: {"MAKE_STRUCT", StructOperand}, OpGetField: {"GET_FIELD", FieldOperand},
+	OpTakePath: {"TAKE_PATH", PathOperand}, OpPutPath: {"PUT_PATH", PathOperand},
 }
 
 // Valid reports whether o is a defined opcode.

@@ -1,0 +1,6 @@
+error[TR-T035]: import cycle: lib.cycle_a imports lib.cycle_b imports lib.cycle_a
+  --> lib/cycle_b.tr:1:1
+   |
+ 1 | import lib.cycle_a
+   | ^^^^^^^^^^^^^^^^^^
+   = help: move the declarations both files need into a third file that both import

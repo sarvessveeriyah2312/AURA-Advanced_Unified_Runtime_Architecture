@@ -41,10 +41,11 @@ const (
 // Compiler is the SDK's source pipeline (internal/pipeline). It is nil in
 // the runtime edition.
 type Compiler interface {
-	// Check lexes, parses and type-checks a file.
-	Check(file *source.File) []diagnostic.Diagnostic
-	// Compile checks a file and compiles it to a validated module.
-	Compile(file *source.File) (*bytecode.Module, []diagnostic.Diagnostic)
+	// Check loads, lexes, parses and type-checks a program whose root is
+	// file. It returns every file loaded, root first (ADR-0014).
+	Check(file *source.File) (source.Set, []diagnostic.Diagnostic)
+	// Compile checks a program and compiles it to a validated module.
+	Compile(file *source.File) (*bytecode.Module, source.Set, []diagnostic.Diagnostic)
 }
 
 const sdkUsage = `Usage: tread <command> [arguments]
@@ -233,8 +234,8 @@ func (t *tool) readSource(path string) (*source.File, int) {
 // diagnostics. It never compiles or executes the program, and prints
 // nothing on success.
 func (t *tool) runCheck(file *source.File) int {
-	if diags := t.compiler.Check(file); len(diags) > 0 {
-		renderAll(t.stderr, file, diags)
+	if files, diags := t.compiler.Check(file); len(diags) > 0 {
+		renderAll(t.stderr, files, diags)
 		return exitCodeForAll(diags)
 	}
 	return ExitOK
@@ -268,12 +269,12 @@ func (t *tool) run(path string) int {
 // produced no diagnostics, so a program is never executed after a
 // compile-time error.
 func (t *tool) runSource(file *source.File) int {
-	module, diags := t.compiler.Compile(file)
+	module, files, diags := t.compiler.Compile(file)
 	if len(diags) > 0 {
-		renderAll(t.stderr, file, diags)
+		renderAll(t.stderr, files, diags)
 		return exitCodeForAll(diags)
 	}
-	return t.runModule(module, file)
+	return t.runModule(module, files)
 }
 
 // runBytecode runs a .tbc file. A file that cannot be loaded is TR-R006
@@ -290,16 +291,19 @@ func (t *tool) runBytecode(path string) int {
 		renderAll(t.stderr, nil, []diagnostic.Diagnostic{d})
 		return exitCodeFor(d.Code)
 	}
-	var file *source.File
+	var files source.Set
 	if len(f.Source) > 0 {
-		file = source.NewFile(bytecode.SourceFileID, f.SourceName, f.Source)
+		files = append(files, source.NewFile(bytecode.SourceFileID, f.SourceName, f.Source))
+		for i, imp := range f.Imports {
+			files = append(files, source.NewFile(bytecode.SourceFileID+1+source.FileID(i), imp.Name, imp.Source))
+		}
 	}
-	return t.runModule(f.Module, file)
+	return t.runModule(f.Module, files)
 }
 
 // runModule executes a module and renders any runtime failure. file is
 // nil when no source is available.
-func (t *tool) runModule(module *bytecode.Module, file *source.File) int {
+func (t *tool) runModule(module *bytecode.Module, files source.Set) int {
 	failure, err := execute(module, t.stdout, t.limits)
 	if err != nil {
 		fmt.Fprintf(t.stderr, "error: cannot write program output: %v\n", err)
@@ -308,15 +312,15 @@ func (t *tool) runModule(module *bytecode.Module, file *source.File) int {
 	if failure == nil {
 		return ExitOK
 	}
-	src := file
+	src := files
 	if !failure.withSource {
 		src = nil
 	}
 	renderAll(t.stderr, src, []diagnostic.Diagnostic{failure.diag})
 	// ADR-0009: errors below main add a stack trace after a blank line.
-	if src != nil && len(failure.trace) >= 2 {
+	if len(src) > 0 && len(failure.trace) >= 2 {
 		fmt.Fprintln(t.stderr)
-		_ = diagnostic.RenderTrace(t.stderr, src, failure.trace)
+		_ = diagnostic.RenderTraceSet(t.stderr, src, failure.trace)
 	}
 	return exitCodeFor(failure.diag.Code)
 }
@@ -354,15 +358,20 @@ func (t *tool) build(args []string) int {
 	if file == nil {
 		return code
 	}
-	module, diags := t.compiler.Compile(file)
+	module, files, diags := t.compiler.Compile(file)
 	if len(diags) > 0 {
-		renderAll(t.stderr, file, diags)
+		renderAll(t.stderr, files, diags)
 		return exitCodeForAll(diags)
+	}
+	var imports []bytecode.SourceFile
+	for _, f := range files[1:] {
+		imports = append(imports, bytecode.SourceFile{Name: f.Name(), Source: f.Content()})
 	}
 	data, err := bytecode.Encode(&bytecode.File{
 		Producer:   "tread " + Version,
 		SourceName: in,
 		Source:     file.Content(),
+		Imports:    imports,
 		Module:     module,
 	})
 	if err != nil {
@@ -435,7 +444,7 @@ func (t *tool) doctor() int {
 	if t.sdk() {
 		info.Edition = doctor.SDK
 		info.Compile = func(name string, src []byte) (*bytecode.Module, error) {
-			module, diags := t.compiler.Compile(source.NewFile(1, name, src))
+			module, _, diags := t.compiler.Compile(source.NewFile(1, name, src))
 			if len(diags) > 0 {
 				return nil, fmt.Errorf("%s: %s", diags[0].Code, diags[0].Message)
 			}
@@ -470,11 +479,11 @@ func RunSource(compiler Compiler, name string, src []byte, check bool, limits vm
 
 // renderAll writes diagnostics with the shared renderer, separated by a
 // blank line (docs/07 §7.4).
-func renderAll(w io.Writer, file *source.File, diags []diagnostic.Diagnostic) {
+func renderAll(w io.Writer, files source.Set, diags []diagnostic.Diagnostic) {
 	for i, d := range diags {
 		if i > 0 {
 			fmt.Fprintln(w)
 		}
-		_ = diagnostic.Render(w, file, d)
+		_ = diagnostic.RenderSet(w, files, d)
 	}
 }

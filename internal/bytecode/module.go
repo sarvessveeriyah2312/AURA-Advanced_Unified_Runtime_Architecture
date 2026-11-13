@@ -21,6 +21,7 @@ const (
 	KindArray
 	KindMap
 	KindEnum
+	KindStruct // ADR-0014
 	// KindAny is the result kind of a function returning a type
 	// parameter. Values never have this kind.
 	KindAny
@@ -44,6 +45,8 @@ func (k Kind) String() string {
 		return "Map"
 	case KindEnum:
 		return "Enum"
+	case KindStruct:
+		return "Struct"
 	case KindAny:
 		return "Any"
 	}
@@ -58,7 +61,8 @@ type Value struct {
 	Float float64
 	Bool  bool
 	Str   string
-	// Ref is the payload of a heap value: *Array, *Map or *EnumValue.
+	// Ref is the payload of a heap value: *Array, *Map, *EnumValue or
+	// *StructValue.
 	Ref any
 }
 
@@ -98,7 +102,11 @@ type Function struct {
 	NumParams int
 	NumLocals int
 	Result    Kind
-	Code      []Instr
+	// MutSelf marks a `mut self` method (ADR-0014): RETURN also hands
+	// back its receiver, local 0, so CALL pushes the receiver and then
+	// the result.
+	MutSelf bool
+	Code    []Instr
 	// Spans is the source mapping table: Spans[i] is the source span of
 	// Code[i].
 	Spans []source.Span
@@ -112,6 +120,8 @@ type Module struct {
 	// Enums describes every enum type; Option is always enum 0
 	// (ADR-0013).
 	Enums []EnumInfo
+	// Structs describes every struct type (ADR-0014).
+	Structs []StructInfo
 }
 
 // MaxPathDepth bounds the B operand of path instructions.
@@ -154,6 +164,8 @@ func (m *Module) Validate() error {
 			return bad(-1, "empty body")
 		case len(fn.Spans) != len(fn.Code):
 			return bad(-1, "source mapping has %d entries for %d instructions", len(fn.Spans), len(fn.Code))
+		case fn.MutSelf && fn.NumParams < 1:
+			return bad(-1, "a mut self method needs a receiver parameter")
 		case fn.NumParams < 0 || fn.NumParams > fn.NumLocals:
 			return bad(-1, "%d parameters but %d locals", fn.NumParams, fn.NumLocals)
 		}
@@ -174,6 +186,11 @@ func (m *Module) Validate() error {
 			case SizeOperand, FieldOperand:
 				if in.A < 0 || in.A > maxCount {
 					return bad(pc, "%s operand %d out of range", in.Op, in.A)
+				}
+				continue
+			case StructOperand:
+				if in.A < 0 || in.A >= len(m.Structs) {
+					return bad(pc, "%s struct %d out of range [0,%d)", in.Op, in.A, len(m.Structs))
 				}
 				continue
 			case PathOperand:
@@ -223,11 +240,22 @@ func (m *Module) Disassemble() string {
 		}
 		b.WriteByte('\n')
 	}
+	for i, s := range m.Structs {
+		fmt.Fprintf(&b, "struct %d %s", i, s.Name)
+		for _, f := range s.Fields {
+			fmt.Fprintf(&b, " %s", f)
+		}
+		b.WriteByte('\n')
+	}
 	for i, c := range m.Constants {
 		fmt.Fprintf(&b, "const %d %s %s\n", i, c.Kind, c)
 	}
 	for fi, fn := range m.Functions {
-		fmt.Fprintf(&b, "fn %d %s params=%d locals=%d result=%s\n", fi, fn.Name, fn.NumParams, fn.NumLocals, fn.Result)
+		mutSelf := ""
+		if fn.MutSelf {
+			mutSelf = " mut-self"
+		}
+		fmt.Fprintf(&b, "fn %d %s params=%d locals=%d result=%s%s\n", fi, fn.Name, fn.NumParams, fn.NumLocals, fn.Result, mutSelf)
 		for pc, in := range fn.Code {
 			switch in.Op.Operand() {
 			case NoOperand:

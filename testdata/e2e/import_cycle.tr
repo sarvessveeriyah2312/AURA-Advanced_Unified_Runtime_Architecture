@@ -1,0 +1,5 @@
+import lib.cycle_a
+
+fn main() -> Unit {
+    print(cycle_a.a())
+}

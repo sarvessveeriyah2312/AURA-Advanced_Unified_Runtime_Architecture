@@ -1,0 +1,6 @@
+error[TR-T036]: cannot import 'lib.nowhere': lib/nowhere.tr: no such file
+  --> import_missing.tr:1:1
+   |
+ 1 | import lib.nowhere
+   | ^^^^^^^^^^^^^^^^^^
+   = help: imports are found relative to the directory of the file being run

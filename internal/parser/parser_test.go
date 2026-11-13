@@ -204,6 +204,24 @@ var parseCases = []parseCase{
 	// An enum inside a block ends it, like a nested fn (N10).
 	{id: "S136", mode: program, src: "fn main() {\n    enum E { A }\n}", want: "(program (enum E A) (fn main () (block)))", diags: []string{"P011@1:11", "P012@3:1"}},
 	{id: "S137", mode: program, src: "enum E {\n    A(Int,)\n}", want: "(program (enum E (A Int)))", diags: []string{"P007@2:10"}},
+	// Structs, methods and imports (ADR-0014).
+	{id: "S138", mode: program, src: "pub struct Point {\n    pub x: Int\n    y: Int\n}\nstruct Pair<A, B> { a: A, b: B }",
+		want: "(program (pub struct Point pub x:Int y:Int) (struct Pair<A, B> a:A b:B))"},
+	{id: "S139", mode: program, src: "impl Point {\n    pub fn new() -> Point { }\n    fn len(self) -> Int { }\n    fn shift(mut self, d: Int) { }\n}",
+		want: "(program (impl Point (pub fn new () -> Point (block)) (fn len (self) -> Int (block)) (fn shift (mut self d:Int) (block))))"},
+	{id: "S140", mode: program, src: "module app\nimport geometry\nimport shapes.circle\nfn main() { }",
+		want: "(program (module app) (import geometry) (import shapes.circle) (fn main () (block)))"},
+	{id: "S141", mode: program, src: "fn main() { }\nimport geometry", want: "(program (import geometry) (fn main () (block)))", diags: []string{"P015@2:1"}},
+	{id: "S142", mode: stmts, src: "let p = Point { x: 1, y: f(2) }\nlet q = geometry.Point {\n    x: 1\n    y: 2\n}\nlet e = Empty {}",
+		want: "(let p (struct Point x:1 y:(call f 2))) (let q (struct geometry.Point x:1 y:2)) (let e (struct Empty))"},
+	{id: "S143", mode: stmts, src: "if p == q { }\nif p == (Point { x: 1 }) { }\nwhile ok { }",
+		want: "(if (== p q) (block)) (if (== p (paren (struct Point x:1))) (block)) (while ok (block))"},
+	{id: "S144", mode: stmts, src: "p.x = 1\ngrid[0].pos.y = 2\nlet g: geometry.Point = f()",
+		want: "(assign (. p x) 1) (assign (. (. (index grid 0) pos) y) 2) (let g:geometry.Point (call f))"},
+	{id: "S145", mode: stmts, src: "match s {\n    shapes.Shape.Circle(r) => { }\n}", want: "(match s (=> (shapes.Shape.Circle r) (block)))"},
+	{id: "S146", mode: program, src: "pub let x = 1\nfn main() { }", want: "(program (fn main () (block)))", diags: []string{"P012@1:5"}},
+	{id: "S147", mode: program, src: "impl P {\n    let x = 1\n    fn f(self) { }\n}", want: "(program (impl P (fn f (self) (block))))", diags: []string{"P012@2:5"}},
+	{id: "S148", mode: stmts, src: "let p = Point { x: 1 y: 2 }", want: "(let p (struct Point x:1))", diags: []string{"P004@1:22"}},
 
 	// Nesting limit (ADR-0006). n nested constructs plus the innermost
 	// operand use n+1 levels; the limit is MaxNestingDepth (10,000).

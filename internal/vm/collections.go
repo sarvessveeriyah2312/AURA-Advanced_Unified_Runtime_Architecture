@@ -74,7 +74,20 @@ func (m *machine) position(a *bytecode.Array, k bytecode.Value) (int, *Error) {
 }
 
 func (m *machine) missingKey(k bytecode.Value) *Error {
-	return m.fail(CodeKeyNotFound, "key %s is not in the map", quoteValue(m.mod.Enums, k))
+	return m.fail(CodeKeyNotFound, "key %s is not in the map", quoteValue(m.mod, k))
+}
+
+// fieldOf checks a struct field index, given as an Int key in a path
+// (ADR-0014).
+func (m *machine) fieldOf(v bytecode.Value, k bytecode.Value) (*bytecode.StructValue, int, *Error) {
+	s := v.AsStruct()
+	if v.Kind != bytecode.KindStruct || s == nil {
+		return nil, 0, m.invalid("expected Struct, found %s", v.Kind)
+	}
+	if k.Kind != bytecode.KindInt || k.Int < 0 || k.Int >= int64(len(s.Fields)) {
+		return nil, 0, m.invalid("field %s of a struct with %d fields", Format(k), len(s.Fields))
+	}
+	return s, int(k.Int), nil
 }
 
 // elem returns container[k] without marking it.
@@ -104,6 +117,12 @@ func (m *machine) elem(c, k bytecode.Value) (bytecode.Value, *Error) {
 			return c, m.missingKey(k)
 		}
 		return mp.Vals[i], nil
+	case bytecode.KindStruct:
+		s, i, e := m.fieldOf(c, k)
+		if e != nil {
+			return c, e
+		}
+		return s.Fields[i], nil
 	}
 	return c, m.invalid("cannot index a %s value", c.Kind)
 }
@@ -128,6 +147,10 @@ func unshare(ref *bytecode.Value) {
 			*ref = bytecode.Clone(*ref)
 		}
 	case *bytecode.Map:
+		if r.Shared {
+			*ref = bytecode.Clone(*ref)
+		}
+	case *bytecode.StructValue:
 		if r.Shared {
 			*ref = bytecode.Clone(*ref)
 		}
@@ -165,6 +188,12 @@ func (m *machine) writeRef(fr *frame, slot int, keys []bytecode.Value) (*bytecod
 				return nil, m.missingKey(k)
 			}
 			ref = &mp.Vals[i]
+		case bytecode.KindStruct:
+			s, i, e := m.fieldOf(*ref, k)
+			if e != nil {
+				return nil, e
+			}
+			ref = &s.Fields[i]
 		default:
 			return nil, m.invalid("cannot index a %s value", ref.Kind)
 		}
@@ -244,6 +273,12 @@ func (m *machine) collectionOp(fr *frame, in bytecode.Instr) (handled bool, err 
 			var k bytecode.MapKey
 			if k, e = m.key(last); e == nil {
 				ref.AsMap().Set(last, k, value)
+			}
+		case bytecode.KindStruct:
+			var s *bytecode.StructValue
+			var i int
+			if s, i, e = m.fieldOf(*ref, last); e == nil {
+				s.Fields[i] = value
 			}
 		default:
 			e = m.invalid("cannot index a %s value", ref.Kind)
@@ -412,10 +447,74 @@ func (m *machine) collectionOp(fr *frame, in bytecode.Instr) (handled bool, err 
 			eq := bytecode.Equal(v[0], v[1])
 			m.push(bytecode.BoolValue(eq == (in.Op == bytecode.OpEqValue)))
 		}
+	case bytecode.OpMakeStruct:
+		var fields []bytecode.Value
+		if fields, e = m.popN(len(m.mod.Structs[in.A].Fields)); e == nil {
+			for _, v := range fields {
+				bytecode.MarkShared(v)
+			}
+			m.push(bytecode.StructOf(in.A, fields))
+		}
+	case bytecode.OpGetField:
+		var v bytecode.Value
+		if v, e = m.pop(); e == nil {
+			var s *bytecode.StructValue
+			var i int
+			if s, i, e = m.fieldOf(v, bytecode.IntValue(int64(in.A))); e == nil {
+				f := s.Fields[i]
+				bytecode.MarkShared(f)
+				m.push(f)
+			}
+		}
+	case bytecode.OpTakePath:
+		// The receiver of a mut self call (ADR-0014): every node on the
+		// path is made exclusively the variable's, so the callee can change
+		// the value in place; PUT_PATH stores the result back.
+		var keys []bytecode.Value
+		if keys, e = m.popN(in.B); e == nil {
+			var ref *bytecode.Value
+			if ref, e = m.writeRef(fr, in.A, keys); e == nil {
+				m.push(*ref)
+			}
+		}
+	case bytecode.OpPutPath:
+		var vals []bytecode.Value
+		if vals, e = m.popN(in.B + 1); e != nil {
+			break
+		}
+		if in.B == 0 {
+			fr.locals[in.A] = vals[0]
+			break
+		}
+		var ref *bytecode.Value
+		if ref, e = m.writeRef(fr, in.A, vals[:in.B-1]); e != nil {
+			break
+		}
+		last, value := vals[in.B-1], vals[in.B]
+		switch ref.Kind {
+		case bytecode.KindArray:
+			var i int
+			if i, e = m.position(ref.AsArray(), last); e == nil {
+				ref.AsArray().Elems[i] = value
+			}
+		case bytecode.KindMap:
+			var k bytecode.MapKey
+			if k, e = m.key(last); e == nil {
+				ref.AsMap().Set(last, k, value)
+			}
+		case bytecode.KindStruct:
+			var s *bytecode.StructValue
+			var i int
+			if s, i, e = m.fieldOf(*ref, last); e == nil {
+				s.Fields[i] = value
+			}
+		default:
+			e = m.invalid("cannot index a %s value", ref.Kind)
+		}
 	case bytecode.OpPrintValue:
 		var v bytecode.Value
 		if v, e = m.pop(); e == nil {
-			if _, werr := m.out.Write([]byte(FormatIn(m.mod.Enums, v) + "\n")); werr != nil {
+			if _, werr := m.out.Write([]byte(FormatIn(m.mod, v) + "\n")); werr != nil {
 				return true, werr
 			}
 			m.push(bytecode.UnitValue())
@@ -423,7 +522,7 @@ func (m *machine) collectionOp(fr *frame, in bytecode.Instr) (handled bool, err 
 	case bytecode.OpToStringValue:
 		var v bytecode.Value
 		if v, e = m.pop(); e == nil {
-			m.push(bytecode.StringValue(FormatIn(m.mod.Enums, v)))
+			m.push(bytecode.StringValue(FormatIn(m.mod, v)))
 		}
 	default:
 		return false, nil
@@ -437,22 +536,23 @@ func (m *machine) collectionOp(fr *frame, in bytecode.Instr) (handled bool, err 
 // FormatIn returns the program-visible text of any value (ADR-0013). A
 // string on its own is its contents; inside a collection or an enum it
 // is quoted, so ["a", "b"] reads unambiguously.
-func FormatIn(enums []bytecode.EnumInfo, v bytecode.Value) string {
+func FormatIn(mod *bytecode.Module, v bytecode.Value) string {
 	if v.Kind == bytecode.KindString {
 		return v.Str
 	}
 	var b strings.Builder
-	writeValue(&b, enums, v)
+	writeValue(&b, mod, v)
 	return b.String()
 }
 
-func quoteValue(enums []bytecode.EnumInfo, v bytecode.Value) string {
+func quoteValue(mod *bytecode.Module, v bytecode.Value) string {
 	var b strings.Builder
-	writeValue(&b, enums, v)
+	writeValue(&b, mod, v)
 	return b.String()
 }
 
-func writeValue(b *strings.Builder, enums []bytecode.EnumInfo, v bytecode.Value) {
+func writeValue(b *strings.Builder, mod *bytecode.Module, v bytecode.Value) {
+	enums := mod.Enums
 	switch v.Kind {
 	case bytecode.KindString:
 		writeQuoted(b, v.Str)
@@ -463,7 +563,7 @@ func writeValue(b *strings.Builder, enums []bytecode.EnumInfo, v bytecode.Value)
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			writeValue(b, enums, e)
+			writeValue(b, mod, e)
 		}
 		b.WriteByte(']')
 	case bytecode.KindMap:
@@ -477,9 +577,9 @@ func writeValue(b *strings.Builder, enums []bytecode.EnumInfo, v bytecode.Value)
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			writeValue(b, enums, mp.Keys[i])
+			writeValue(b, mod, mp.Keys[i])
 			b.WriteString(": ")
-			writeValue(b, enums, mp.Vals[i])
+			writeValue(b, mod, mp.Vals[i])
 		}
 		b.WriteByte(']')
 	case bytecode.KindEnum:
@@ -495,10 +595,35 @@ func writeValue(b *strings.Builder, enums []bytecode.EnumInfo, v bytecode.Value)
 				if i > 0 {
 					b.WriteString(", ")
 				}
-				writeValue(b, enums, f)
+				writeValue(b, mod, f)
 			}
 			b.WriteByte(')')
 		}
+	case bytecode.KindStruct:
+		// Point { x: 1, y: 2 } (ADR-0014)
+		s := v.AsStruct()
+		var info *bytecode.StructInfo
+		if s.Struct >= 0 && s.Struct < len(mod.Structs) && len(mod.Structs[s.Struct].Fields) == len(s.Fields) {
+			info = &mod.Structs[s.Struct]
+			b.WriteString(info.Name)
+		} else {
+			b.WriteString("struct(" + strconv.Itoa(s.Struct) + ")")
+		}
+		if len(s.Fields) == 0 {
+			b.WriteString(" {}")
+			return
+		}
+		b.WriteString(" { ")
+		for i, f := range s.Fields {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			if info != nil {
+				b.WriteString(info.Fields[i] + ": ")
+			}
+			writeValue(b, mod, f)
+		}
+		b.WriteString(" }")
 	default:
 		b.WriteString(Format(v))
 	}

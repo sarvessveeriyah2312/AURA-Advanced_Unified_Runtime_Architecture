@@ -5,6 +5,46 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 Tread uses [Semantic Versioning](https://semver.org/). Entries for 0.1.0
 and 0.2.0 are kept as written, under the language's name at the time.
 
+## [Unreleased]
+
+Structs, methods and multi-file programs (ADR-0014).
+
+### Added
+
+-   **Structs.** `struct Point { x: Int, y: Int }` (fields separated by
+    newlines or commas), built with `Point { x: 1, y: 2 }` (fields in
+    any order), read with `p.x`, and changed with `p.x = v`, also inside
+    collections and other structs (`line.to.x = 9`, `grid[0].x = 1`).
+    Structs have value semantics like arrays and maps, print as
+    `Point { x: 1, y: 2 }`, and compare with `==`. Generic structs
+    (`struct Stack<T> { items: Array<T> }`) infer their type arguments.
+-   **Methods** in `impl` blocks. `fn len(self)` reads its receiver;
+    `fn shift(mut self, d: Int)` changes the caller's variable, which
+    must be `let mut`. Functions without `self` are associated
+    functions, called as `Point.origin()`.
+-   **Imports.** `import geometry` loads `geometry.tr`, and
+    `import shapes.circle` loads `shapes/circle.tr`, relative to the
+    directory of the file being run. Names are used qualified:
+    `geometry.Point`, `circle.area(r)`, `geometry.Shape.Dot(p)`. Each
+    file is loaded once; import cycles are reported.
+-   **`pub` visibility.** Only `pub` functions, structs, enums, fields
+    and methods can be used from other files.
+-   `tread build` embeds every source file in the `.tbc` file, so runtime
+    errors and stack traces show the right file and line.
+-   New errors: **TR-P015** (an import after other declarations) and
+    **TR-T031** to **TR-T036** (struct literal fields, a struct that
+    contains itself, a module name that does not match its file, a
+    private item, an import cycle, a file that cannot be imported).
+
+### Changed (breaking)
+
+-   **`struct`, `impl`, `pub` and `import` are keywords.** `struct` and
+    `impl` were ordinary identifiers before, so programs using them as
+    names must rename them.
+-   **Bytecode format 3.** `.tbc` files built by 0.5.0 must be rebuilt.
+-   A struct literal cannot appear directly in the condition of `if`,
+    `while`, `match` or `for`; wrap it in parentheses there.
+
 ## [0.5.0] - 2026-11-13
 
 Arrays, maps, enums, pattern matching and generics (ADR-0013).

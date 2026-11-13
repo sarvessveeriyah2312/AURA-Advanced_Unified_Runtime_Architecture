@@ -15,7 +15,7 @@ const sampleSource = "fn add(a: Int, b: Int) -> Int { return a + b }\nfn main() 
 
 // tbcModule exercises every constant kind and a call.
 func tbcModule() *Module {
-	sp := source.Span{File: 7, Start: 1, End: 3}
+	sp := source.Span{File: SourceFileID, Start: 1, End: 3}
 	spans := func(n int) []source.Span {
 		s := make([]source.Span, n)
 		for i := range s {
@@ -126,8 +126,9 @@ func TestDecodeRejects(t *testing.T) {
 		{"bad magic", edit(func(b []byte) []byte { b[0] = 'X'; return b }), "not a Tread bytecode file"},
 		{"source file", []byte("fn main() -> Unit {}\n"), "not a Tread bytecode file"},
 		{"header only", good[:8], "truncated"},
-		{"future version", edit(func(b []byte) []byte { b[4] = 3; return b }), "unsupported bytecode format version 3: this runtime supports version 2"},
-		{"0.4 format", edit(func(b []byte) []byte { b[4] = 1; return b }), "unsupported bytecode format version 1: this runtime supports version 2; rebuild"},
+		{"future version", edit(func(b []byte) []byte { b[4] = 4; return b }), "unsupported bytecode format version 4: this runtime supports version 3"},
+		{"0.4 format", edit(func(b []byte) []byte { b[4] = 1; return b }), "unsupported bytecode format version 1: this runtime supports version 3; rebuild"},
+		{"0.5 format", edit(func(b []byte) []byte { b[4] = 2; return b }), "unsupported bytecode format version 2: this runtime supports version 3; rebuild"},
 		{"version zero", edit(func(b []byte) []byte { b[4] = 0; return b }), "unsupported bytecode format version 0"},
 		{"flags", edit(func(b []byte) []byte { b[6] = 1; return b }), "unsupported bytecode flags"},
 		{"checksum", edit(func(b []byte) []byte { b[len(b)-1] ^= 0xFF; return b }), "checksum mismatch"},
@@ -174,6 +175,7 @@ func encodeRaw(t *testing.T, src string, m *Module) []byte {
 	b = appendString(b, "")
 	b = appendString(b, "")
 	b = appendBytes(b, []byte(src))
+	b = binary.AppendUvarint(b, 0) // no imported files
 	b = binary.AppendUvarint(b, uint64(len(m.Constants)))
 	for _, c := range m.Constants {
 		b = append(b, byte(c.Kind))
@@ -192,6 +194,8 @@ func encodeRaw(t *testing.T, src string, m *Module) []byte {
 		b = binary.AppendUvarint(b, uint64(fn.NumParams))
 		b = binary.AppendUvarint(b, uint64(fn.NumLocals))
 		b = append(b, byte(fn.Result))
+		b = append(b, 0)               // flags
+		b = binary.AppendUvarint(b, 0) // root source file
 		b = binary.AppendUvarint(b, uint64(len(fn.Code)))
 		for pc, in := range fn.Code {
 			b = append(b, byte(in.Op))
@@ -207,6 +211,7 @@ func encodeRaw(t *testing.T, src string, m *Module) []byte {
 	}
 	b = binary.AppendUvarint(b, uint64(m.Main))
 	b = binary.AppendUvarint(b, 0) // no enums
+	b = binary.AppendUvarint(b, 0) // no structs
 	return binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
 }
 
@@ -262,6 +267,48 @@ func TestDecodeRejectsHugeCounts(t *testing.T) {
 	b = binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
 	if _, err := Decode(b); err == nil || !strings.Contains(err.Error(), "exceeds the remaining") {
 		t.Errorf("err = %v", err)
+	}
+}
+
+// TestEncodeDecodeStructsAndFiles round-trips the ADR-0014 additions:
+// imported source files, a function in one of them, a mut self method
+// and struct metadata.
+func TestEncodeDecodeStructsAndFiles(t *testing.T) {
+	m := tbcModule()
+	m.Structs = []StructInfo{{Name: "Point", Fields: []string{"x", "y"}}}
+	m.Functions[0].Name = "geometry.Point.add"
+	m.Functions[0].MutSelf = true
+	for i := range m.Functions[0].Spans {
+		m.Functions[0].Spans[i].File = SourceFileID + 2
+	}
+	// main calls a mut self function: it gets the receiver and the result.
+	m.Functions[1].Code = []Instr{
+		{OpConst, 0, 0}, {OpConst, 0, 0}, {OpCall, 0, 0}, {OpPop, 0, 0}, {OpPop, 0, 0},
+		{OpConst, 0, 0}, {OpConst, 0, 0}, {OpMakeStruct, 0, 0}, {OpGetField, 1, 0}, {OpPop, 0, 0},
+		{OpUnit, 0, 0}, {OpReturn, 0, 0},
+	}
+	m.Functions[1].Spans = m.Functions[1].Spans[:len(m.Functions[1].Code)]
+	f := &File{SourceName: "main.tr", Source: []byte(sampleSource), Module: m,
+		Imports: []SourceFile{{Name: "a.tr", Source: []byte("a")}, {Name: "geometry.tr", Source: []byte("xyz")}}}
+	got, err := Decode(mustEncode(t, f))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Module.Disassemble() != m.Disassemble() {
+		t.Errorf("module changed:\n%s\nwant\n%s", got.Module.Disassemble(), m.Disassemble())
+	}
+	if len(got.Imports) != 2 || got.Imports[1].Name != "geometry.tr" || string(got.Imports[1].Source) != "xyz" {
+		t.Errorf("imports = %+v", got.Imports)
+	}
+	if s := got.Module.Functions[0].Spans[0]; s.File != SourceFileID+2 {
+		t.Errorf("imported function span file = %d", s.File)
+	}
+	if s := got.Module.Functions[1].Spans[0]; s.File != SourceFileID {
+		t.Errorf("root function span file = %d", s.File)
+	}
+	f.Imports = f.Imports[:1]
+	if _, err := Encode(f); err == nil || !strings.Contains(err.Error(), "not embedded") {
+		t.Errorf("missing source file: err = %v", err)
 	}
 }
 

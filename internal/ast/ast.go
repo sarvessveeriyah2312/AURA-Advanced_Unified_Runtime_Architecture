@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"strings"
+
 	"github.com/sarvessveeriyah2312/Tread/internal/source"
 	"github.com/sarvessveeriyah2312/Tread/internal/token"
 )
@@ -31,10 +33,13 @@ type Stmt interface {
 type Program struct {
 	// Module is nil when the file has no module declaration; the module
 	// is then implicitly named ImplicitModuleName.
-	Module *ModuleDecl
-	Funcs  []*FuncDecl
-	Enums  []*EnumDecl // ADR-0013
-	Loc    source.Span
+	Module  *ModuleDecl
+	Imports []*ImportDecl // ADR-0014
+	Funcs   []*FuncDecl
+	Enums   []*EnumDecl   // ADR-0013
+	Structs []*StructDecl // ADR-0014
+	Impls   []*ImplDecl   // ADR-0014
+	Loc     source.Span
 }
 
 // ModuleName returns the declared or implicit module name.
@@ -51,8 +56,60 @@ type ModuleDecl struct {
 	Loc  source.Span
 }
 
-// FuncDecl is a top-level function declaration.
+// ImportDecl is `import a.b.c` (ADR-0014).
+type ImportDecl struct {
+	Path []*Ident
+	Loc  source.Span
+}
+
+// Name returns the import's qualifier: the last segment of its path.
+func (d *ImportDecl) Name() *Ident { return d.Path[len(d.Path)-1] }
+
+// PathString returns the dotted path, as in "shapes.circle".
+func (d *ImportDecl) PathString() string {
+	parts := make([]string, len(d.Path))
+	for i, p := range d.Path {
+		parts[i] = p.Name
+	}
+	return strings.Join(parts, ".")
+}
+
+// StructDecl is `[pub] struct Name<T> { [pub] field: Type ... }`
+// (ADR-0014).
+type StructDecl struct {
+	Pub        bool
+	Name       *Ident
+	TypeParams []*Ident
+	Fields     []*FieldDecl
+	Loc        source.Span
+}
+
+// FieldDecl is one struct field.
+type FieldDecl struct {
+	Pub  bool
+	Name *Ident
+	Type *TypeName
+	Loc  source.Span
+}
+
+// ImplDecl is `impl Name { fn ... }` (ADR-0014).
+type ImplDecl struct {
+	Name  *Ident
+	Funcs []*FuncDecl
+	Loc   source.Span
+}
+
+// SelfParam is the receiver `self` or `mut self` of a method (ADR-0014).
+type SelfParam struct {
+	Mutable bool
+	Loc     source.Span
+}
+
+// FuncDecl is a top-level function declaration, or a function in an
+// impl block.
 type FuncDecl struct {
+	Pub        bool       // ADR-0014
+	Self       *SelfParam // the receiver of a method; nil otherwise
 	Name       *Ident
 	TypeParams []*Ident // generic parameters `<T, U>` (ADR-0013)
 	Params     []*Param
@@ -71,13 +128,16 @@ type Param struct {
 // TypeName is a type annotation. It is resolved by the checker in the
 // type namespace (ADR-0004 item 3).
 type TypeName struct {
-	Name string
-	Args []*TypeName // type arguments, as in Array<Int> (ADR-0013)
-	Loc  source.Span
+	// Module is the qualifier of `geometry.Point`, or nil (ADR-0014).
+	Module *Ident
+	Name   string
+	Args   []*TypeName // type arguments, as in Array<Int> (ADR-0013)
+	Loc    source.Span
 }
 
 // EnumDecl is `enum Name<T> { Variant(Type, ...) ... }` (ADR-0013).
 type EnumDecl struct {
+	Pub        bool // ADR-0014
 	Name       *Ident
 	TypeParams []*Ident
 	Variants   []*Variant
@@ -106,8 +166,9 @@ type LetStmt struct {
 	Loc     source.Span
 }
 
-// AssignStmt is `target = value`. Target is an *Ident or an *IndexExpr
-// path rooted in one, such as grid[r][c] (ADR-0013).
+// AssignStmt is `target = value`. Target is an *Ident or a path of
+// *IndexExpr and *MemberExpr (field) nodes rooted in one, such as
+// grid[r][c] (ADR-0013) or p.pos.x (ADR-0014).
 type AssignStmt struct {
 	Target Expr
 	Value  Expr
@@ -188,6 +249,7 @@ type LitPat struct {
 
 // VariantPat is `Enum.Variant` or `Enum.Variant(p, ...)`.
 type VariantPat struct {
+	Module  *Ident // qualifier of `geometry.Shape.Circle`, or nil (ADR-0014)
 	Enum    *Ident
 	Variant *Ident
 	Args    []Pattern
@@ -314,6 +376,20 @@ type MemberExpr struct {
 	Loc  source.Span
 }
 
+// StructLit is `[module.]Name { field: value, ... }` (ADR-0014).
+type StructLit struct {
+	Module *Ident
+	Name   *Ident
+	Fields []*FieldInit
+	Loc    source.Span
+}
+
+// FieldInit is one `field: value` of a struct literal.
+type FieldInit struct {
+	Name  *Ident
+	Value Expr
+}
+
 // ErrorExpr stands in for an INVALID token or a failed sub-parse. The
 // error has already been reported; later phases skip it silently.
 type ErrorExpr struct {
@@ -358,6 +434,13 @@ func (n *ArrayLit) Span() source.Span     { return n.Loc }
 func (n *MapLit) Span() source.Span       { return n.Loc }
 func (n *IndexExpr) Span() source.Span    { return n.Loc }
 func (n *MemberExpr) Span() source.Span   { return n.Loc }
+func (n *ImportDecl) Span() source.Span   { return n.Loc }
+func (n *StructDecl) Span() source.Span   { return n.Loc }
+func (n *FieldDecl) Span() source.Span    { return n.Loc }
+func (n *ImplDecl) Span() source.Span     { return n.Loc }
+func (n *StructLit) Span() source.Span    { return n.Loc }
+
+func (*StructLit) exprNode() {}
 
 func (*MatchStmt) stmtNode() {}
 

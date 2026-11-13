@@ -43,7 +43,16 @@ const (
 // and the 10 outermost. The output is deterministic and has no trailing
 // spaces.
 func RenderTrace(w io.Writer, file *source.File, frames []TraceFrame) error {
-	if file == nil || len(frames) < 2 {
+	if file == nil {
+		return nil
+	}
+	return RenderTraceSet(w, source.Set{file}, frames)
+}
+
+// RenderTraceSet is RenderTrace for a program of several files
+// (ADR-0014): each frame's location names its own file.
+func RenderTraceSet(w io.Writer, files source.Set, frames []TraceFrame) error {
+	if len(files) == 0 || len(frames) < 2 {
 		return nil
 	}
 
@@ -76,6 +85,10 @@ func RenderTrace(w io.Writer, file *source.File, frames []TraceFrame) error {
 		label := strconv.Itoa(g.first) + ":"
 		if g.last != g.first {
 			label = strconv.Itoa(g.first) + "-" + strconv.Itoa(g.last) + ":"
+		}
+		file := files.Lookup(g.frame.Span.File)
+		if file == nil {
+			file = files[0]
 		}
 		pos := file.Position(g.frame.Span.Start)
 		r := row{

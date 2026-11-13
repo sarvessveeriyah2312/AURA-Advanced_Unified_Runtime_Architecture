@@ -1,0 +1,5 @@
+module text
+
+pub fn shout(s: String) -> String {
+    return "${s}!"
+}

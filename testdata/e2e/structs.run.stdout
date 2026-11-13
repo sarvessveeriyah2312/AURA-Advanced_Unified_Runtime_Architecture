@@ -1,0 +1,8 @@
+Point { x: 4, y: 5 }
+saved Point { x: 3, y: 4 }, len2 25
+true
+Line { from: Point { x: 2, y: 0 }, to: Point { x: 9, y: 5 } }
+[Point { x: -1, y: -1 }, Point { x: 4, y: 5 }]
+3
+top c
+Stack { items: ["a", "b"] }

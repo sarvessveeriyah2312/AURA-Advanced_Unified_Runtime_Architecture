@@ -27,6 +27,9 @@ func TestMatchesCLI(t *testing.T) {
 		if bytes.Contains(src, []byte("forever")) || strings.Contains(p, "trace_mutual") {
 			continue // deep recursion: identical, but slow under the instruction limit
 		}
+		if bytes.HasPrefix(src, []byte("import ")) {
+			continue // the playground cannot load imports (TestImportsUnavailable)
+		}
 		main := filepath.Join(dir, FileName)
 		if err := os.WriteFile(main, src, 0o644); err != nil {
 			t.Fatal(err)
@@ -99,5 +102,13 @@ func TestPrettyAST(t *testing.T) {
 	want := "(program\n  (fn main () -> Unit\n    (block (call print \"a (not a list) b\") (call print \"x\"))))\n"
 	if got := PrettyAST(long); got != want {
 		t.Errorf("long:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+// The playground has no file system: imports report T036 (ADR-0014).
+func TestImportsUnavailable(t *testing.T) {
+	r := Run("import lib\nfn main() -> Unit { }\n", false)
+	if r.Exit != 1 || !strings.Contains(r.Stderr, "error[TR-T036]: cannot import 'lib': lib.tr: imports are not available in the playground") {
+		t.Errorf("exit %d stderr %q", r.Exit, r.Stderr)
 	}
 }

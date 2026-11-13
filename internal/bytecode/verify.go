@@ -42,6 +42,9 @@ func (m *Module) stackEffect(in Instr) (pop, push int) {
 	case OpBuildString:
 		return in.A, 1
 	case OpCall:
+		if m.Functions[in.A].MutSelf {
+			return m.Functions[in.A].NumParams, 2 // the receiver, then the result
+		}
 		return m.Functions[in.A].NumParams, 1
 	// ADR-0013.
 	case OpMakeArray:
@@ -58,6 +61,15 @@ func (m *Module) stackEffect(in Instr) (pop, push int) {
 		return in.B + 1, 1
 	case OpLen, OpMapKeys, OpIsVariant, OpEnumField, OpPrintValue, OpToStringValue:
 		return 1, 1
+	// ADR-0014.
+	case OpMakeStruct:
+		return len(m.Structs[in.A].Fields), 1
+	case OpGetField:
+		return 1, 1
+	case OpTakePath:
+		return in.B, 1
+	case OpPutPath:
+		return in.B + 1, 0
 	}
 	return 2, 1 // binary arithmetic, concatenation and comparisons
 }

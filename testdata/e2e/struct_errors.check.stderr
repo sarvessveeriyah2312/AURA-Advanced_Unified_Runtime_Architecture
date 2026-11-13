@@ -1,0 +1,47 @@
+error[TR-T004]: cannot change 'self' in a method that takes 'self'
+  --> struct_errors.tr:8:9
+   |
+ 8 |         self.x = 0
+   |         ^^^^^^^^^^
+   = help: declare the method with 'mut self' to change its receiver
+
+error[TR-T032]: struct 'Node' contains itself through field 'next', so no value of it could ever be built
+   --> struct_errors.tr:14:5
+    |
+ 14 |     next: Node
+    |     ^^^^
+
+error[TR-T031]: missing field(s) 'y' in 'Point'
+   --> struct_errors.tr:18:13
+    |
+ 18 |     let p = Point { x: 1 }
+    |             ^^^^^
+
+error[TR-T031]: struct 'Point' has no field 'z'
+   --> struct_errors.tr:19:33
+    |
+ 19 |     let q = Point { x: 1, y: 2, z: 3 }
+    |                                 ^
+    = help: its fields are x, y
+
+error[TR-T004]: cannot change immutable variable 'q'
+   --> struct_errors.tr:20:5
+    |
+ 20 |     q.x = 2
+    |     ^^^^^^^
+    = help: declare it with 'let mut' to allow changes
+    = note: variable declared here (struct_errors.tr:19:9)
+
+error[TR-T024]: Point has no field 'z'
+   --> struct_errors.tr:21:13
+    |
+ 21 |     print(q.z)
+    |             ^
+    = help: its fields are x, y
+
+error[TR-T024]: Point has no method 'nope'
+   --> struct_errors.tr:22:7
+    |
+ 22 |     q.nope()
+    |       ^^^^
+    = help: the methods of Point are len2

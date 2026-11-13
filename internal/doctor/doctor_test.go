@@ -44,7 +44,7 @@ func fakeInstall(t *testing.T, release string) (Env, string) {
 const goodRelease = `# Tread installation metadata
 TREAD_VERSION="1.2.3"
 TREAD_EDITION="runtime"
-TREAD_BYTECODE_FORMAT="2"
+TREAD_BYTECODE_FORMAT="3"
 TREAD_PLATFORM="linux-x64"
 `
 
@@ -72,8 +72,8 @@ func TestHealthyRuntimeInstall(t *testing.T) {
 		"[OK]   Installation: " + home + " (Tread Runtime 1.2.3, linux-x64)\n" +
 		"[OK]   TREAD_HOME: " + home + "\n" +
 		"[OK]   PATH: tread resolves to this executable\n" +
-		"[OK]   Runtime: encoded, verified and ran a test program (bytecode format 2)\n" +
-		"[OK]   Bytecode compatibility: format 2 loads; format 3 is rejected with a rebuild hint\n" +
+		"[OK]   Runtime: encoded, verified and ran a test program (bytecode format 3)\n" +
+		"[OK]   Bytecode compatibility: format 3 loads; format 4 is rejected with a rebuild hint\n" +
 		"[OK]   Standard library: built-in print and toString work (no library modules in this release)\n" +
 		"\nInstallation is healthy.\n"
 	if got != want {

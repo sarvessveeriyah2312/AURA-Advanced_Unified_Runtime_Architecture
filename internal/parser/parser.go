@@ -39,6 +39,10 @@ type parser struct {
 	// top-level declaration; exceeding the limit is one root cause, so
 	// it is reported only once per declaration.
 	depthReported bool
+	// noStruct is set while parsing the condition of if / while, a match
+	// subject or a for header, where `Name {` starts the block, not a
+	// struct literal (ADR-0014). Parentheses and brackets clear it.
+	noStruct bool
 }
 
 // MaxNestingDepth is the implementation limit on nesting (ADR-0006,
@@ -162,7 +166,23 @@ func isStatementKeyword(k token.Kind) bool {
 		token.While, token.For, token.Break, token.Continue, token.Match, token.Enum:
 		return true
 	}
+	return isDeclKeyword(k)
+}
+
+// isDeclKeyword reports whether k can only start a top-level declaration
+// (ADR-0014): struct, impl, import or pub.
+func isDeclKeyword(k token.Kind) bool {
+	switch k {
+	case token.Struct, token.Impl, token.Import, token.Pub:
+		return true
+	}
 	return false
+}
+
+// startsTopLevel reports whether k starts a top-level declaration that
+// cannot occur inside a block.
+func startsTopLevel(k token.Kind) bool {
+	return k == token.Fn || k == token.Enum || isDeclKeyword(k)
 }
 
 // unwindIfUnclosed applies N10: if a token that cannot occur inside
@@ -191,7 +211,8 @@ func (p *parser) syncTop() {
 	p.parens = nil
 	for {
 		switch p.toks[p.pos].Kind {
-		case token.EOF, token.Fn, token.Module, token.Enum:
+		case token.EOF, token.Fn, token.Module, token.Enum,
+			token.Struct, token.Impl, token.Import, token.Pub:
 			return
 		}
 		p.pos++
@@ -227,7 +248,8 @@ func (p *parser) syncStatement() {
 			}
 			braces--
 		case token.Let, token.Fn, token.If, token.Return, token.Module,
-			token.While, token.For, token.Break, token.Continue, token.Match, token.Enum:
+			token.While, token.For, token.Break, token.Continue, token.Match, token.Enum,
+			token.Struct, token.Impl, token.Import, token.Pub:
 			if depth > 0 {
 				return
 			}
@@ -252,22 +274,64 @@ func (p *parser) parseProgram() *ast.Program {
 			break
 		}
 		start := p.pos
+		pub := false
+		if t.Kind == token.Pub {
+			pub = true
+			p.next()
+			t = p.cur()
+			switch t.Kind {
+			case token.Fn, token.Enum, token.Struct:
+			default:
+				p.errorf(diagnostic.UnexpectedToken, t.Span,
+					"expected 'fn', 'struct' or 'enum' after 'pub', found %s", describe(t))
+				p.syncTop()
+				if p.pos == start {
+					p.pos++
+				}
+				continue
+			}
+		}
 		switch t.Kind {
 		case token.Module:
-			p.parseModule(prog, sawFn)
+			p.parseModule(prog, sawFn || len(prog.Imports) > 0)
+		case token.Import:
+			if d := p.parseImport(); d != nil {
+				if sawFn {
+					p.errorf(diagnostic.ImportNotFirst, d.Loc,
+						"imports must come before every other declaration (after 'module', if present)")
+				}
+				prog.Imports = append(prog.Imports, d)
+			}
 		case token.Fn:
 			sawFn = true
 			if fd := p.parseFunc(); fd != nil {
+				fd.Pub = pub
+				if fd.Self != nil {
+					p.errorf(diagnostic.UnexpectedToken, fd.Self.Loc,
+						"'self' is only allowed as the first parameter of a function in an 'impl' block")
+				}
 				prog.Funcs = append(prog.Funcs, fd)
 			}
 		case token.Enum:
 			sawFn = true // a module declaration must precede enums too
 			if ed := p.parseEnum(); ed != nil {
+				ed.Pub = pub
 				prog.Enums = append(prog.Enums, ed)
+			}
+		case token.Struct:
+			sawFn = true
+			if sd := p.parseStruct(); sd != nil {
+				sd.Pub = pub
+				prog.Structs = append(prog.Structs, sd)
+			}
+		case token.Impl:
+			sawFn = true
+			if id := p.parseImpl(); id != nil {
+				prog.Impls = append(prog.Impls, id)
 			}
 		default:
 			p.errorf(diagnostic.UnexpectedToken, t.Span,
-				"expected 'fn', 'enum' or 'module' declaration, found %s", describe(t))
+				"expected a declaration ('fn', 'struct', 'enum', 'impl', 'import' or 'module'), found %s", describe(t))
 			p.syncTop()
 			if p.pos == start {
 				p.pos++
@@ -347,6 +411,20 @@ func (p *parser) parseType() *ast.TypeName {
 	defer p.leave()
 	p.next()
 	tn := &ast.TypeName{Name: t.Lexeme, Loc: t.Span}
+	if p.at(token.Dot) {
+		// module.Type (ADR-0014)
+		p.next()
+		n := p.cur()
+		if n.Kind != token.Ident {
+			p.errorf(diagnostic.ExpectedTypeName, n.Span, "expected type name after '%s.', found %s", t.Lexeme, describe(n))
+			return nil
+		}
+		p.next()
+		tn.Module = &ast.Ident{Name: t.Lexeme, Loc: t.Span}
+		tn.Name = n.Lexeme
+		tn.Loc = source.Join(t.Span, n.Span)
+		t = token.Token{Kind: n.Kind, Span: tn.Loc, Lexeme: n.Lexeme}
+	}
 	if !p.at(token.Lt) {
 		return tn
 	}
@@ -449,7 +527,7 @@ func (p *parser) parseEnum() *ast.EnumDecl {
 			ed.Loc = source.Join(kw.Span, t.Span)
 			return ed
 		}
-		if t.Kind == token.EOF || t.Kind == token.Fn || t.Kind == token.Enum {
+		if t.Kind == token.EOF || startsTopLevel(t.Kind) {
 			p.errorf(diagnostic.MissingRBrace, open.Span, "missing '}' to close this enum")
 			return ed
 		}
@@ -466,6 +544,192 @@ func (p *parser) parseEnum() *ast.EnumDecl {
 		if t := p.cur(); t.Kind != token.Newline && t.Kind != token.Comma && t.Kind != token.RBrace {
 			p.errorf(diagnostic.ExpectedNewline, t.Span, "expected newline, ',' or '}' after enum variant, found %s", describe(t))
 		}
+	}
+}
+
+// parseImport parses `import a.b.c` (ADR-0014).
+func (p *parser) parseImport() *ast.ImportDecl {
+	kw := p.next()
+	d := &ast.ImportDecl{}
+	for {
+		id := p.parseIdent("module name")
+		if id == nil {
+			return nil
+		}
+		d.Path = append(d.Path, id)
+		if !p.at(token.Dot) {
+			break
+		}
+		p.next()
+	}
+	d.Loc = source.Join(kw.Span, d.Path[len(d.Path)-1].Loc)
+	return d
+}
+
+// openBrace expects the '{' of a declaration body on the current line.
+func (p *parser) openBrace(after string) (token.Token, bool) {
+	if t := p.cur(); t.Kind != token.LBrace {
+		if t.Kind == token.Newline && p.peekPastNewlines().Kind == token.LBrace {
+			p.errorf(diagnostic.SameLine, p.peekPastNewlines().Span, "'{' must be on the same line as the %s", after)
+			p.skipNewlines()
+		} else {
+			p.errorf(diagnostic.UnexpectedToken, t.Span, "expected '{' after %s, found %s", after, describe(t))
+			return t, false
+		}
+	}
+	return p.next(), true
+}
+
+// parseStruct parses `struct Name<T> { [pub] field: Type ... }`. Fields
+// are separated by newlines or commas (ADR-0014).
+func (p *parser) parseStruct() *ast.StructDecl {
+	kw := p.next()
+	name := p.parseIdent("struct name")
+	if name == nil {
+		return nil
+	}
+	sd := &ast.StructDecl{Name: name, Loc: source.Join(kw.Span, name.Loc)}
+	var ok bool
+	if sd.TypeParams, ok = p.parseTypeParams(); !ok {
+		return nil
+	}
+	open, ok := p.openBrace("struct name")
+	if !ok {
+		return nil
+	}
+	for {
+		for p.at(token.Newline) || p.at(token.Comma) {
+			p.next()
+		}
+		t := p.cur()
+		if t.Kind == token.RBrace {
+			p.next()
+			sd.Loc = source.Join(kw.Span, t.Span)
+			return sd
+		}
+		if t.Kind == token.EOF || (startsTopLevel(t.Kind) && t.Kind != token.Pub) {
+			p.errorf(diagnostic.MissingRBrace, open.Span, "missing '}' to close this struct")
+			return sd
+		}
+		f := p.parseFieldDecl()
+		if f == nil {
+			for !p.at(token.Newline) && !p.at(token.Comma) && !p.at(token.RBrace) && !p.at(token.EOF) {
+				p.pos++
+			}
+			p.panicking = false
+			continue
+		}
+		sd.Fields = append(sd.Fields, f)
+		if t := p.cur(); t.Kind != token.Newline && t.Kind != token.Comma && t.Kind != token.RBrace {
+			p.errorf(diagnostic.ExpectedNewline, t.Span, "expected newline, ',' or '}' after struct field, found %s", describe(t))
+		}
+	}
+}
+
+func (p *parser) parseFieldDecl() *ast.FieldDecl {
+	start := p.cur()
+	pub := false
+	if start.Kind == token.Pub {
+		pub = true
+		p.next()
+	}
+	name := p.parseIdent("field name")
+	if name == nil {
+		return nil
+	}
+	if t := p.cur(); t.Kind != token.Colon {
+		p.errorf(diagnostic.UnexpectedToken, t.Span, "expected ':' after field name, found %s", describe(t))
+		return nil
+	}
+	p.next()
+	typ := p.parseType()
+	if typ == nil {
+		return nil
+	}
+	return &ast.FieldDecl{Pub: pub, Name: name, Type: typ, Loc: source.Join(start.Span, typ.Loc)}
+}
+
+// parseImpl parses `impl Name { [pub] fn ... }` (ADR-0014).
+func (p *parser) parseImpl() *ast.ImplDecl {
+	kw := p.next()
+	name := p.parseIdent("struct name")
+	if name == nil {
+		return nil
+	}
+	d := &ast.ImplDecl{Name: name, Loc: source.Join(kw.Span, name.Loc)}
+	if p.at(token.Lt) {
+		t := p.cur()
+		p.errorf(diagnostic.UnexpectedToken, t.Span,
+			"write 'impl %s' without type parameters; the struct's type parameters are already in scope", name.Name)
+		return nil
+	}
+	open, ok := p.openBrace("'impl' name")
+	if !ok {
+		return nil
+	}
+	for {
+		p.skipNewlines()
+		p.panicking = false
+		p.depthReported = false
+		t := p.cur()
+		if t.Kind == token.RBrace {
+			p.next()
+			d.Loc = source.Join(kw.Span, t.Span)
+			return d
+		}
+		pub := false
+		if t.Kind == token.Pub {
+			pub = true
+			p.next()
+			t = p.cur()
+		}
+		if t.Kind != token.Fn {
+			if t.Kind == token.EOF || (startsTopLevel(t.Kind) && t.Kind != token.Pub) {
+				p.errorf(diagnostic.MissingRBrace, open.Span, "missing '}' to close this 'impl' block")
+				return d
+			}
+			p.errorf(diagnostic.UnexpectedToken, t.Span, "expected 'fn' in an 'impl' block, found %s", describe(t))
+			p.syncImpl()
+			continue
+		}
+		start := p.pos
+		if fd := p.parseFunc(); fd != nil {
+			fd.Pub = pub
+			d.Funcs = append(d.Funcs, fd)
+		}
+		p.unwinding = false
+		if end := p.cur(); end.Kind != token.Newline && end.Kind != token.RBrace && end.Kind != token.EOF {
+			p.errorf(diagnostic.ExpectedNewline, end.Span, "expected newline after method, found %s", describe(end))
+			p.syncImpl()
+		}
+		if p.pos == start {
+			p.syncImpl()
+		}
+	}
+}
+
+// syncImpl skips to the next method, the end of the impl block, or a
+// top-level declaration.
+func (p *parser) syncImpl() {
+	p.parens = nil
+	depth := 0
+	for {
+		switch p.toks[p.pos].Kind {
+		case token.EOF, token.Struct, token.Impl, token.Enum, token.Import, token.Module:
+			return
+		case token.Fn, token.Pub:
+			if depth == 0 {
+				return
+			}
+		case token.LBrace:
+			depth++
+		case token.RBrace:
+			if depth == 0 {
+				return
+			}
+			depth--
+		}
+		p.pos++
 	}
 }
 
@@ -539,6 +803,20 @@ func (p *parser) parseFunc() *ast.FuncDecl {
 		return nil
 	}
 	p.openParen()
+	if self := p.parseSelf(); self != nil {
+		fd.Self = self
+		if p.at(token.Comma) {
+			comma := p.next()
+			if p.at(token.RParen) {
+				p.errorf(diagnostic.TrailingComma, comma.Span, "trailing comma is not allowed in a parameter list")
+			}
+		} else if !p.at(token.RParen) {
+			t := p.cur()
+			p.errorf(diagnostic.UnexpectedToken, t.Span, "expected ',' or ')' after 'self', found %s", describe(t))
+			p.parens = nil
+			return nil
+		}
+	}
 	if !p.at(token.RParen) {
 		for {
 			prm := p.parseParam()
@@ -571,6 +849,33 @@ func (p *parser) parseFunc() *ast.FuncDecl {
 	fd.Body = body
 	fd.Loc = source.Join(kw.Span, body.Loc)
 	return fd
+}
+
+// parseSelf parses the receiver `self` or `mut self` at the start of a
+// parameter list (ADR-0014). `self: T` is an ordinary parameter.
+func (p *parser) parseSelf() *ast.SelfParam {
+	t := p.cur()
+	if t.Kind == token.Mut {
+		p.next()
+		n := p.cur()
+		if n.Kind != token.Ident || n.Lexeme != "self" {
+			p.errorf(diagnostic.UnexpectedToken, n.Span, "expected 'self' after 'mut' in a parameter list, found %s", describe(n))
+			return nil
+		}
+		p.next()
+		return &ast.SelfParam{Mutable: true, Loc: source.Join(t.Span, n.Span)}
+	}
+	if t.Kind == token.Ident && t.Lexeme == "self" {
+		i := p.pos + 1
+		for p.toks[i].Kind == token.Newline {
+			i++
+		}
+		if p.toks[i].Kind != token.Colon {
+			p.next()
+			return &ast.SelfParam{Loc: t.Span}
+		}
+	}
+	return nil
 }
 
 func (p *parser) parseParam() *ast.Param {
@@ -645,7 +950,7 @@ func (p *parser) parseStatements(end token.Kind) []ast.Stmt {
 		if t.Kind == end || t.Kind == token.EOF {
 			return stmts
 		}
-		if (t.Kind == token.Fn || t.Kind == token.Enum) && end == token.RBrace {
+		if startsTopLevel(t.Kind) && end == token.RBrace {
 			return stmts // start of a top-level declaration: the block is unclosed (N10)
 		}
 		start := p.pos
@@ -719,7 +1024,7 @@ func (p *parser) parseStatement() ast.Stmt {
 			return s
 		}
 		return nil
-	case token.Fn, token.Module, token.Enum:
+	case token.Fn, token.Module, token.Enum, token.Struct, token.Impl, token.Import, token.Pub:
 		p.errorf(diagnostic.UnexpectedToken, t.Span, "'%s' declarations are only allowed at top level", t.Lexeme)
 		return nil
 	}
@@ -759,7 +1064,7 @@ func (p *parser) parseLet() ast.Stmt {
 func (p *parser) parseAssign(target ast.Expr) ast.Stmt {
 	eq := p.next() // '='
 	if !assignable(target) {
-		p.errorf(diagnostic.UnexpectedToken, eq.Span, "cannot assign to this expression; only a variable or an element such as a[i] can be assigned")
+		p.errorf(diagnostic.UnexpectedToken, eq.Span, "cannot assign to this expression; only a variable, an element such as a[i] or a field such as p.x can be assigned")
 		return nil
 	}
 	p.skipNewlines()
@@ -767,14 +1072,16 @@ func (p *parser) parseAssign(target ast.Expr) ast.Stmt {
 	return &ast.AssignStmt{Target: target, Value: value, Loc: source.Join(target.Span(), value.Span())}
 }
 
-// assignable reports whether e is a variable or an index path rooted in
-// one.
+// assignable reports whether e is a variable or a path of elements and
+// fields rooted in one.
 func assignable(e ast.Expr) bool {
 	for {
 		switch x := e.(type) {
 		case *ast.Ident:
 			return true
 		case *ast.IndexExpr:
+			e = x.X
+		case *ast.MemberExpr:
 			e = x.X
 		default:
 			return false
@@ -802,7 +1109,7 @@ func (p *parser) parseIf() *ast.IfStmt {
 	defer p.leave()
 	kw := p.next()
 	before := p.errorEvents
-	cond := p.parseExpr()
+	cond := p.parseHeaderExpr()
 	stmt := &ast.IfStmt{Cond: cond, Loc: source.Join(kw.Span, cond.Span())}
 	if p.unwinding {
 		return stmt
@@ -878,7 +1185,7 @@ func (p *parser) parseWhile() *ast.WhileStmt {
 	defer p.leave()
 	kw := p.next()
 	before := p.errorEvents
-	cond := p.parseExpr()
+	cond := p.parseHeaderExpr()
 	stmt := &ast.WhileStmt{Cond: cond, Loc: source.Join(kw.Span, cond.Span())}
 	if p.unwinding {
 		return stmt
@@ -924,7 +1231,7 @@ func (p *parser) parseFor() *ast.ForStmt {
 // parseRange parses `start..end` after 'in'. It returns false if the
 // parser is unwinding (N10).
 func (p *parser) parseRange(stmt *ast.ForStmt, kw token.Token, before int) bool {
-	stmt.Start = p.parseExpr()
+	stmt.Start = p.parseHeaderExpr()
 	stmt.Loc = source.Join(kw.Span, stmt.Start.Span())
 	if p.unwinding {
 		return false
@@ -937,7 +1244,7 @@ func (p *parser) parseRange(stmt *ast.ForStmt, kw token.Token, before int) bool 
 	}
 	p.next()
 	p.skipNewlines() // N3
-	stmt.End = p.parseExpr()
+	stmt.End = p.parseHeaderExpr()
 	stmt.Loc = source.Join(kw.Span, stmt.End.Span())
 	return !p.unwinding
 }
@@ -951,7 +1258,8 @@ func (p *parser) scanToBrace() bool {
 		case token.LBrace:
 			return true
 		case token.RBrace, token.EOF, token.Let, token.Fn, token.If, token.Return, token.Module, token.Else,
-			token.While, token.For, token.Break, token.Continue, token.Match, token.Enum:
+			token.While, token.For, token.Break, token.Continue, token.Match, token.Enum,
+			token.Struct, token.Impl, token.Import, token.Pub:
 			return false
 		}
 		p.pos++
@@ -1006,6 +1314,24 @@ func binaryPrecedence(k token.Kind) int {
 
 func (p *parser) parseExpr() ast.Expr { return p.parseBinary(1) }
 
+// parseHeaderExpr parses the expression of a statement header, where a
+// '{' starts the statement's block (ADR-0014).
+func (p *parser) parseHeaderExpr() ast.Expr {
+	saved := p.noStruct
+	p.noStruct = true
+	defer func() { p.noStruct = saved }()
+	return p.parseExpr()
+}
+
+// nested parses with struct literals allowed again, inside parentheses
+// or brackets.
+func (p *parser) nested(f func() ast.Expr) ast.Expr {
+	saved := p.noStruct
+	p.noStruct = false
+	defer func() { p.noStruct = saved }()
+	return f()
+}
+
 // parseBinary is a precedence-climbing parser for left-associative binary
 // operators (docs/02 §2.9). A NEWLINE after an operator is skipped (N3);
 // a significant NEWLINE ends the expression.
@@ -1054,6 +1380,14 @@ func (p *parser) parsePostfix() ast.Expr {
 	defer func() { p.depth -= entered }()
 	for !p.unwinding {
 		t := p.cur()
+		if t.Kind == token.LBrace && p.structLitAhead(e) {
+			if !p.enter(t) {
+				break
+			}
+			entered++
+			e = p.parseStructLit(e)
+			continue
+		}
 		if t.Kind != token.LParen && t.Kind != token.LBracket && t.Kind != token.Dot {
 			break
 		}
@@ -1063,9 +1397,11 @@ func (p *parser) parsePostfix() ast.Expr {
 		entered++
 		switch t.Kind {
 		case token.LParen:
-			e = p.parseCall(e)
+			callee := e
+			e = p.nested(func() ast.Expr { return p.parseCall(callee) })
 		case token.LBracket:
-			e = p.parseIndex(e)
+			x := e
+			e = p.nested(func() ast.Expr { return p.parseIndex(x) })
 		case token.Dot:
 			p.next()
 			name := p.parseIdent("method or variant name")
@@ -1076,6 +1412,115 @@ func (p *parser) parsePostfix() ast.Expr {
 		}
 	}
 	return e
+}
+
+// structLitAhead reports whether the '{' at the current token starts a
+// struct literal after e: e is `Name` or `module.Name`, struct literals
+// are allowed here, and the brace is followed by '}' or `field:`.
+func (p *parser) structLitAhead(e ast.Expr) bool {
+	if p.noStruct {
+		return false
+	}
+	switch x := e.(type) {
+	case *ast.Ident:
+	case *ast.MemberExpr:
+		if _, ok := x.X.(*ast.Ident); !ok {
+			return false
+		}
+	default:
+		return false
+	}
+	i := p.pos + 1
+	for p.toks[i].Kind == token.Newline {
+		i++
+	}
+	switch p.toks[i].Kind {
+	case token.RBrace:
+		return true
+	case token.Ident:
+		return p.toks[i+1].Kind == token.Colon
+	}
+	return false
+}
+
+// parseStructLit parses `{ field: value, ... }` after a struct name
+// (ADR-0014). Fields are separated by commas or newlines.
+func (p *parser) parseStructLit(name ast.Expr) ast.Expr {
+	lit := &ast.StructLit{}
+	switch x := name.(type) {
+	case *ast.Ident:
+		lit.Name = x
+	case *ast.MemberExpr:
+		lit.Module, lit.Name = x.X.(*ast.Ident), x.Name
+	}
+	saved, savedParens := p.noStruct, p.parens
+	p.noStruct, p.parens = false, nil
+	defer func() { p.noStruct, p.parens = saved, savedParens }()
+	open := p.next()
+	for {
+		for p.at(token.Newline) || p.at(token.Comma) {
+			p.next()
+		}
+		t := p.cur()
+		if t.Kind == token.RBrace {
+			p.next()
+			lit.Loc = source.Join(name.Span(), t.Span)
+			return lit
+		}
+		if t.Kind == token.EOF || startsTopLevel(t.Kind) {
+			p.errorf(diagnostic.MissingRBrace, open.Span, "missing '}' to close this struct literal")
+			lit.Loc = source.Join(name.Span(), open.Span)
+			return lit
+		}
+		id := p.parseIdent("field name")
+		if id == nil {
+			lit.Loc = source.Join(name.Span(), open.Span)
+			p.skipToBrace()
+			return lit
+		}
+		if c := p.cur(); c.Kind != token.Colon {
+			p.errorf(diagnostic.UnexpectedToken, c.Span, "expected ':' after field name, found %s", describe(c))
+			lit.Loc = source.Join(name.Span(), open.Span)
+			p.skipToBrace()
+			return lit
+		}
+		p.next()
+		p.skipNewlines()
+		v := p.parseExpr()
+		lit.Fields = append(lit.Fields, &ast.FieldInit{Name: id, Value: v})
+		if p.unwinding {
+			lit.Loc = source.Join(name.Span(), v.Span())
+			return lit
+		}
+		if c := p.cur(); c.Kind != token.Newline && c.Kind != token.Comma && c.Kind != token.RBrace {
+			p.errorf(diagnostic.ExpectedNewline, c.Span, "expected ',', newline or '}' after field value, found %s", describe(c))
+			lit.Loc = source.Join(name.Span(), v.Span())
+			p.skipToBrace()
+			return lit
+		}
+	}
+}
+
+// skipToBrace skips to the '}' closing a struct literal, and past it.
+func (p *parser) skipToBrace() {
+	depth := 0
+	for {
+		switch p.toks[p.pos].Kind {
+		case token.EOF:
+			return
+		case token.LBrace:
+			depth++
+		case token.RBrace:
+			if depth == 0 {
+				p.pos++
+				return
+			}
+			depth--
+		case token.Fn, token.Struct, token.Impl, token.Enum, token.Import, token.Pub:
+			return
+		}
+		p.pos++
+	}
 }
 
 func (p *parser) parseIndex(x ast.Expr) ast.Expr {
@@ -1224,13 +1669,13 @@ func (p *parser) parsePrimary() ast.Expr {
 		p.next()
 		return &ast.Ident{Name: t.Lexeme, Loc: t.Span}
 	case token.LParen:
-		return p.parseParen()
+		return p.nested(p.parseParen)
 	case token.LBracket:
 		if !p.enter(t) {
 			return &ast.ErrorExpr{Loc: t.Span}
 		}
 		defer p.leave()
-		return p.parseCollection()
+		return p.nested(p.parseCollection)
 	case token.Invalid:
 		p.next() // already reported by the lexer
 		return &ast.ErrorExpr{Loc: t.Span}
@@ -1313,7 +1758,7 @@ func (p *parser) parseMatch() *ast.MatchStmt {
 	defer p.leave()
 	kw := p.next()
 	before := p.errorEvents
-	subject := p.parseExpr()
+	subject := p.parseHeaderExpr()
 	stmt := &ast.MatchStmt{Subject: subject, Loc: source.Join(kw.Span, subject.Span())}
 	if p.unwinding {
 		return stmt
@@ -1345,7 +1790,7 @@ func (p *parser) parseMatch() *ast.MatchStmt {
 			stmt.Loc = source.Join(kw.Span, t.Span)
 			return stmt
 		}
-		if t.Kind == token.EOF || t.Kind == token.Fn || t.Kind == token.Enum {
+		if t.Kind == token.EOF || startsTopLevel(t.Kind) {
 			p.errorf(diagnostic.MissingRBrace, open.Span, "missing '}' to close this 'match'")
 			return stmt
 		}
@@ -1412,6 +1857,16 @@ func (p *parser) parsePattern() ast.Pattern {
 			return nil
 		}
 		vp := &ast.VariantPat{Enum: id, Variant: variant, Loc: source.Join(t.Span, variant.Loc)}
+		if p.at(token.Dot) {
+			// module.Enum.Variant (ADR-0014)
+			p.next()
+			v := p.parseIdent("variant name")
+			if v == nil {
+				return nil
+			}
+			vp.Module, vp.Enum, vp.Variant = id, variant, v
+			vp.Loc = source.Join(t.Span, v.Loc)
+		}
 		if !p.at(token.LParen) {
 			return vp
 		}

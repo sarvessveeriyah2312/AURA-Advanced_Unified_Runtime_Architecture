@@ -23,7 +23,7 @@ func TestRegistryWellFormedAndUnique(t *testing.T) {
 		counts[c.Phase()]++
 	}
 	// docs/04 §4.4.3 registers 9 L, 14 P, 30 T, 1 C and 8 R codes.
-	want := map[byte]int{'L': 9, 'P': 14, 'T': 30, 'C': 1, 'R': 8}
+	want := map[byte]int{'L': 9, 'P': 15, 'T': 36, 'C': 1, 'R': 8}
 	for phase, n := range want {
 		if counts[phase] != n {
 			t.Errorf("phase %c: %d codes, want %d", phase, counts[phase], n)

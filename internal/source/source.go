@@ -157,3 +157,21 @@ func (f *File) Position(offset int) Position {
 	}
 	return Position{Line: idx + 1, Column: col}
 }
+
+// Set is the source files of a program (ADR-0014). Lookup finds a file
+// by ID; a set of one file returns it for any ID, so single-file callers
+// need not agree on IDs.
+type Set []*File
+
+// Lookup returns the file with the given ID, or nil.
+func (s Set) Lookup(id FileID) *File {
+	for _, f := range s {
+		if f != nil && f.id == id {
+			return f
+		}
+	}
+	if len(s) == 1 {
+		return s[0]
+	}
+	return nil
+}

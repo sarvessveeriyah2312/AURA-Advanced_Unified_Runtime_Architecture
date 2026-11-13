@@ -34,11 +34,17 @@ type checkCase struct {
 	types map[string]string
 	// lexOK allows lexer diagnostics (K73).
 	lexOK bool
+	// files are other modules of the program, by import path (ADR-0014).
+	// A diagnostic in one of them is written `T034 "text"@path`.
+	files map[string]string
 }
 
 func (tc checkCase) source() string {
 	if tc.whole {
 		return tc.src
+	}
+	if tc.files != nil {
+		return tc.decls + prelude + "fn main() -> Unit {\n" + tc.body + "\n}\n" // imports first
 	}
 	return prelude + tc.decls + "fn main() -> Unit {\n" + tc.body + "\n}\n"
 }
@@ -260,7 +266,48 @@ var checkCases = []checkCase{
 	{id: "K131", decls: "enum Tree<T> {\nLeaf\nNode(Tree<T>, T, Tree<T>)\n}\nfn pick<T>(a: Array<T>, b: Array<T>) -> T {\nreturn b[0]\n}\n",
 		body:  "let t = Tree.Node(Tree.Leaf, 1, Tree.Leaf)\nlet p = pick([], [\"s\"])\nlet q = Option.Some([Option.None, Option.Some(2)])",
 		types: map[string]string{"t": "Tree<Int>", "p": "String", "q": "Option<Array<Option<Int>>>"}},
+
+	// Structs and methods (ADR-0014).
+	{id: "K132", decls: pointDecl,
+		body:  "let mut p = Point { y: 2, x: 1 }\np.x = 5\np.shift(1)\nlet n = p.len2()\nlet o = Point.origin()\nlet s = \"${p}\"\nlet e = p == o",
+		types: map[string]string{"p": "Point", "n": "Int", "o": "Point", "s": "String", "e": "Bool"}},
+	{id: "K133", decls: pointDecl,
+		body: "let p = Point { x: 1 }\nlet q = Point { x: 1, y: 2, z: 3 }\nlet r = Point { x: 1, x: 2, y: 3 }",
+		want: []string{`T031 "Point"`, `T031 "z"`, `T031 "x"`}},
+	{id: "K134", decls: pointDecl,
+		body: "let p = Point { x: 1, y: 2 }\np.x = 3\np.shift(1)\nprint(p.z)\nprint(p.len2)\np.nope()\nlet q = Point.len2()",
+		want: []string{`T004 "p.x = 3"`, `T004 "p.shift(1)"`, `T024 "z"`, `T024 "p.len2"`, `T024 "nope"`, `T024 "Point.len2"`}},
+	{id: "K135", decls: "struct Box<T> { v: T }\nimpl Box {\nfn get(self) -> T {\nreturn self.v\n}\nfn put(mut self, v: T) -> Unit {\nself.v = v\n}\nfn wrap(v: T) -> Box<T> {\nreturn Box { v: v }\n}\nfn bad(self) -> Unit {\nself.v = self.v\n}\n}\n",
+		body:  "let mut b = Box { v: \"s\" }\nb.put(\"t\")\nlet g = b.get()\nlet w = Box.wrap(1)\nlet e: Box<Array<Int>> = Box { v: [] }\nb.put(1)",
+		types: map[string]string{"b": "Box<String>", "g": "String", "w": "Box<Int>", "e": "Box<Array<Int>>"},
+		want:  []string{`T004 "self.v = self.v"`, `T001 "1"`}},
+	{id: "K136", decls: "struct A { b: B }\nstruct B { a: A }\nstruct List { next: Option<List> }\nstruct Wrap<T> { v: T }\nstruct C { w: Wrap<C> }\n",
+		want: []string{`T032 "b"`, `T032 "a"`, `T032 "w"`}},
+	{id: "K137", decls: "struct P { x: Int }\nimpl P {\nfn x(self) -> Int {\nreturn 1\n}\nfn f(self) -> Unit { }\nfn f(self) -> Unit { }\n}\nimpl Q { }\nenum E { A }\nimpl E { }\nstruct E { }\n",
+		body: "let a = P\nlet b = P { x: 1 }\nif b == (P { x: 1 }) { }\nmatch b {\nP.x => { }\n}",
+		want: []string{`T005 "x"`, `T005 "f"`, `T003 "Q"`, `T003 "E"`, `T005 "E"`, `T025 "P"`, `T029 "P"`}},
+
+	// Modules (ADR-0014).
+	{id: "K138", files: map[string]string{
+		"geometry":      "pub struct Point {\npub x: Int\npub y: Int\n}\nimpl Point {\npub fn sum(self) -> Int {\nreturn self.x + self.y\n}\n}\npub fn origin() -> Point {\nreturn Point { x: 0, y: 0 }\n}\npub enum Shape {\nDot(Point)\nNone\n}\n",
+		"shapes.circle": "module circle\npub fn area(r: Float) -> Float {\nreturn r * r * 3.0\n}\nfn main() -> Unit { }\n",
+	},
+		decls: "import geometry\nimport shapes.circle\nfn f(p: geometry.Point) -> geometry.Shape {\nreturn geometry.Shape.Dot(p)\n}\n",
+		body:  "let p = geometry.Point { x: 1, y: 2 }\nlet o = geometry.origin()\nlet s = p.sum()\nlet a = circle.area(2.0)\nlet sh = f(o)\nmatch sh {\ngeometry.Shape.Dot(q) => { print(q.x) }\ngeometry.Shape.None => { }\n}",
+		types: map[string]string{"p": "geometry.Point", "o": "geometry.Point", "s": "Int", "a": "Float", "sh": "geometry.Shape"}},
+	{id: "K139", files: map[string]string{
+		"lib": "module other\npub struct Pub {\npub a: Int\nb: Int\n}\nimpl Pub {\nfn hidden(self) -> Int {\nreturn self.b\n}\n}\nstruct Priv { }\nfn helper() -> Int {\nreturn 1\n}\npub fn make() -> Pub {\nreturn Pub { a: 1, b: 2 }\n}\n",
+	},
+		decls: "import lib\nfn g(x: lib.Priv) -> Unit { }\n",
+		body:  "let p = lib.make()\nprint(p.b)\nprint(p.hidden())\nprint(lib.helper())\nlet q = lib.Pub { a: 1, b: 2 }\nlet lib = 1\nprint(lib)",
+		want:  []string{`T034 "lib.Priv"`, `T034 "b"`, `T034 "hidden"`, `T034 "helper"`, `T034 "Pub"`, `T033 "module other"@lib`}},
+	{id: "K140", files: map[string]string{"lib": "pub fn f() -> Int {\nreturn 1\n}\n"},
+		decls: "import lib\nfn lib() -> Unit { }\n",
+		body:  "print(lib)\nlib.g()\nlet x: lib = 1\nlet y = lib.f",
+		want:  []string{`T005 "lib"`, `T025 "lib"`, `T002 "g"`, `T003 "lib"`, `T018 "lib.f"`}},
 }
+
+const pointDecl = "struct Point {\nx: Int\ny: Int\n}\nimpl Point {\nfn origin() -> Point {\nreturn Point { x: 0, y: 0 }\n}\nfn len2(self) -> Int {\nreturn self.x * self.x + self.y * self.y\n}\nfn shift(mut self, d: Int) -> Unit {\nself.x = self.x + d\nself.shift2(d)\n}\nfn shift2(mut self, d: Int) -> Unit {\nself.y = self.y + d\n}\n}\n"
 
 // runCheck lexes, parses and checks src. It fails the test on unexpected
 // lexer or parser diagnostics.
@@ -278,6 +325,45 @@ func runCheck(t *testing.T, src string, lexOK bool) (*CheckedProgram, []diagnost
 	return Check(prog)
 }
 
+// runCheckFiles checks a program of several modules (ADR-0014). It
+// returns the source text of every file by file ID.
+func runCheckFiles(t *testing.T, src string, files map[string]string) (*CheckedProgram, []diagnostic.Diagnostic, map[source.FileID]string, map[source.FileID]string) {
+	t.Helper()
+	texts := map[source.FileID]string{1: src}
+	names := map[source.FileID]string{1: ""}
+	parse := func(id source.FileID, text string) *ast.Program {
+		toks, lexDiags := lexer.Lex(source.NewFile(id, "f.tr", []byte(text)))
+		prog, parseDiags := parser.Parse(toks)
+		if len(lexDiags)+len(parseDiags) > 0 {
+			t.Fatalf("unexpected syntax diagnostics: %+v %+v", lexDiags, parseDiags)
+		}
+		return prog
+	}
+	mods := []SourceModule{{Program: parse(1, src)}}
+	index := map[string]int{"": 0}
+	var paths []string
+	for p := range files {
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+	for _, p := range paths {
+		id := source.FileID(len(mods) + 1)
+		texts[id], names[id] = files[p], p
+		index[p] = len(mods)
+		mods = append(mods, SourceModule{Path: p, Program: parse(id, files[p])})
+	}
+	for i := range mods {
+		mods[i].Imports = map[*ast.ImportDecl]int{}
+		for _, d := range mods[i].Program.Imports {
+			if j, ok := index[d.PathString()]; ok {
+				mods[i].Imports[d] = j
+			}
+		}
+	}
+	out, diags := CheckModules(mods)
+	return out, diags, texts, names
+}
+
 // describe renders a diagnostic as `T001 "text"`; when the span text is
 // empty or ambiguous, tests append @offset.
 func describe(src string, d diagnostic.Diagnostic, withOffset bool) string {
@@ -292,14 +378,26 @@ func TestCheckRequiredCases(t *testing.T) {
 	for _, tc := range checkCases {
 		t.Run(tc.id, func(t *testing.T) {
 			src := tc.source()
-			out, diags := runCheck(t, src, tc.lexOK)
+			var out *CheckedProgram
+			var diags []diagnostic.Diagnostic
+			texts := map[source.FileID]string{1: src}
+			names := map[source.FileID]string{1: ""}
+			if tc.files != nil {
+				out, diags, texts, names = runCheckFiles(t, src, tc.files)
+			} else {
+				out, diags = runCheck(t, src, tc.lexOK)
+			}
 			var got []string
 			for i, d := range diags {
 				if d.Code.Phase() != 'T' {
 					t.Fatalf("checker produced non-checker code %s", d.Code)
 				}
-				withOffset := i < len(tc.want) && strings.Contains(tc.want[i], `"@`)
-				got = append(got, describe(src, d, withOffset))
+				withOffset := i < len(tc.want) && strings.Contains(tc.want[i], `"@`) && !strings.HasSuffix(tc.want[i], `"@`+names[d.Span.File])
+				text := describe(texts[d.Span.File], d, withOffset)
+				if names[d.Span.File] != "" {
+					text += "@" + names[d.Span.File]
+				}
+				got = append(got, text)
 			}
 			if strings.Join(got, " | ") != strings.Join(tc.want, " | ") {
 				t.Errorf("diagnostics:\n got  %v\n want %v", got, tc.want)
@@ -359,6 +457,11 @@ func TestEveryCheckerCodeIsTested(t *testing.T) {
 	}
 	var missing []string
 	for _, c := range diagnostic.Registry() {
+		// Import cycles and unreadable files are found while loading the
+		// files (internal/pipeline tests).
+		if c == diagnostic.ImportCycle || c == diagnostic.ImportNotFound {
+			continue
+		}
 		if c.Phase() == 'T' && !seen[string(c)] {
 			missing = append(missing, string(c))
 		}

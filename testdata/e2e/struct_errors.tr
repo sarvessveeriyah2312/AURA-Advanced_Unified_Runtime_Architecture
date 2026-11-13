@@ -1,0 +1,23 @@
+struct Point {
+    x: Int
+    y: Int
+}
+
+impl Point {
+    fn len2(self) -> Int {
+        self.x = 0
+        return self.x * self.x
+    }
+}
+
+struct Node {
+    next: Node
+}
+
+fn main() -> Unit {
+    let p = Point { x: 1 }
+    let q = Point { x: 1, y: 2, z: 3 }
+    q.x = 2
+    print(q.z)
+    q.nope()
+}
