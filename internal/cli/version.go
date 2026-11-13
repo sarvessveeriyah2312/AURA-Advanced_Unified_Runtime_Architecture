@@ -4,7 +4,7 @@ package cli
 //
 // It is a variable only so release builds can override it at link time:
 //
-//	go build -ldflags "-X github.com/sarvessveeriyah2312/Tread/internal/cli.Version=0.3.0" ./cmd/tread
+//	go build -ldflags "-X github.com/sarvessveeriyah2312/Tread/internal/cli.Version=0.4.0" ./cmd/tread
 //
 // It must not be modified at run time.
-var Version = "0.3.0"
+var Version = "0.4.0"

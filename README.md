@@ -13,7 +13,7 @@ A small, statically typed programming language whose whole toolchain
 (lexer, parser, type checker, bytecode compiler, and virtual machine) is
 built to be read, one stage at a time. Written in Go.
 
-**Version 0.3.0** · macOS · Linux · Windows ·
+**Version 0.4.0** · macOS · Linux · Windows ·
 [Website](https://treadlang.vercel.app/) ·
 [Repository](https://github.com/sarvessveeriyah2312/Tread) ·
 [Latest release](https://github.com/sarvessveeriyah2312/Tread/releases/latest)
@@ -76,16 +76,17 @@ The design goals:
 | **Helpful errors** | Every error has a stable code (such as `TR-T001`), an exact line and column, and a pointer to the problem. |
 | **Small and understandable** | A compiler and runtime that one developer can read and extend. |
 
-> **Status: 0.3.0, released 2026-11-13.** A deliberately small language
-> core, tested on Linux, macOS, and Windows. 0.3.0 gives the language its
-> name: the `tread` command, `.tr` source files, and `TR-` error codes.
+> **Status: 0.4.0, released 2026-11-13.** A deliberately small language
+> core, tested on Linux, macOS, and Windows. 0.4.0 adds loops (`while`,
+> `for`, `break`, `continue`), compiled `.tbc` bytecode files, and two
+> installable editions: the Tread SDK and the Tread Runtime.
 > Tread 0.x is experimental, and the language may change between minor
 > versions. Every change is recorded in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Key features
 
-All of the following are implemented in Tread 0.3.0:
+All of the following are implemented in Tread 0.4.0:
 
 -   **Static typing with inference:** `Int`, `Float`, `Bool`, `String`,
     and `Unit`, with no implicit conversions.
@@ -93,7 +94,8 @@ All of the following are implemented in Tread 0.3.0:
     that change.
 -   **Functions:** typed parameters, explicit return types, recursion,
     and calls in any order.
--   **Control flow:** `if`, `else if`, and `else`.
+-   **Control flow:** `if`, `else if`, and `else`; `while` and
+    `for i in a..b` loops with `break` and `continue`.
 -   **Checked integer arithmetic:** overflow and division by zero are
     reported as errors, not silent wrong answers.
 -   **Strings:** escape sequences, and `${...}` interpolation of any
@@ -142,128 +144,28 @@ Choose one of three methods:
 
 | Method | Best for | Requires Go? |
 |---|---|---|
-| [A. Download a release](#method-a-download-a-release-recommended) (recommended) | Using Tread | **No** |
+| [A. Install a release](#method-a-install-a-release-recommended) (recommended) | Using Tread | **No** |
 | [B. Install with Go](#method-b-install-with-go) | Go developers | Yes, Go 1.25 or later |
 | [C. Build from source](#method-c-build-from-source) | Contributors | Yes, Go 1.25 or later |
 
-### Method A: Download a release (recommended)
+### Method A: Install a release (recommended)
 
-**A prebuilt Tread release does not need Go or any other software.** Each
-archive contains a single, self-contained `tread` executable.
-
-Download from the
-[v0.3.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.3.0):
-
-| Platform | Archive | Minimum OS |
-|---|---|---|
-| macOS, Apple silicon | `tread_0.3.0_darwin_arm64.tar.gz` | macOS 12 |
-| macOS, Intel | `tread_0.3.0_darwin_amd64.tar.gz` | macOS 12 |
-| Linux, x86-64 | `tread_0.3.0_linux_amd64.tar.gz` | kernel 3.2 (not WSL 1) |
-| Linux, ARM64 | `tread_0.3.0_linux_arm64.tar.gz` | kernel 3.2 |
-| Windows, x86-64 | `tread_0.3.0_windows_amd64.zip` | Windows 10 / Server 2016 |
-
-Each archive unpacks to a folder containing:
-
--   `tread` (`tread.exe` on Windows);
--   `LICENSE`;
--   `README.md`;
--   `CHANGELOG.md`;
--   `THIRD_PARTY_NOTICES.txt`.
-
-The release also provides `SHA256SUMS`, to verify your download, and
-`BUILD-INFO.txt`, which describes how the binaries were built.
-
-#### macOS
-
-``` bash
-# Apple silicon. For an Intel Mac, use tread_0.3.0_darwin_amd64.tar.gz.
-ARCHIVE=tread_0.3.0_darwin_arm64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.3.0
-
-curl -fLO "$BASE/$ARCHIVE"
-curl -fLO "$BASE/SHA256SUMS"
-shasum -a 256 -c SHA256SUMS --ignore-missing      # expect: <archive>: OK
-
-tar -xzf "$ARCHIVE"
-sudo mkdir -p /usr/local/bin
-sudo install -m 0755 "${ARCHIVE%.tar.gz}/tread" /usr/local/bin/tread
-tread version                                     # tread 0.3.0
-```
-
-The binaries are not code-signed. Files downloaded with `curl` run
-normally. If you download the archive in a **browser**, macOS Gatekeeper
-may block `tread`. After verifying the checksum, remove the quarantine
-flag:
-
-``` bash
-xattr -d com.apple.quarantine /usr/local/bin/tread
-```
-
-#### Linux
-
-``` bash
-# x86-64. For ARM64, use tread_0.3.0_linux_arm64.tar.gz.
-ARCHIVE=tread_0.3.0_linux_amd64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.3.0
-
-curl -fLO "$BASE/$ARCHIVE"
-curl -fLO "$BASE/SHA256SUMS"
-sha256sum -c SHA256SUMS --ignore-missing           # expect: <archive>: OK
-
-tar -xzf "$ARCHIVE"
-sudo install -m 0755 "${ARCHIVE%.tar.gz}/tread" /usr/local/bin/tread
-tread version                                      # tread 0.3.0
-```
-
-The Linux binaries are statically linked and need no system libraries.
-
-**Without `sudo`:** install into `~/.local/bin` instead, and make sure
-that directory is on your `PATH`:
-
-``` bash
-mkdir -p ~/.local/bin
-install -m 0755 "${ARCHIVE%.tar.gz}/tread" ~/.local/bin/tread
-```
-
-
-#### Windows (PowerShell)
-
-``` powershell
-$Base = "https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.3.0"
-Invoke-WebRequest "$Base/tread_0.3.0_windows_amd64.zip" -OutFile tread_0.3.0_windows_amd64.zip
-Invoke-WebRequest "$Base/SHA256SUMS" -OutFile SHA256SUMS
-
-# Verify: both lines must show the same hash.
-(Select-String -Path SHA256SUMS -Pattern "windows_amd64.zip").Line.Split(" ")[0]
-(Get-FileHash tread_0.3.0_windows_amd64.zip -Algorithm SHA256).Hash.ToLower()
-
-Expand-Archive tread_0.3.0_windows_amd64.zip -DestinationPath .
-$Dest = "$env:LOCALAPPDATA\Programs\tread"
-New-Item -ItemType Directory -Force $Dest | Out-Null
-Copy-Item .\tread_0.3.0_windows_amd64\tread.exe $Dest
-[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$Dest", "User")
-```
-
-Open a **new** terminal, so that it picks up the updated `PATH`, then
-run `tread version`. It should print `tread 0.3.0`. SmartScreen may warn
-the first time, because the binary is not code-signed.
-
-### Coming in the next release: installers, SDK and Runtime
-
-> The `main` branch builds these artifacts; they will be published with
-> the next release. The download instructions above are for 0.3.0.
-
+**A Tread release does not need Go or any other software.** Download
+from the
+[v0.4.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.4.0).
 Each platform gets two downloads, plus an installer for the SDK:
 
 | Download | What it is |
 |---|---|
-| `tread-sdk-<version>-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
-| `tread-runtime-<version>-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
+| `tread-sdk-0.4.0-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
+| `tread-runtime-0.4.0-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
 | `.msi` (Windows), `.pkg` (macOS), `.deb` / `.rpm` (Linux) | SDK installer |
 | `install.sh`, `install.ps1` | user-level install scripts (no administrator rights) |
 
 `<platform>` is `windows-x64`, `macos-arm64`, `macos-x64`, `linux-x64`
-or `linux-arm64`. Every archive has the same layout:
+or `linux-arm64` (macOS 12, Linux kernel 3.2, Windows 10 / Server 2016
+or later). The release also has `SHA256SUMS` and `release-manifest.json`.
+Every archive has the same layout:
 
 ``` text
 tread-sdk-<version>-<platform>/
@@ -282,8 +184,10 @@ tread-sdk-<version>-<platform>/
 | `.pkg` (macOS) | `/Library/Tread` | `/etc/paths.d/tread` | `sudo /Library/Tread/uninstall.sh` |
 | `.deb`, `.rpm` (Linux) | `/opt/tread` | `/usr/bin/tread` link | `sudo apt remove tread` / `sudo dnf remove tread` |
 
+The quickest way is an install script:
+
 ``` bash
-# macOS / Linux, no sudo:
+# macOS / Linux, no sudo (add `-s -- --runtime` for the Runtime):
 curl -fsSL https://github.com/sarvessveeriyah2312/Tread/releases/latest/download/install.sh | sh
 ```
 
@@ -298,6 +202,25 @@ files they installed, and refuse to install into a directory that is
 not empty and not a previous Tread installation. Upgrading is running
 the installer again with a newer version. `TREAD_HOME` is optional:
 `tread` finds its installation from its own location.
+
+**Installing an archive by hand** (macOS Apple silicon shown; use your
+platform's name):
+
+``` bash
+ARCHIVE=tread-sdk-0.4.0-macos-arm64.tar.gz
+BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.4.0
+curl -fLO "$BASE/$ARCHIVE"
+curl -fLO "$BASE/SHA256SUMS"
+shasum -a 256 -c SHA256SUMS --ignore-missing      # Linux: sha256sum; expect: <archive>: OK
+tar -xzf "$ARCHIVE"
+mv "${ARCHIVE%.tar.gz}" ~/tread-sdk               # any location works
+export PATH="$HOME/tread-sdk/bin:$PATH"           # add this to your shell profile
+```
+
+On Windows, expand `tread-sdk-0.4.0-windows-x64.zip` and add its `bin`
+folder to your user `PATH`. If you download in a browser on macOS,
+Gatekeeper may block `tread`; after checking the checksum, run
+`xattr -d com.apple.quarantine <path>/bin/tread`.
 
 Then open a new terminal and check the installation:
 
@@ -327,7 +250,7 @@ This method needs **Go 1.25 or later**; `go.mod` declares `go 1.25.0`.
 Go 1.21 or later can download the required toolchain automatically.
 
 ``` bash
-go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.3.0
+go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.4.0
 ```
 
 Go installs `tread` into `$(go env GOBIN)`, or into
@@ -336,7 +259,7 @@ That directory must be on your `PATH`:
 
 ``` bash
 export PATH="$PATH:$(go env GOPATH)/bin"   # add this to your shell profile
-tread version                              # tread 0.3.0
+tread version                              # tread 0.4.0
 ```
 
 ### Method C: Build from source
@@ -348,21 +271,21 @@ dependencies.
 git clone https://github.com/sarvessveeriyah2312/Tread.git
 cd Tread
 go build -o ./bin/tread ./cmd/tread
-./bin/tread version                      # tread 0.3.0
+./bin/tread version                      # tread 0.4.0
 ./bin/tread run examples/hello.tr        # Hello, Tread!
 ```
 
 The source on the `main` branch may be ahead of the latest release. To
-build exactly 0.3.0, run `git checkout v0.3.0` first.
+build exactly 0.4.0, run `git checkout v0.4.0` first.
 
 ## Quick start
 
-1.  **Install Tread** with [Method A](#method-a-download-a-release-recommended).
+1.  **Install Tread** with [Method A](#method-a-install-a-release-recommended).
 2.  **Check the installation:**
 
     ``` text
     $ tread version
-    tread 0.3.0
+    tread 0.4.0
     ```
 
 3.  **Create** a file named `hello.tr`:
@@ -392,7 +315,7 @@ Next, work through the [Language tutorial](#language-tutorial).
 ## Language tutorial
 
 Each lesson is a complete program. Save it as a `.tr` file and run it
-with `tread run`. The output shown is exactly what Tread 0.3.0 prints.
+with `tread run`. The output shown is exactly what Tread 0.4.0 prints.
 
 1.  [Program structure and comments](#1-program-structure-and-comments)
 2.  [Variables and mutability](#2-variables-and-mutability)
@@ -429,7 +352,7 @@ Hello from Tread
     may continue on the next line after an operator such as `+`, or
     inside parentheses.
 -   **`module`:** an optional `module` declaration may appear first. In
-    Tread 0.3.0, a program is a single file and the name has no other
+    Tread 0.4.0, a program is a single file and the name has no other
     effect.
 -   **Order:** functions may appear in any order.
 
@@ -654,8 +577,7 @@ Welcome to Tread
 
 ### 9. Recursion
 
-Tread 0.3.0 has no loops, so repetition uses recursion. (Loops are on
-`main` for the next release; see [Loops](#loops-unreleased-on-main).)
+Repetition can use recursion, or a [loop](#loops) (since 0.4.0):
 
 ``` tread
 fn main() -> Unit {
@@ -691,7 +613,7 @@ Liftoff!
 Calls may nest up to 10,000 deep, including `main`. Deeper recursion
 stops with `TR-R003`.
 
-#### Loops (unreleased, on `main`)
+#### Loops
 
 `while` repeats while a `Bool` condition holds. `for` counts through a
 half-open `Int` range: `for i in a..b` runs with `i` = `a`, `a + 1`, …,
@@ -830,13 +752,13 @@ tread <command> [arguments]
 |---|---|---|---|
 | `tread run <file.tr>` | Check, compile, and run a program. It runs only if there are no compile-time errors. | Program output on stdout; errors on stderr | `0`, `1`, `2`, or `3` |
 | `tread check <file.tr>` | Check a program without running it. | Nothing on success; errors on stderr | `0`, `1`, or `2` |
-| `tread version` | Print the version. | `tread 0.3.0` on stdout | `0` |
+| `tread version` | Print the version. | `tread 0.4.0` on stdout | `0` |
 | `tread help` | Print usage. | Usage on stdout | `0` |
 
 Flags: `--version` is the same as `tread version`; `-h` and `--help` are
 the same as `tread help`.
 
-**Unreleased (on `main`, in the next release):**
+**Since 0.4.0:**
 
 | Command | Purpose | Exit code |
 |---|---|---|
@@ -916,12 +838,10 @@ tread check app.tr && tread run app.tr
 **Keywords:**
 
 -   **In use:** `fn`, `let`, `mut`, `if`, `else`, `return`, `true`,
-    `false`, `module`.
--   **Unreleased, on `main`:** `while`, `for`, `in`, `break`,
-    `continue` are loop keywords, so they cannot be used as names.
+    `false`, `module`, and the loop keywords `while`, `for`, `in`,
+    `break`, `continue`.
 -   **Reserved for the future**, and not usable as names: `match`,
-    `class`, `interface`, `enum`, `import`, `pub`, `async`, `await`
-    (and `for`, `while` in 0.3.0).
+    `class`, `interface`, `enum`, `import`, `pub`, `async`, `await`.
 
 **Names** use ASCII letters, digits, and `_`, and must not start with a
 digit. The type names (`Int`, `String`, …) are not keywords.
@@ -1052,12 +972,11 @@ problem:
 
 ## Current limitations
 
-Tread 0.3.0 is intentionally small.
+Tread 0.4.0 is intentionally small.
 
 **Not yet in the language:**
 
--   loops: `for` and `while` are reserved; use recursion (loops are on
-    `main`, unreleased);
+-   `for` over anything but an `Int` range (there are no collections);
 -   arrays, maps, or other collections;
 -   structs, classes, enums, generics, or pattern matching;
 -   function values or closures;
@@ -1067,7 +986,7 @@ Tread 0.3.0 is intentionally small.
 **Tooling:**
 
 -   no REPL, formatter, debugger, or editor (LSP) support;
--   no native compilation, and no saved bytecode files.
+-   no native compilation (`.tbc` files are bytecode for the Tread VM).
 
 **Implementation limits:**
 
@@ -1086,14 +1005,15 @@ repository:
 | Core language, compiler, VM, and CLI | **Implemented** | Released in 0.1.0. |
 | Runtime stack traces | **Implemented** | Released in 0.2.0. See [Stack traces](#stack-traces). |
 | Rename to Tread (`tread`, `.tr`, `TR-` codes) | **Implemented** | Released in 0.3.0. |
-| Loops (`while`, `for`, `break`, `continue`) | **Implemented on `main`** | Unreleased; in the next release. They remove the need for recursion when repeating work. |
+| SDK and Runtime editions, `.tbc` bytecode files, installers | **Implemented** | Released in 0.4.0. |
+| Loops (`while`, `for`, `break`, `continue`) | **Implemented** | Released in 0.4.0. See [Loops](#loops). |
 | Collections (arrays, maps) | Under consideration | |
 | Generics, enums, and pattern matching | Under consideration | |
 | Imports and multi-file programs | Under consideration | |
 | Structured error handling (`Result`) | Under consideration | |
 | Formatter, test runner, and editor support (LSP) | Under consideration | |
 | File and network APIs | Under consideration | |
-| Saved bytecode files, and native compilation | Under consideration | |
+| Native compilation | Under consideration | |
 
 ## Repository structure
 
