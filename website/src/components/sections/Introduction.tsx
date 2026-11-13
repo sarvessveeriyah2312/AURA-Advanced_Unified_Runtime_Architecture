@@ -44,7 +44,7 @@ export function Introduction() {
             </p>
             <p>
               Tread is young and deliberately small. Version 0.x focuses on a solid foundation (types, functions,
-              control flow, and diagnostics) before adding larger features such as loops and collections.
+              control flow, and diagnostics) before adding larger features such as collections and user-defined types.
             </p>
           </Reveal>
         </div>

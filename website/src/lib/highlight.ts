@@ -19,7 +19,22 @@ export interface Token {
   text: string;
 }
 
-const KEYWORDS = new Set(["fn", "let", "mut", "if", "else", "return", "module", "true", "false"]);
+const KEYWORDS = new Set([
+  "fn",
+  "let",
+  "mut",
+  "if",
+  "else",
+  "return",
+  "module",
+  "true",
+  "false",
+  "while",
+  "for",
+  "in",
+  "break",
+  "continue",
+]);
 const TYPES = new Set(["Int", "Float", "Bool", "String", "Unit"]);
 const BUILTINS = new Set(["print", "toString"]);
 const PUNCT = new Set(["{", "}", "(", ")", ",", ":"]);
@@ -56,7 +71,13 @@ export function highlight(src: string): Token[] {
       i = scanString(src, i, push);
     } else if (isDigit(c)) {
       let j = i;
-      while (j < src.length && /[0-9.]/.test(src[j] ?? "")) j++;
+      // A number stops before "..", so 0..10 is a range (ADR-0012).
+      while (
+        j < src.length &&
+        /[0-9.]/.test(src[j] ?? "") &&
+        !(src[j] === "." && src[j + 1] === ".")
+      )
+        j++;
       push("number", src.slice(i, j));
       i = j;
     } else if (isIdentStart(c)) {
@@ -85,7 +106,11 @@ export function highlight(src: string): Token[] {
 // scanString highlights a string literal starting at src[start] === '"'
 // and returns the index just past it. Interpolated expressions are
 // highlighted as code; strings are single-line in Tread.
-function scanString(src: string, start: number, push: (k: TokenKind, t: string) => void): number {
+function scanString(
+  src: string,
+  start: number,
+  push: (k: TokenKind, t: string) => void,
+): number {
   let i = start + 1;
   let chunk = '"';
   while (i < src.length) {

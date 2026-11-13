@@ -29,9 +29,15 @@ const MILESTONES: { title: string; status: Status; version?: string; items: stri
     items: ["Every active call in runtime errors", "Recursion merged into one line", "Bounded to 20 lines"],
   },
   {
-    title: "Loops",
-    status: "Planned",
-    items: ["while, then for", "The next language feature", "Repetition without recursion"],
+    title: "Loops, SDK and Runtime",
+    status: "Released",
+    version: "0.4.0",
+    items: [
+      "while and for i in a..b",
+      "break and continue",
+      ".tbc bytecode files",
+      "SDK and Runtime installers",
+    ],
   },
 ];
 
@@ -42,7 +48,7 @@ const CONSIDERING = [
   "Structured error handling (Result)",
   "Formatter, test runner, and editor support (LSP)",
   "File and network APIs",
-  "Saved bytecode files and native compilation",
+  "Native compilation",
 ];
 
 const STYLE: Record<Status, { icon: typeof Circle; className: string }> = {

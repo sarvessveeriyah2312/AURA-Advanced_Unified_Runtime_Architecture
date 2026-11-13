@@ -1,5 +1,5 @@
 // Tread programs shown on the site. Every program and its output was run
-// with the `tread` 0.3.0 binary; `output` is copied verbatim.
+// with the `tread` 0.4.0 binary; `output` is copied verbatim.
 // Keep this file free of imports so the verification script can read it.
 
 export interface Example {
@@ -138,7 +138,7 @@ in stock: true`,
     label: "Recursion",
     file: "factorial.tr",
     command: "run",
-    summary: "Repetition uses recursion in Tread today. Int arithmetic is overflow-checked.",
+    summary: "Functions may call themselves. Int arithmetic is overflow-checked.",
     code: `fn main() -> Unit {
     print(factorial(10))
     print(factorial(20))
@@ -152,6 +152,49 @@ fn factorial(n: Int) -> Int {
 }`,
     output: `3628800
 2432902008176640000`,
+    exitCode: 0,
+  },
+  {
+    id: "loops",
+    label: "Loops",
+    file: "loops.tr",
+    command: "run",
+    summary: "New in 0.4.0: while, for over a half-open Int range, break and continue.",
+    code: `fn main() -> Unit {
+    let mut total = 0
+    for i in 1..101 {
+        total = total + i
+    }
+    print("sum 1..100 = \${total}")
+
+    let mut n = 27
+    let mut steps = 0
+    while n != 1 {
+        if n % 2 == 0 {
+            n = n / 2
+        } else {
+            n = 3 * n + 1
+        }
+        steps = steps + 1
+    }
+    print("27 reaches 1 in \${steps} steps")
+
+    for i in 0..10 {
+        if i % 2 == 0 {
+            continue
+        }
+        if i > 7 {
+            break
+        }
+        print("odd \${i}")
+    }
+}`,
+    output: `sum 1..100 = 5050
+27 reaches 1 in 111 steps
+odd 1
+odd 3
+odd 5
+odd 7`,
     exitCode: 0,
   },
   {
@@ -185,14 +228,19 @@ stack trace:
   },
 ];
 
-// Real output of the CLI commands (tread 0.3.0).
+// Real output of the CLI commands (tread 0.4.0).
 export const CLI_HELP = `Usage: tread <command> [arguments]
 
 Commands:
-  run <file.tr>       Check, compile and run a program
-  check <file.tr>     Check a program for errors without running it
-  version             Print the Tread version
-  help                Print this help
+  new <name>                       Create a new project in the directory <name>
+  check <file.tr>                  Check a program for errors without running it
+  build <file.tr> [-o <file.tbc>]  Compile a program to a bytecode file
+  run <file.tr|file.tbc>           Run a program from source or bytecode
+  doctor                           Diagnose the Tread installation
+  version                          Print the Tread version
+  sdk --version                    Print the Tread SDK version
+  runtime --version                Print the Tread Runtime version
+  help                             Print this help
 
 Flags:
   -h, --help     Print this help

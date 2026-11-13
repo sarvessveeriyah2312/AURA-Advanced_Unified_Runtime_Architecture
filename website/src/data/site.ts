@@ -3,8 +3,8 @@
 // release (see the README in this folder). To move the site to a new
 // release, update VERSION and confirm the asset list still matches.
 
-export const VERSION = "0.3.0";
-// RELEASED is false until the v0.3.0 GitHub release exists. While false,
+export const VERSION = "0.4.0";
+// RELEASED is false until the v0.4.0 GitHub release exists. While false,
 // the site shows the upcoming archive names without download links and
 // points visitors at building from source instead. Set it to true (and
 // RELEASE_DATE) on release day.

@@ -6,7 +6,7 @@ import { TerminalText, WindowBar } from "../ui/CodeBlock";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
 
-// Commands and their real output (tread 0.3.0).
+// Commands and their real output (tread 0.4.0).
 const COMMANDS = [
   {
     command: "tread version",
@@ -25,6 +25,12 @@ const COMMANDS = [
     output: "Hello, Tread!",
   },
   {
+    command: "tread build hello.tr",
+    purpose: "Compile a program to hello.tbc, a bytecode file that the Tread Runtime runs without the compiler.",
+    output: "",
+    after: "$ tread run hello.tbc\nHello, Tread!",
+  },
+  {
     command: "tread help",
     purpose: "Print usage. Also available as tread -h and tread --help.",
     output: CLI_HELP,
@@ -34,7 +40,7 @@ const COMMANDS = [
 const EXIT_CODES = [
   { code: "0", meaning: "Success" },
   { code: "1", meaning: "The program has compile-time or runtime errors" },
-  { code: "2", meaning: "Usage error, a file not ending in .tr, or an unreadable file" },
+  { code: "2", meaning: "Usage error, a file not ending in .tr or .tbc, or an unreadable file" },
   { code: "3", meaning: "Internal failure" },
 ];
 
@@ -48,7 +54,7 @@ export function CLIShowcase() {
       <SectionHeading
         id="cli-title"
         eyebrow="CLI experience"
-        title="One command, four verbs."
+        title="One command, the whole toolchain."
         description="The tread command is the whole toolchain. Program output goes to stdout and diagnostics to stderr, so it fits naturally into scripts and CI."
       />
 
