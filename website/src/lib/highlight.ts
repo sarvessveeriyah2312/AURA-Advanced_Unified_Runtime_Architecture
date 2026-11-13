@@ -36,6 +36,10 @@ const KEYWORDS = new Set([
   "continue",
   "enum",
   "match",
+  "struct",
+  "impl",
+  "pub",
+  "import",
 ]);
 const TYPES = new Set(["Int", "Float", "Bool", "String", "Unit"]);
 const BUILTINS = new Set(["print", "toString"]);

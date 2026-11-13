@@ -44,7 +44,7 @@ export function Introduction() {
             </p>
             <p>
               Tread is young and deliberately small. Version 0.x focuses on a solid foundation (types, functions,
-              control flow, and diagnostics) and grows one feature at a time: loops in 0.4, collections, enums and generics in 0.5.
+              control flow, and diagnostics) and grows one feature at a time: loops in 0.4, collections, enums and generics in 0.5, structs, methods and imports in 0.6.
             </p>
           </Reveal>
         </div>

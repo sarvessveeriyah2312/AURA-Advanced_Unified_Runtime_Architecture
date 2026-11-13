@@ -6,7 +6,7 @@ import { TerminalText, WindowBar } from "../ui/CodeBlock";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
 
-// Commands and their real output (tread 0.5.0).
+// Commands and their real output (tread 0.6.0).
 const COMMANDS = [
   {
     command: "tread version",

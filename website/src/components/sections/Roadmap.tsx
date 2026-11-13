@@ -46,11 +46,15 @@ const MILESTONES: { title: string; status: Status; version?: string; items: stri
     items: ["Array<T> and Map<K, V>", "Enums and exhaustive match", "Generic functions and Option<T>"],
   },
   {
+    title: "Structs, methods, imports",
+    status: "Released",
+    version: "0.6.0",
+    items: ["Structs with value semantics", "Methods in impl blocks", "Multi-file programs with import and pub"],
+  },
+  {
     title: "Next up",
     status: "Planned",
     items: [
-      "Structs and user-defined types",
-      "Imports and multi-file programs",
       "File and network I/O",
       "Structured error handling (Result)",
       "Package ecosystem",

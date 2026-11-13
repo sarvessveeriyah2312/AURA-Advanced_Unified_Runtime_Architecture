@@ -1,5 +1,5 @@
 // Tread programs shown on the site. Every program and its output was run
-// with the `tread` 0.5.0 binary; `output` is copied verbatim.
+// with the `tread` 0.6.0 binary; `output` is copied verbatim.
 // Keep this file free of imports so the verification script can read it.
 
 export interface Example {
@@ -285,6 +285,47 @@ no age for bob`,
     exitCode: 0,
   },
   {
+    id: "structs",
+    label: "Structs",
+    file: "structs.tr",
+    command: "run",
+    summary: "New in 0.6.0: structs, and methods in impl blocks. A mut self method changes its receiver.",
+    code: `struct Point {
+    x: Int
+    y: Int
+}
+
+impl Point {
+    fn origin() -> Point {
+        return Point { x: 0, y: 0 }
+    }
+
+    fn dist2(self, other: Point) -> Int {
+        let dx = self.x - other.x
+        let dy = self.y - other.y
+        return dx * dx + dy * dy
+    }
+
+    fn move(mut self, dx: Int, dy: Int) -> Unit {
+        self.x = self.x + dx
+        self.y = self.y + dy
+    }
+}
+
+fn main() -> Unit {
+    let mut p = Point { x: 3, y: 4 }
+    let start = p
+    p.move(1, 1)
+    print(p)
+    print(start)
+    print(p.dist2(Point.origin()))
+}`,
+    output: `Point { x: 4, y: 5 }
+Point { x: 3, y: 4 }
+41`,
+    exitCode: 0,
+  },
+  {
     id: "traces",
     label: "Stack traces",
     file: "trace.tr",
@@ -315,7 +356,7 @@ stack trace:
   },
 ];
 
-// Real output of the CLI commands (tread 0.5.0).
+// Real output of the CLI commands (tread 0.6.0).
 export const CLI_HELP = `Usage: tread <command> [arguments]
 
 Commands:
