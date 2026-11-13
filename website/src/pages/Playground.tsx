@@ -162,7 +162,7 @@ export function PlaygroundPage() {
 
           <div className="min-w-0 overflow-hidden rounded-2xl border border-code-line bg-code-bg">
             <div className="flex h-11 items-center justify-between gap-2 border-b border-code-line bg-code-bar pr-2 pl-2">
-              <div role="tablist" aria-label="Program output and compiler stages" className="flex min-w-0 items-center gap-0.5 overflow-x-auto">
+              <div role="tablist" aria-label="Program output and compiler stages" className="flex min-w-0 items-center gap-0.5">
                 {VIEWS.map((v) => {
                   const active = v.id === view;
                   return (
@@ -177,7 +177,7 @@ export function PlaygroundPage() {
                       onClick={() => setView(v.id)}
                       onKeyDown={onTabKey}
                       className={cn(
-                        "relative h-8 shrink-0 rounded-lg px-3 font-mono text-xs transition-colors",
+                        "relative h-8 shrink-0 rounded-lg px-2 font-mono text-xs transition-colors sm:px-3",
                         active ? "bg-white/[0.06] text-code-fg" : "text-code-dim hover:text-code-fg",
                       )}
                     >
