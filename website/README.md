@@ -75,15 +75,12 @@ is `SITE_URL` in `src/data/site.ts`, and it also appears as a literal in
 `index.html` (canonical, Open Graph, and Twitter tags), `public/robots.txt`,
 and `public/llms.txt`. Change them all together.
 
-**On release day**, besides setting `RELEASED = true`, update the status
-line in `public/llms.txt` ("0.3.0 is not published as a release yet").
-
-**For 0.4.0** (the first release with SDK/Runtime installers), setting
-`VERSION = "0.4.0"` with `RELEASED = true` is enough to switch the site
-over: the download page's links go live (`INSTALLERS_RELEASED`), the home
-page's archives use the new `tread-sdk-<version>-<platform>` names, and
-the "Download Tread" button goes to `/download/`. Also update the facts
-in `public/llms.txt`.
+**On release day**, set `VERSION` (and `RELEASE_DATE`) in
+`src/data/site.ts`. The download page, the home page's archive names and
+the "Download Tread" button all follow `VERSION`. Then update the facts
+in `public/llms.txt`, rerun `npm run verify:examples` against the new
+`tread` binary, and rebuild the playground (`scripts/build-playground.sh`
+in the repository root).
 
 Components must not read `window`, `document`, or `localStorage` while
 rendering, because the page is rendered at build time. Read them in

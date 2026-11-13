@@ -4,13 +4,12 @@
 // name, so a typo here would be a dead link.
 import { REPO_URL, RELEASED, VERSION } from "./site";
 
-// The first release that ships SDK/Runtime archives and installers.
-export const INSTALLERS_VERSION = "0.4.0";
-
-// Links go live when the site's VERSION reaches INSTALLERS_VERSION and
-// that release is published: on release day set VERSION = "0.4.0" (and
-// RELEASED/RELEASE_DATE) in site.ts, and this page follows.
-export const INSTALLERS_RELEASED = RELEASED && (VERSION as string) === INSTALLERS_VERSION;
+// Every release from 0.4.0 on ships SDK/Runtime archives and installers,
+// so the page always offers the site's current release: on release day
+// set VERSION (and RELEASED/RELEASE_DATE) in site.ts, and this page
+// follows.
+export const INSTALLERS_VERSION: string = VERSION;
+export const INSTALLERS_RELEASED = RELEASED;
 
 const TAG = `v${INSTALLERS_VERSION}`;
 const BASE = `${REPO_URL}/releases/download/${TAG}`;

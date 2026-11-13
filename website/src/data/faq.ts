@@ -22,7 +22,7 @@ export const FAQS: Faq[] = [
   {
     question: "Is Tread ready for production use?",
     answer:
-      "No. Tread 0.x is experimental, and the language may change between minor versions. It has no collections, user-defined types, imports, or file I/O yet. It is thoroughly tested, with CI running the full test suite on Linux, macOS, and Windows, but it is meant for learning and experimenting.",
+      "No. Tread 0.x is experimental, and the language may change between minor versions. It has no structs, imports, or file I/O yet. It is thoroughly tested, with CI running the full test suite on Linux, macOS, and Windows, but it is meant for learning and experimenting.",
   },
   {
     question: "Do I need Go to use Tread?",

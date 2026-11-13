@@ -34,6 +34,8 @@ const KEYWORDS = new Set([
   "in",
   "break",
   "continue",
+  "enum",
+  "match",
 ]);
 const TYPES = new Set(["Int", "Float", "Bool", "String", "Unit"]);
 const BUILTINS = new Set(["print", "toString"]);

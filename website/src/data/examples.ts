@@ -1,5 +1,5 @@
 // Tread programs shown on the site. Every program and its output was run
-// with the `tread` 0.4.0 binary; `output` is copied verbatim.
+// with the `tread` 0.5.0 binary; `output` is copied verbatim.
 // Keep this file free of imports so the verification script can read it.
 
 export interface Example {
@@ -198,6 +198,93 @@ odd 7`,
     exitCode: 0,
   },
   {
+    id: "collections",
+    label: "Arrays & maps",
+    file: "groceries.tr",
+    command: "run",
+    summary: "New in 0.5.0: arrays and maps with value semantics. Copying a collection never shares changes.",
+    code: `fn main() -> Unit {
+    let mut cart = ["apples", "bread"]
+    cart.push("milk")
+
+    let mut prices = ["apples": 3, "bread": 2, "milk": 1]
+    prices["bread"] = 4
+
+    let mut total = 0
+    for item in cart {
+        total = total + prices[item]
+    }
+    print(cart)
+    print("total: \${total}")
+
+    let receipt = cart
+    cart[0] = "pears"
+    print("receipt keeps \${receipt[0]}")
+}`,
+    output: `["apples", "bread", "milk"]
+total: 8
+receipt keeps apples`,
+    exitCode: 0,
+  },
+  {
+    id: "enums",
+    label: "Enums & match",
+    file: "shapes.tr",
+    command: "run",
+    summary: "New in 0.5.0: enums carry values, and match must cover every case.",
+    code: `enum Shape {
+    Circle(Float)
+    Rect(Float, Float)
+    Empty
+}
+
+fn area(s: Shape) -> Float {
+    match s {
+        Shape.Circle(r) => { return 3.14 * r * r }
+        Shape.Rect(w, h) => { return w * h }
+        Shape.Empty => { return 0.0 }
+    }
+}
+
+fn main() -> Unit {
+    for s in [Shape.Circle(1.0), Shape.Rect(2.0, 3.0), Shape.Empty] {
+        print("\${s}: \${area(s)}")
+    }
+}`,
+    output: `Shape.Circle(1.0): 3.14
+Shape.Rect(2.0, 3.0): 6.0
+Shape.Empty: 0.0`,
+    exitCode: 0,
+  },
+  {
+    id: "generics",
+    label: "Generics",
+    file: "generics.tr",
+    command: "run",
+    summary: "New in 0.5.0: generic functions and the built-in Option<T>.",
+    code: `fn first<T>(items: Array<T>) -> Option<T> {
+    if items.len() == 0 {
+        return Option.None
+    }
+    return Option.Some(items[0])
+}
+
+fn main() -> Unit {
+    print(first([3, 1, 2]))
+    print(first(["x", "y"]))
+
+    let ages = ["sam": 31]
+    match ages.get("bob") {
+        Option.Some(age) => { print("bob is \${age}") }
+        Option.None => { print("no age for bob") }
+    }
+}`,
+    output: `Option.Some(3)
+Option.Some("x")
+no age for bob`,
+    exitCode: 0,
+  },
+  {
     id: "traces",
     label: "Stack traces",
     file: "trace.tr",
@@ -228,7 +315,7 @@ stack trace:
   },
 ];
 
-// Real output of the CLI commands (tread 0.4.0).
+// Real output of the CLI commands (tread 0.5.0).
 export const CLI_HELP = `Usage: tread <command> [arguments]
 
 Commands:

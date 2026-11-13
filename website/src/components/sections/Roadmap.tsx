@@ -39,11 +39,16 @@ const MILESTONES: { title: string; status: Status; version?: string; items: stri
       "SDK and Runtime installers",
     ],
   },
+  {
+    title: "Collections, enums, generics",
+    status: "Released",
+    version: "0.5.0",
+    items: ["Array<T> and Map<K, V>", "Enums and exhaustive match", "Generic functions and Option<T>"],
+  },
 ];
 
 const CONSIDERING = [
-  "Collections (arrays, maps)",
-  "Generics, enums, and pattern matching",
+  "Structs and user-defined methods",
   "Imports and multi-file programs",
   "Structured error handling (Result)",
   "Formatter, test runner, and editor support (LSP)",

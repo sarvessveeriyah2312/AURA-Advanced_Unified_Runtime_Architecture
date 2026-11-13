@@ -1,4 +1,4 @@
-import { Binary, Braces, Cpu, Layers, ListTree, ShieldCheck, SquareTerminal, TriangleAlert } from "lucide-react";
+import { Binary, Boxes, Braces, Cpu, Layers, ListTree, ShieldCheck, SquareTerminal, TriangleAlert } from "lucide-react";
 import { VERSION } from "../../data/site";
 import { Card, IconBadge } from "../ui/Card";
 import { Reveal } from "../ui/Reveal";
@@ -10,7 +10,7 @@ const FEATURES = [
     icon: ShieldCheck,
     title: "Static type system",
     points: [
-      "Int, Float, Bool, String, and Unit",
+      "Int, Float, Bool, String, Unit, arrays, maps, and enums",
       "Optional type annotations",
       "Local type inference from initializers",
       "Compile-time checking, with no implicit conversions",
@@ -31,7 +31,7 @@ const FEATURES = [
     title: "Tread Virtual Machine",
     points: [
       "Stack-based execution",
-      "46 typed bytecode instructions",
+      "66 bytecode instructions",
       "Bytecode validated before it runs",
       "Never panics on a user program",
     ],
@@ -40,7 +40,7 @@ const FEATURES = [
     icon: ListTree,
     title: "Structured diagnostics",
     points: [
-      "47 stable codes, such as TR-T001",
+      "62 stable codes, such as TR-T001",
       "Exact line and column positions",
       "Underlined source excerpts and help text",
       "Several errors reported in one run",
@@ -74,6 +74,17 @@ const FEATURES = [
       "Division by zero is a runtime error",
       "IEEE-754 Float semantics",
       "Shortest round-trip Float formatting",
+    ],
+  },
+  {
+    icon: Boxes,
+    title: "Collections, enums, and generics",
+    badge: "Since 0.5.0",
+    points: [
+      "Array<T> and Map<K, V> with value semantics",
+      "Enums whose variants carry values",
+      "match, checked to cover every case",
+      "Generic functions, with inferred types",
     ],
   },
   {
