@@ -1,4 +1,4 @@
-import { Check, Copy, Sparkles } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import { useCopy } from "../../hooks/useCopy";
 import { highlight } from "../../lib/highlight";
@@ -20,33 +20,6 @@ export function CopyButton({ text, label, className }: { text: string; label: st
       <span aria-hidden>{copied ? "Copied" : "Copy"}</span>
       <span className="sr-only" role="status" aria-live="polite">
         {copied ? "Copied to clipboard" : ""}
-      </span>
-    </button>
-  );
-}
-
-// PromptButton sits next to a terminal command's CopyButton. It copies a
-// prompt (src/lib/aiPrompt.ts) that asks an AI assistant to run the
-// command for the visitor.
-export function PromptButton({ prompt, label, className }: { prompt: string; label: string; className?: string }) {
-  const { copied, copy } = useCopy();
-  return (
-    <button
-      type="button"
-      onClick={() => void copy(prompt)}
-      title="Copy a prompt for an AI assistant that runs this command for you"
-      className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-md border border-code-line px-2.5 text-xs font-medium whitespace-nowrap text-code-dim transition-colors hover:border-[#2c3462] hover:text-code-fg",
-        className,
-      )}
-      aria-label={copied ? "Prompt copied" : label}
-    >
-      {copied ? <Check className="size-3.5 text-[var(--tok-string)]" aria-hidden /> : <Sparkles className="size-3.5" aria-hidden />}
-      <span aria-hidden className="hidden sm:inline">
-        {copied ? "Copied" : "Prompt for AI"}
-      </span>
-      <span className="sr-only" role="status" aria-live="polite">
-        {copied ? "AI prompt copied to clipboard" : ""}
       </span>
     </button>
   );

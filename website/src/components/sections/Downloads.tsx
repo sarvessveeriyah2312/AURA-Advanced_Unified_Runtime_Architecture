@@ -17,7 +17,7 @@ import {
   type Platform,
 } from "../../data/site";
 import { Card, IconBadge } from "../ui/Card";
-import { CopyButton, PromptButton } from "../ui/CodeBlock";
+import { TerminalCommand } from "../ui/TerminalCommand";
 import { commandPrompt } from "../../lib/aiPrompt";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
@@ -124,13 +124,12 @@ export function Downloads() {
                 archives, listed below, will not need Go. Today, build from source (Go 1.25 or later):
               </span>
             </p>
-            <div className="mt-4 flex items-start gap-2 rounded-xl border border-code-line bg-code-bg p-2 pl-4">
-              <pre className="scrollbar-thin min-w-0 flex-1 overflow-x-auto py-1 font-mono text-[12.5px] leading-6 text-code-fg">
-                <code>{BUILD_FROM_SOURCE}</code>
-              </pre>
-              <PromptButton prompt={BUILD_PROMPT} label="Copy an AI prompt for the build-from-source commands" className="shrink-0" />
-              <CopyButton text={BUILD_FROM_SOURCE} label="Copy the build-from-source commands" className="shrink-0" />
-            </div>
+            <TerminalCommand
+              className="mt-4"
+              command={BUILD_FROM_SOURCE}
+              prompt={BUILD_PROMPT}
+              label="the build-from-source commands"
+            />
           </div>
         )}
       </Reveal>
@@ -229,13 +228,7 @@ export function Downloads() {
             The <code className="font-mono text-[13px]">tread</code> binary is placed in{" "}
             <code className="font-mono text-[13px]">$(go env GOPATH)/bin</code>, which must be on your PATH.
           </p>
-          <div className="mt-4 flex items-center gap-2 rounded-xl border border-code-line bg-code-bg p-2 pl-4">
-            <code className="scrollbar-thin min-w-0 flex-1 overflow-x-auto py-1 font-mono text-[12.5px] whitespace-nowrap text-code-fg">
-              {GO_INSTALL}
-            </code>
-            <PromptButton prompt={GO_PROMPT} label="Copy an AI prompt for the go install command" className="shrink-0" />
-            <CopyButton text={GO_INSTALL} label="Copy the go install command" className="shrink-0" />
-          </div>
+          <TerminalCommand className="mt-4" command={GO_INSTALL} prompt={GO_PROMPT} label="the go install command" />
         </Card>
       </Reveal>
     </Section>
