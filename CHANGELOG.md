@@ -5,6 +5,52 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 Tread uses [Semantic Versioning](https://semver.org/). Entries for 0.1.0
 and 0.2.0 are kept as written, under the language's name at the time.
 
+## [0.5.0] - 2026-11-13
+
+Arrays, maps, enums, pattern matching and generics (ADR-0013).
+
+### Added
+
+-   **Arrays.** `Array<T>`, with literals `[1, 2, 3]` and `[]`, indexing
+    `xs[i]`, element assignment `xs[i] = v` (also nested, `grid[r][c] = v`),
+    `for x in xs`, and the methods `len()`, `push(x)`, `pop()` and
+    `contains(x)`. An index out of range is the new runtime error
+    **TR-R007**.
+-   **Maps.** `Map<K, V>` with `Int`, `String` or `Bool` keys, kept in
+    insertion order. Literals `["a": 1]` and `[:]`, `m[k]`, `m[k] = v`,
+    `for k in m` (keys), and `len()`, `get(k)`, `contains(k)`,
+    `remove(k)`, `keys()`. A missing key in `m[k]` is the new runtime
+    error **TR-R008**.
+-   **Value semantics.** Assigning or passing an array or map gives an
+    independent copy, so `let` values never change. Copies are made only
+    when a shared value is changed (copy-on-write).
+-   **Enums** with optional payloads (`Shape.Circle(1.0)`), declared with
+    `enum`, and the built-in `Option<T>` (`Option.Some(x)`,
+    `Option.None`), which `pop`, `get` and `remove` return.
+-   **`match` statements** with variant, literal (`Int`, `String`,
+    `Bool`), binding and `_` patterns. The compiler rejects a match that
+    misses a case, naming an example, and an arm that can never run.
+-   **Generics.** Generic functions (`fn first<T>(xs: Array<T>) ->
+    Option<T>`) and generic enums, with type arguments inferred from the
+    arguments and from the expected type.
+-   Every value except `Unit` can now be printed, interpolated, and
+    compared with `==` and `!=`; collections and enums compare by
+    contents and print as written, for example `["a": 1]`.
+-   New checker errors **TR-T020** to **TR-T030** (for example TR-T020,
+    "cannot infer"; TR-T027, a match that misses a case).
+
+### Changed (breaking)
+
+-   **`enum` and `match` are keywords** (they were reserved, so no
+    program used them).
+-   **`.` is a token**, so `x.y` is member access instead of an invalid
+    character.
+-   **Bytecode format 2.** `.tbc` files built by 0.4.0 must be rebuilt;
+    a 0.5.0 runtime rejects them with a "rebuild" message (TR-R006), and
+    so does a 0.4.0 runtime given a format-2 file.
+-   The help for assigning to an immutable variable now says "declare it
+    with 'let mut' to allow changes".
+
 ## [0.4.0] - 2026-11-13
 
 SDK and runtime editions, bytecode files, and installers (ADR-0011).

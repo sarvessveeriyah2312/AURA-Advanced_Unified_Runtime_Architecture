@@ -13,7 +13,7 @@ A small, statically typed programming language whose whole toolchain
 (lexer, parser, type checker, bytecode compiler, and virtual machine) is
 built to be read, one stage at a time. Written in Go.
 
-**Version 0.4.0** · macOS · Linux · Windows ·
+**Version 0.5.0** · macOS · Linux · Windows ·
 [Website](https://treadlang.vercel.app/) ·
 [Repository](https://github.com/sarvessveeriyah2312/Tread) ·
 [Latest release](https://github.com/sarvessveeriyah2312/Tread/releases/latest)
@@ -76,17 +76,16 @@ The design goals:
 | **Helpful errors** | Every error has a stable code (such as `TR-T001`), an exact line and column, and a pointer to the problem. |
 | **Small and understandable** | A compiler and runtime that one developer can read and extend. |
 
-> **Status: 0.4.0, released 2026-11-13.** A deliberately small language
-> core, tested on Linux, macOS, and Windows. 0.4.0 adds loops (`while`,
-> `for`, `break`, `continue`), compiled `.tbc` bytecode files, and two
-> installable editions: the Tread SDK and the Tread Runtime.
+> **Status: 0.5.0, released 2026-11-13.** A deliberately small language
+> core, tested on Linux, macOS, and Windows. 0.5.0 adds arrays, maps,
+> enums, pattern matching with `match`, and generics.
 > Tread 0.x is experimental, and the language may change between minor
 > versions. Every change is recorded in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Key features
 
-All of the following are implemented in Tread 0.4.0:
+All of the following are implemented in Tread 0.5.0:
 
 -   **Static typing with inference:** `Int`, `Float`, `Bool`, `String`,
     and `Unit`, with no implicit conversions.
@@ -96,6 +95,12 @@ All of the following are implemented in Tread 0.4.0:
     and calls in any order.
 -   **Control flow:** `if`, `else if`, and `else`; `while` and
     `for i in a..b` loops with `break` and `continue`.
+-   **Collections:** `Array<T>` and `Map<K, V>` with value semantics,
+    indexing, and methods such as `push`, `get`, and `keys`.
+-   **Enums and pattern matching:** variants that carry values, and a
+    `match` that the compiler checks covers every case.
+-   **Generics:** generic functions and enums, with types inferred from
+    the arguments, and the built-in `Option<T>`.
 -   **Checked integer arithmetic:** overflow and division by zero are
     reported as errors, not silent wrong answers.
 -   **Strings:** escape sequences, and `${...}` interpolation of any
@@ -152,13 +157,13 @@ Choose one of three methods:
 
 **A Tread release does not need Go or any other software.** Download
 from the
-[v0.4.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.4.0).
+[v0.5.0 release page](https://github.com/sarvessveeriyah2312/Tread/releases/tag/v0.5.0).
 Each platform gets two downloads, plus an installer for the SDK:
 
 | Download | What it is |
 |---|---|
-| `tread-sdk-0.4.0-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
-| `tread-runtime-0.4.0-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
+| `tread-sdk-0.5.0-<platform>` (`.tar.gz`, `.zip` on Windows) | **Tread SDK**: everything to write, check, build and run Tread programs |
+| `tread-runtime-0.5.0-<platform>` | **Tread Runtime**: runs compiled `.tbc` programs only; no compiler |
 | `.msi` (Windows), `.pkg` (macOS), `.deb` / `.rpm` (Linux) | SDK installer |
 | `install.sh`, `install.ps1` | user-level install scripts (no administrator rights) |
 
@@ -207,8 +212,8 @@ the installer again with a newer version. `TREAD_HOME` is optional:
 platform's name):
 
 ``` bash
-ARCHIVE=tread-sdk-0.4.0-macos-arm64.tar.gz
-BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.4.0
+ARCHIVE=tread-sdk-0.5.0-macos-arm64.tar.gz
+BASE=https://github.com/sarvessveeriyah2312/Tread/releases/download/v0.5.0
 curl -fLO "$BASE/$ARCHIVE"
 curl -fLO "$BASE/SHA256SUMS"
 shasum -a 256 -c SHA256SUMS --ignore-missing      # Linux: sha256sum; expect: <archive>: OK
@@ -217,7 +222,7 @@ mv "${ARCHIVE%.tar.gz}" ~/tread-sdk               # any location works
 export PATH="$HOME/tread-sdk/bin:$PATH"           # add this to your shell profile
 ```
 
-On Windows, expand `tread-sdk-0.4.0-windows-x64.zip` and add its `bin`
+On Windows, expand `tread-sdk-0.5.0-windows-x64.zip` and add its `bin`
 folder to your user `PATH`. If you download in a browser on macOS,
 Gatekeeper may block `tread`; after checking the checksum, run
 `xattr -d com.apple.quarantine <path>/bin/tread`.
@@ -250,7 +255,7 @@ This method needs **Go 1.25 or later**; `go.mod` declares `go 1.25.0`.
 Go 1.21 or later can download the required toolchain automatically.
 
 ``` bash
-go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.4.0
+go install github.com/sarvessveeriyah2312/Tread/cmd/tread@v0.5.0
 ```
 
 Go installs `tread` into `$(go env GOBIN)`, or into
@@ -259,7 +264,7 @@ That directory must be on your `PATH`:
 
 ``` bash
 export PATH="$PATH:$(go env GOPATH)/bin"   # add this to your shell profile
-tread version                              # tread 0.4.0
+tread version                              # tread 0.5.0
 ```
 
 ### Method C: Build from source
@@ -271,12 +276,12 @@ dependencies.
 git clone https://github.com/sarvessveeriyah2312/Tread.git
 cd Tread
 go build -o ./bin/tread ./cmd/tread
-./bin/tread version                      # tread 0.4.0
+./bin/tread version                      # tread 0.5.0
 ./bin/tread run examples/hello.tr        # Hello, Tread!
 ```
 
 The source on the `main` branch may be ahead of the latest release. To
-build exactly 0.4.0, run `git checkout v0.4.0` first.
+build exactly 0.5.0, run `git checkout v0.5.0` first.
 
 ## Quick start
 
@@ -285,7 +290,7 @@ build exactly 0.4.0, run `git checkout v0.4.0` first.
 
     ``` text
     $ tread version
-    tread 0.4.0
+    tread 0.5.0
     ```
 
 3.  **Create** a file named `hello.tr`:
@@ -315,7 +320,7 @@ Next, work through the [Language tutorial](#language-tutorial).
 ## Language tutorial
 
 Each lesson is a complete program. Save it as a `.tr` file and run it
-with `tread run`. The output shown is exactly what Tread 0.4.0 prints.
+with `tread run`. The output shown is exactly what Tread 0.5.0 prints.
 
 1.  [Program structure and comments](#1-program-structure-and-comments)
 2.  [Variables and mutability](#2-variables-and-mutability)
@@ -326,8 +331,12 @@ with `tread run`. The output shown is exactly what Tread 0.4.0 prints.
 7.  [Strings and interpolation](#7-strings-and-interpolation)
 8.  [Functions and return values](#8-functions-and-return-values)
 9.  [Recursion](#9-recursion)
-10. [Built-in functions](#10-built-in-functions)
-11. [Putting it together: FizzBuzz](#11-putting-it-together-fizzbuzz)
+10. [Arrays](#10-arrays)
+11. [Maps](#11-maps)
+12. [Enums and pattern matching](#12-enums-and-pattern-matching)
+13. [Generics](#13-generics)
+14. [Built-in functions](#14-built-in-functions)
+15. [Putting it together: FizzBuzz](#15-putting-it-together-fizzbuzz)
 
 ### 1. Program structure and comments
 
@@ -352,7 +361,7 @@ Hello from Tread
     may continue on the next line after an operator such as `+`, or
     inside parentheses.
 -   **`module`:** an optional `module` declaration may appear first. In
-    Tread 0.4.0, a program is a single file and the name has no other
+    Tread 0.5.0, a program is a single file and the name has no other
     effect.
 -   **Order:** functions may appear in any order.
 
@@ -668,7 +677,212 @@ odd 5
 -   A function that returns a value may end with `while true { … }` if
     that loop has no `break` of its own.
 
-### 10. Built-in functions
+### 10. Arrays
+
+An `Array<T>` holds values of one type, in order. Arrays have **value semantics**: assigning one, or passing it to a function, gives an independent copy, so changing one never changes another.
+
+``` tread
+fn main() -> Unit {
+    let mut scores: Array<Int> = [72, 95, 64]
+    scores.push(88)
+    scores[0] = 75
+    print(scores)
+    print(scores.len())
+    print(scores[1])
+
+    let mut total = 0
+    for s in scores {
+        total = total + s
+    }
+    print("total ${total}")
+
+    let saved = scores
+    scores[1] = 0
+    print(saved)
+    print(scores)
+
+    print(scores.contains(64))
+    print(scores.pop())
+    print(scores)
+}
+```
+
+``` text
+[75, 95, 64, 88]
+4
+95
+total 322
+[75, 95, 64, 88]
+[75, 0, 64, 88]
+true
+Option.Some(88)
+[75, 0, 64]
+```
+
+-   `xs[i]` reads an element; indexes start at 0, and an index outside the
+    array stops the program with `TR-R007`.
+-   Changing an array (`xs[i] = v`, `xs.push(v)`, `xs.pop()`) needs a
+    `let mut` variable. Nested elements work too: `grid[r][c] = v`.
+-   Methods: `len()`, `push(value)`, `pop()` (returns an
+    [`Option`](#12-enums-and-pattern-matching)), and `contains(value)`.
+-   An empty array needs its type written down: `let xs: Array<Int> = []`.
+-   Copies are cheap: Tread copies an array only when a shared copy is
+    changed, so a loop that keeps pushing to one array stays fast.
+
+### 11. Maps
+
+A `Map<K, V>` stores values by key. Keys are `Int`, `String`, or `Bool`, and a map remembers the order in which keys were first added.
+
+``` tread
+fn main() -> Unit {
+    let mut ages = ["sam": 31, "ana": 28]
+    ages["bob"] = 40
+    ages["sam"] = 32
+    print(ages)
+    print(ages["ana"])
+
+    for name in ages {
+        print("${name} is ${ages[name]}")
+    }
+
+    print(ages.get("bob"))
+    print(ages.get("zed"))
+    print(ages.remove("bob"))
+    print(ages.keys())
+    print(ages.contains("bob"))
+}
+```
+
+``` text
+["sam": 32, "ana": 28, "bob": 40]
+28
+sam is 32
+ana is 28
+bob is 40
+Option.Some(40)
+Option.None
+Option.Some(40)
+["sam", "ana"]
+false
+```
+
+-   `m[key]` reads a value; a missing key stops the program with
+    `TR-R008`. Use `m.get(key)` to get an `Option` instead.
+-   `m[key] = value` adds or replaces an entry (in a `let mut` variable).
+-   Methods: `len()`, `get(key)`, `contains(key)`, `remove(key)`, and
+    `keys()` (in insertion order). `for key in m` loops over the keys.
+-   An empty map is written `[:]`, with a type annotation:
+    `let m: Map<String, Int> = [:]`.
+
+### 12. Enums and pattern matching
+
+An `enum` lists the forms a value can take; each variant can carry values. A `match` statement runs the arm whose pattern fits.
+
+``` tread
+enum Shape {
+    Circle(Float)
+    Rect(Float, Float)
+    Empty
+}
+
+fn area(s: Shape) -> Float {
+    match s {
+        Shape.Circle(r) => { return 3.14 * r * r }
+        Shape.Rect(w, h) => { return w * h }
+        Shape.Empty => { return 0.0 }
+    }
+}
+
+fn main() -> Unit {
+    let shapes = [Shape.Circle(1.0), Shape.Rect(2.0, 3.0), Shape.Empty]
+    for s in shapes {
+        print("${s}: ${area(s)}")
+    }
+
+    let code = 404
+    match code {
+        200 => { print("OK") }
+        404 => { print("Not Found") }
+        other => { print("status ${other}") }
+    }
+}
+```
+
+``` text
+Shape.Circle(1.0): 3.14
+Shape.Rect(2.0, 3.0): 6.0
+Shape.Empty: 0.0
+Not Found
+```
+
+Patterns can be a variant with patterns for its values (`Shape.Rect(w, h)`), a literal (`200`, `"yes"`, `true`), a name that binds the whole value (`other`), or `_`, which matches anything without naming it. Arms are tried from top to bottom.
+
+**A `match` must handle every case.** Forgetting one is a compile-time error that names an example:
+
+``` text
+error[TR-T027]: this match does not cover every Light value: Light.Amber is not matched
+  --> mistake.tr:9:11
+   |
+ 9 |     match light {
+   |           ^^^^^
+   = help: add an arm for it, or a '_' arm to match everything else
+```
+
+The built-in `Option<T>` is an enum with two variants, `Option.Some(value)` and `Option.None`. It is what `pop`, `get`, and `remove` return when there may be no value.
+
+### 13. Generics
+
+Type parameters in angle brackets let one function, or one enum, work with any type. Tread works out the types from the arguments, so calls need no extra syntax.
+
+``` tread
+fn first<T>(items: Array<T>) -> Option<T> {
+    if items.len() == 0 {
+        return Option.None
+    }
+    return Option.Some(items[0])
+}
+
+enum Pair<A, B> {
+    Of(A, B)
+}
+
+fn swap<A, B>(p: Pair<A, B>) -> Pair<B, A> {
+    match p {
+        Pair.Of(a, b) => { return Pair.Of(b, a) }
+    }
+}
+
+fn main() -> Unit {
+    print(first([3, 1, 2]))
+    print(first(["x", "y"]))
+    let none: Array<Float> = []
+    print(first(none))
+
+    match first(["tread"]) {
+        Option.Some(name) => { print("hello, ${name}") }
+        Option.None => { print("nobody") }
+    }
+
+    print(swap(Pair.Of(1, "one")))
+}
+```
+
+``` text
+Option.Some(3)
+Option.Some("x")
+Option.None
+hello, tread
+Pair.Of("one", 1)
+```
+
+-   Inside a generic function, a value of type `T` can be stored,
+    passed, returned, compared with `==`, printed, and matched with a
+    name or `_`. It cannot be used with arithmetic, because `T` might
+    not be a number.
+-   Where Tread cannot work out a type, such as `Option.None` on its
+    own, write it down: `let x: Option<Int> = Option.None`.
+
+### 14. Built-in functions
 
 ``` tread
 fn main() -> Unit {
@@ -692,14 +906,16 @@ text
 
 | Function | Description |
 |---|---|
-| `print(value)` | Prints an `Int`, `Float`, `Bool`, or `String`, followed by a newline. |
-| `toString(value)` | Returns the text of an `Int`, `Float`, `Bool`, or `String`. |
+| `print(value)` | Prints any value except `Unit`, followed by a newline. |
+| `toString(value)` | Returns the text of any value except `Unit`. |
 
 A `Float` always prints with a decimal point (`3.0`), using the shortest
-text that reads back as the same value. Built-in names cannot be
+text that reads back as the same value. Collections and enums print as
+you would write them: `[1, 2]`, `["a": 1]`, `[:]`, `Shape.Circle(1.0)`;
+strings inside them are quoted. Built-in names cannot be
 redefined.
 
-### 11. Putting it together: FizzBuzz
+### 15. Putting it together: FizzBuzz
 
 ``` tread
 // FizzBuzz from 1 to 15, using recursion instead of a loop.
@@ -752,7 +968,7 @@ tread <command> [arguments]
 |---|---|---|---|
 | `tread run <file.tr>` | Check, compile, and run a program. It runs only if there are no compile-time errors. | Program output on stdout; errors on stderr | `0`, `1`, `2`, or `3` |
 | `tread check <file.tr>` | Check a program without running it. | Nothing on success; errors on stderr | `0`, `1`, or `2` |
-| `tread version` | Print the version. | `tread 0.4.0` on stdout | `0` |
+| `tread version` | Print the version. | `tread 0.5.0` on stdout | `0` |
 | `tread help` | Print usage. | Usage on stdout | `0` |
 
 Flags: `--version` is the same as `tread version`; `-h` and `--help` are
@@ -815,17 +1031,21 @@ tread check app.tr && tread run app.tr
 | `Bool` | `true` or `false` | `true` |
 | `String` | Unicode text | `"hi ${name}"` |
 | `Unit` | No value: the return type of `main` and of procedures | none |
+| `Array<T>` | An ordered list of `T` values (value semantics) | `[1, 2, 3]`, `[]` |
+| `Map<K, V>` | `K` to `V`, in insertion order; `K` is `Int`, `String` or `Bool` | `["a": 1]`, `[:]` |
+| `Option<T>` | `Option.Some(value)` or `Option.None` | `Option.Some(3)` |
+| enums | Declared with `enum`, optionally generic | `Shape.Circle(1.0)` |
 
 **Operators**, from highest to lowest precedence:
 
 | Precedence | Operators | Operands |
 |---|---|---|
-| 1 | `( )`, function calls | none |
+| 1 | `( )`, calls, indexing `a[i]`, methods `a.len()` | none |
 | 2 | `!`, unary `-` | `Bool`; `Int` or `Float` |
 | 3 | `*` `/` `%` | `Int` or `Float` (`%`: `Int` only) |
 | 4 | `+` `-` | `Int` or `Float`; `+` also joins two `String`s |
 | 5 | `<` `<=` `>` `>=` | `Int` or `Float` |
-| 6 | `==` `!=` | two values of the same type |
+| 6 | `==` `!=` | two values of the same type, except `Unit` (collections and enums compare by contents) |
 | 7 | `&&` | `Bool` |
 | 8 | `\|\|` | `Bool` |
 
@@ -838,10 +1058,10 @@ tread check app.tr && tread run app.tr
 **Keywords:**
 
 -   **In use:** `fn`, `let`, `mut`, `if`, `else`, `return`, `true`,
-    `false`, `module`, and the loop keywords `while`, `for`, `in`,
-    `break`, `continue`.
--   **Reserved for the future**, and not usable as names: `match`,
-    `class`, `interface`, `enum`, `import`, `pub`, `async`, `await`.
+    `false`, `module`, `enum`, `match`, and the loop keywords `while`,
+    `for`, `in`, `break`, `continue`.
+-   **Reserved for the future**, and not usable as names: `class`,
+    `interface`, `import`, `pub`, `async`, `await`.
 
 **Names** use ASCII letters, digits, and `_`, and must not start with a
 digit. The type names (`Int`, `String`, …) are not keywords.
@@ -886,7 +1106,7 @@ error[TR-T004]: cannot assign twice to immutable variable 'limit'
    |
  4 |     limit = 6
    |     ^^^^^^^^^
-   = help: declare it with 'let mut' to allow assignment
+   = help: declare it with 'let mut' to allow changes
    = note: variable declared here (mistakes.tr:3:9)
 ```
 
@@ -972,13 +1192,14 @@ problem:
 
 ## Current limitations
 
-Tread 0.4.0 is intentionally small.
+Tread 0.5.0 is intentionally small.
 
 **Not yet in the language:**
 
--   `for` over anything but an `Int` range (there are no collections);
--   arrays, maps, or other collections;
--   structs, classes, enums, generics, or pattern matching;
+-   structs or classes, and methods on your own types;
+-   bounds on type parameters (a generic `T` cannot use arithmetic), and
+    type parameters as map keys;
+-   `match` as an expression (it is a statement, like `if`);
 -   function values or closures;
 -   imports or multi-file programs;
 -   input, file access, or networking (the only output is `print`).
@@ -1007,8 +1228,9 @@ repository:
 | Rename to Tread (`tread`, `.tr`, `TR-` codes) | **Implemented** | Released in 0.3.0. |
 | SDK and Runtime editions, `.tbc` bytecode files, installers | **Implemented** | Released in 0.4.0. |
 | Loops (`while`, `for`, `break`, `continue`) | **Implemented** | Released in 0.4.0. See [Loops](#loops). |
-| Collections (arrays, maps) | Under consideration | |
-| Generics, enums, and pattern matching | Under consideration | |
+| Collections (arrays, maps) | **Implemented** | Released in 0.5.0. See [Arrays](#10-arrays) and [Maps](#11-maps). |
+| Generics, enums, and pattern matching | **Implemented** | Released in 0.5.0. See [Enums](#12-enums-and-pattern-matching) and [Generics](#13-generics). |
+| Structs and user-defined methods | Under consideration | |
 | Imports and multi-file programs | Under consideration | |
 | Structured error handling (`Result`) | Under consideration | |
 | Formatter, test runner, and editor support (LSP) | Under consideration | |
