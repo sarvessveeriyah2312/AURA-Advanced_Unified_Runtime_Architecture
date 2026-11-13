@@ -212,6 +212,8 @@ func init() {
 		collCase("MAKE_STRUCT", setStruct, []bytecode.Instr{ld, in(pValue), pop}, "P { x: 1, y: 2 }\n"),
 		collCase("GET_FIELD", setStruct, []bytecode.Instr{ld, in(bytecode.OpGetField, 1), in(pInt), pop}, "2\n"),
 		collCase("STORE_PATH field", setStruct, []bytecode.Instr{in(bytecode.OpConst, 3), in(bytecode.OpConst, 4), in(bytecode.OpStorePath, 0, 1), ld, in(pValue), pop}, "P { x: 9, y: 2 }\n"),
+		collCase("ASSERT", nil, []bytecode.Instr{in(bytecode.OpConst, 0), in(bytecode.OpConst, 0), in(bytecode.OpEqInt), in(bytecode.OpAssert), pop}, ""),
+		collCase("ASSERT_EQ", setArray, []bytecode.Instr{ld, ld, in(bytecode.OpAssertEq), pop}, ""),
 		func() opCase {
 			// A mut self call: set(mut self) stores 9 into field x.
 			c := collCase("TAKE_PATH+mut self CALL+PUT_PATH", setStruct, []bytecode.Instr{

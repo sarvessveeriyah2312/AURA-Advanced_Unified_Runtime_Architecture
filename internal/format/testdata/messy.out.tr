@@ -1,0 +1,58 @@
+// header comment
+module demo
+
+import lib.a
+import lib.b
+
+struct Point { x: Int, y: Int }
+
+struct Big {
+    pub x: Int // the x
+    y: Int
+
+    // about z
+    z: Array<Int>
+}
+
+enum E { A, B(Int, String) }
+
+impl Point {
+    fn len(self) -> Int { return self.x * self.x + self.y }
+
+    fn mv(mut self, d: Int) -> Unit {
+        self.x = self.x + d // move
+
+        self.y = -self.y
+    }
+}
+
+fn main() -> Unit {
+    let xs = [
+        1,
+        2,
+        3
+    ]
+    let m = ["a": 1, "b": 2]
+    let p = Point { x: 1, y: 2 }
+    if p.x > 0 && !false { print("pos") } else if p.x < 0 { print("neg") } else {
+        print("zero")
+    }
+    for i in 0..10 {
+        if i % 2 == 0 { continue }
+    }
+    match E.A {
+        E.A => { print(1) }
+        E.B(n, _) => { print(n) } // b
+    }
+    f(
+        1,
+        // second
+        2
+    )
+    while true { break }
+    let s = "a\tb ${1+2}"
+}
+
+test "x" { assert(true) }
+
+// trailing comment

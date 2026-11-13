@@ -371,6 +371,8 @@ func TestEveryOpcodeIsEmitted(t *testing.T) {
 		// ADR-0014 instructions.
 		"struct P {\n    x: Int\n}\nimpl P {\n    fn inc(mut self) -> Unit {\n        self.x = self.x + 1\n    }\n}\nfn mk() -> P {\n    return P { x: 1 }\n}\n" +
 			mainOf("let mut p = P { x: 1 }\np.inc()\nprint(mk().x)"),
+		// ADR-0015 instructions.
+		mainOf("assert(true)\nassertEqual(1, 1)"),
 	}
 	seen := map[bytecode.Opcode]bool{}
 	for _, src := range programs {
@@ -386,8 +388,8 @@ func TestEveryOpcodeIsEmitted(t *testing.T) {
 			t.Errorf("opcode %s is never emitted", op)
 		}
 	}
-	if len(bytecode.AllOpcodes()) != 70 {
-		t.Errorf("instruction set has %d opcodes, docs/05 §5.3 specifies 70", len(bytecode.AllOpcodes()))
+	if len(bytecode.AllOpcodes()) != 72 {
+		t.Errorf("instruction set has %d opcodes, docs/05 §5.3 specifies 72", len(bytecode.AllOpcodes()))
 	}
 }
 

@@ -122,6 +122,16 @@ type Module struct {
 	Enums []EnumInfo
 	// Structs describes every struct type (ADR-0014).
 	Structs []StructInfo
+	// Tests lists the test functions of a module compiled for `tread
+	// test` (ADR-0015). It exists only in memory: bytecode files never
+	// contain tests.
+	Tests []TestInfo
+}
+
+// TestInfo is one test: its name and the function that runs it.
+type TestInfo struct {
+	Name string
+	Func int
 }
 
 // MaxPathDepth bounds the B operand of path instructions.

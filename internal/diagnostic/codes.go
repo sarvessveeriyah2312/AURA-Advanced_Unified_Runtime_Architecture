@@ -99,6 +99,8 @@ const (
 	// ADR-0013.
 	IndexOutOfRange Code = "TR-R007"
 	KeyNotFound     Code = "TR-R008"
+	// AssertionFailed: assert or assertEqual failed (ADR-0015).
+	AssertionFailed Code = "TR-R009"
 )
 
 // Registry returns every registered code in registry order. The result is
@@ -126,6 +128,7 @@ func Registry() []Code {
 		InternalCompilerError,
 		DivisionByZero, InvalidBytecode, CallDepthExceeded, InstructionLimit,
 		IntegerOverflow, BytecodeLoadError, IndexOutOfRange, KeyNotFound,
+		AssertionFailed,
 	}
 }
 

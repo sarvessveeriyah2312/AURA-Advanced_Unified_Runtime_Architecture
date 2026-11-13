@@ -73,6 +73,7 @@ jobs:
             tread-sdk-$v-macos-x64.tar.gz tread-runtime-$v-macos-x64.tar.gz tread-sdk-$v-macos-x64.pkg \
             tread-sdk-$v-linux-x64.tar.gz tread-runtime-$v-linux-x64.tar.gz tread-sdk-$v-linux-x64.deb tread-sdk-$v-linux-x64.rpm \
             tread-sdk-$v-linux-arm64.tar.gz tread-runtime-$v-linux-arm64.tar.gz tread-sdk-$v-linux-arm64.deb tread-sdk-$v-linux-arm64.rpm \
+            tread-vscode-$v.vsix \
             install.sh install.ps1 SHA256SUMS release-manifest.json; do
             test -f "dist/$f" || { echo "missing dist/$f" >&2; exit 1; }
           done

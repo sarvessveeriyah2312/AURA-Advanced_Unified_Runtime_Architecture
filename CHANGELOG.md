@@ -5,6 +5,41 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 Tread uses [Semantic Versioning](https://semver.org/). Entries for 0.1.0
 and 0.2.0 are kept as written, under the language's name at the time.
 
+## [Unreleased]
+
+Tooling: a formatter, a test runner and editor support (ADR-0015).
+
+### Added
+
+-   **`tread fmt <file.tr>...`** formats files in place in the one Tread
+    style (4-space indentation, standard spacing, at most one blank
+    line in a row), keeping every comment. `tread fmt --check` changes
+    nothing, lists the files that are not formatted and exits 1 if there
+    are any. The formatter checks its own output and never changes what
+    a program means; a comment it cannot place is reported instead of
+    moved.
+-   **Tests.** `test "name" { ... }` blocks next to the code they test,
+    and the built-ins `assert(condition)` and
+    `assertEqual(actual, expected)`. **`tread test <file.tr>...`** runs
+    every test on its own and prints `ok` or `FAIL` for each, with the
+    error, stack trace and printed output of failing tests. `tread run`
+    ignores tests, and a file of only tests needs no `main`. A failed
+    assertion is the new runtime error **TR-R009**.
+-   **`tread lsp`**, a language server for editors: errors as you type
+    (also in imported files, using unsaved changes), hover with types and
+    signatures, go to definition, completion, formatting and an outline.
+-   **A VS Code extension** (`tread-vscode-<version>.vsix` on the release
+    page): syntax highlighting, and the language server features through
+    `tread lsp`.
+
+### Changed (breaking)
+
+-   **`test` is a keyword**, and **`assert` and `assertEqual` are
+    built-in functions**, so programs using these names must rename
+    them.
+-   **Bytecode format 4** (for the two assertion instructions). `.tbc`
+    files built by 0.6.0 must be rebuilt.
+
 ## [0.6.0] - 2026-11-13
 
 Structs, methods and multi-file programs (ADR-0014).

@@ -511,6 +511,27 @@ func (m *machine) collectionOp(fr *frame, in bytecode.Instr) (handled bool, err 
 		default:
 			e = m.invalid("cannot index a %s value", ref.Kind)
 		}
+	case bytecode.OpAssert:
+		var v bytecode.Value
+		if v, e = m.pop(); e == nil {
+			switch {
+			case v.Kind != bytecode.KindBool:
+				e = m.invalid("ASSERT of a %s value", v.Kind)
+			case !v.Bool:
+				e = m.fail(CodeAssertion, "assertion failed")
+			default:
+				m.push(bytecode.UnitValue())
+			}
+		}
+	case bytecode.OpAssertEq:
+		var v []bytecode.Value
+		if v, e = m.popN(2); e == nil {
+			if bytecode.Equal(v[0], v[1]) {
+				m.push(bytecode.UnitValue())
+			} else {
+				e = m.fail(CodeAssertion, "assertEqual failed: %s != %s", quoteValue(m.mod, v[0]), quoteValue(m.mod, v[1]))
+			}
+		}
 	case bytecode.OpPrintValue:
 		var v bytecode.Value
 		if v, e = m.pop(); e == nil {

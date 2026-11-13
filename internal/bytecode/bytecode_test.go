@@ -9,8 +9,8 @@ import (
 
 func TestOpcodeTable(t *testing.T) {
 	ops := AllOpcodes()
-	if len(ops) != 70 {
-		t.Fatalf("%d opcodes, docs/05 §5.3 specifies 70 (46, plus 20 from ADR-0013 and 4 from ADR-0014)", len(ops))
+	if len(ops) != 72 {
+		t.Fatalf("%d opcodes, docs/05 §5.3 specifies 72 (46, plus 20 from ADR-0013, 4 from ADR-0014 and 2 from ADR-0015)", len(ops))
 	}
 	seen := map[string]bool{}
 	for _, op := range ops {

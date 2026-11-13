@@ -480,8 +480,11 @@ func displayType(t Type) string { return t.String() }
 
 // callBuiltin checks print and toString (docs/02 §2.14, ADR-0004 items 7
 // and 13). Both take exactly one value of any type except Unit
-// (ADR-0013).
+// (ADR-0013). assert and assertEqual are checked by callAssert.
 func (c *checker) callBuiltin(e *ast.CallExpr, fn *Function) Type {
+	if fn.Name == "assert" || fn.Name == "assertEqual" {
+		return c.callAssert(e, fn)
+	}
 	types := make([]Type, len(e.Args))
 	for i, a := range e.Args {
 		types[i] = c.expr(a)
@@ -495,6 +498,42 @@ func (c *checker) callBuiltin(e *ast.CallExpr, fn *Function) Type {
 			"'%s' cannot take a value of type Unit; it accepts any other value", fn.Name)
 	}
 	return fn.Result
+}
+
+// callAssert checks assert(cond: Bool) and assertEqual(actual, expected),
+// whose arguments have the same type, any except Unit (ADR-0015).
+func (c *checker) callAssert(e *ast.CallExpr, fn *Function) Type {
+	want := 1
+	if fn.Name == "assertEqual" {
+		want = 2
+	}
+	if len(e.Args) != want {
+		c.errorf(diagnostic.WrongArgumentCount, e.Loc, "'%s' expects exactly %d argument(s) but %d were given", fn.Name, want, len(e.Args))
+		c.checkArgs(e.Args)
+		return Unit
+	}
+	if want == 1 {
+		if t := c.exprWant(e.Args[0], Bool); !compatible(Bool, t) {
+			c.errorf(diagnostic.TypeMismatch, e.Args[0].Span(), "'assert' needs a Bool condition, found %s", t)
+		}
+		return Unit
+	}
+	// The expected value is often the simpler one (Option.None, []), so
+	// a side that needs context is typed from the other.
+	first, second := e.Args[0], e.Args[1]
+	if c.needsContext(first) && !c.needsContext(second) {
+		first, second = second, first
+	}
+	t := c.expr(first)
+	if t == Unit {
+		c.errorf(diagnostic.NotDisplayable, first.Span(), "'assertEqual' cannot compare Unit values")
+		c.expr(second)
+		return Unit
+	}
+	if u := c.exprWant(second, t); !compatible(t, u) {
+		c.errorf(diagnostic.TypeMismatch, e.Args[1].Span(), "'assertEqual' compares two values of the same type, but found %s and %s", c.out.Types[e.Args[0]], c.out.Types[e.Args[1]])
+	}
+	return Unit
 }
 
 // ---------------------------------------------------------------------------

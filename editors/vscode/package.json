@@ -1,0 +1,64 @@
+{
+  "name": "tread",
+  "displayName": "Tread",
+  "description": "Tread language support: syntax highlighting, errors as you type, hover, go to definition, completion and formatting, from the Tread SDK's language server.",
+  "version": "0.7.0",
+  "publisher": "treadlang",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sarvessveeriyah2312/Tread"
+  },
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:tread"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "tread",
+        "aliases": [
+          "Tread",
+          "tread"
+        ],
+        "extensions": [
+          ".tr"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "tread",
+        "scopeName": "source.tread",
+        "path": "./syntaxes/tread.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Tread",
+      "properties": {
+        "tread.path": {
+          "type": "string",
+          "default": "tread",
+          "description": "The tread executable of the Tread SDK (0.7.0 or later). The default finds it on PATH."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[tread]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "9.0.1"
+  }
+}

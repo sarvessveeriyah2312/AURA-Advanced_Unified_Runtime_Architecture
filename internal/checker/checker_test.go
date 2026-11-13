@@ -305,6 +305,12 @@ var checkCases = []checkCase{
 		decls: "import lib\nfn lib() -> Unit { }\n",
 		body:  "print(lib)\nlib.g()\nlet x: lib = 1\nlet y = lib.f",
 		want:  []string{`T005 "lib"`, `T025 "lib"`, `T002 "g"`, `T003 "lib"`, `T018 "lib.f"`}},
+
+	// Tests and assertions (ADR-0015).
+	{id: "K141", decls: "test \"ok\" {\nassert(1 == 1)\nassertEqual([1], [1])\nassertEqual(Option.None, Option.Some(1))\nassertEqual(Option.Some(\"a\"), Option.None)\n}\n"},
+	{id: "K142", decls: "test \"a\" { }\ntest \"a\" { }\ntest \"b\" {\nassert(1)\nassertEqual(1, \"x\")\nassertEqual(1)\nreturn 1\nassertEqual(u(), u())\n}\n",
+		want: []string{`T005 "\"a\""`, `T001 "1"`, `T001 "\"x\""`, `T006 "assertEqual(1)"`, `T009 "return 1"`, `T011 "u()"`}},
+	{id: "K143", decls: "fn assert(x: Int) -> Unit { }\n", want: []string{`T016 "assert"`}},
 }
 
 const pointDecl = "struct Point {\nx: Int\ny: Int\n}\nimpl Point {\nfn origin() -> Point {\nreturn Point { x: 0, y: 0 }\n}\nfn len2(self) -> Int {\nreturn self.x * self.x + self.y * self.y\n}\nfn shift(mut self, d: Int) -> Unit {\nself.x = self.x + d\nself.shift2(d)\n}\nfn shift2(mut self, d: Int) -> Unit {\nself.y = self.y + d\n}\n}\n"

@@ -35,6 +35,11 @@ func Check(prog *ast.Program) (*CheckedProgram, []diagnostic.Diagnostic) {
 // mods[0] is the root file, which holds main. The imports must not form
 // a cycle.
 func CheckModules(mods []SourceModule) (*CheckedProgram, []diagnostic.Diagnostic) {
+	return CheckModulesWith(mods, Options{})
+}
+
+// CheckModulesWith is CheckModules with options.
+func CheckModulesWith(mods []SourceModule, opts Options) (*CheckedProgram, []diagnostic.Diagnostic) {
 	root := mods[0].Program
 	c := &checker{
 		out: &CheckedProgram{
@@ -49,11 +54,13 @@ func CheckModules(mods []SourceModule) (*CheckedProgram, []diagnostic.Diagnostic
 			Exhaustive:  map[*ast.MatchStmt]bool{},
 			Calls:       map[*ast.CallExpr]*Function{},
 			Fields:      map[*ast.MemberExpr]*Field{},
+			TypeNames:   map[*ast.TypeName]Type{},
 		},
 		file: root.Loc.File,
 	}
 	c.universe = newScope(nil)
-	for _, b := range []*Function{{Name: "print", Result: Unit}, {Name: "toString", Result: String}} {
+	for _, b := range []*Function{{Name: "print", Result: Unit}, {Name: "toString", Result: String},
+		{Name: "assert", Result: Unit}, {Name: "assertEqual", Result: Unit}} { // ADR-0015
 		c.universe.names[b.Name] = &Symbol{Name: b.Name, Kind: BuiltinSymbol, Func: b}
 	}
 	option := newOption()
@@ -84,9 +91,26 @@ func CheckModules(mods []SourceModule) (*CheckedProgram, []diagnostic.Diagnostic
 		c.collectSignatures(m.prog)
 		c.collectImpls(m.prog)
 	}
+	var tests []*Function
+	for _, m := range infos {
+		c.enter(m)
+		for _, fn := range c.collectTests(m.prog) {
+			tests = append(tests, fn)
+			if m.root {
+				c.out.Tests = append(c.out.Tests, fn)
+			}
+		}
+	}
 	c.enter(infos[0])
-	c.validateMain()
+	if !opts.Tests {
+		c.validateMain()
+	} else if sym := c.module.names["main"]; sym != nil && sym.Kind == FuncSymbol && len(sym.Func.Params) == 0 && sym.Func.Result == Unit && len(sym.Func.TypeParams) == 0 {
+		c.out.Main = sym.Func
+	}
 	for _, fn := range c.out.Functions {
+		c.checkFunction(fn)
+	}
+	for _, fn := range tests {
 		c.checkFunction(fn)
 	}
 	sort.SliceStable(c.diags, func(i, j int) bool {
@@ -251,6 +275,12 @@ func (c *checker) resolveType(tn *ast.TypeName) Type {
 	if tn == nil {
 		return Invalid // parser already reported
 	}
+	t := c.resolveTypeName(tn)
+	c.out.TypeNames[tn] = t
+	return t
+}
+
+func (c *checker) resolveTypeName(tn *ast.TypeName) Type {
 	args := make([]Type, len(tn.Args))
 	for i, a := range tn.Args {
 		args[i] = c.resolveType(a)
@@ -391,7 +421,7 @@ func (c *checker) collectTypes(prog *ast.Program) {
 				continue
 			}
 			seen[v.Name.Name] = v
-			variant := &Variant{Enum: e, Name: v.Name.Name, Index: len(e.Variants)}
+			variant := &Variant{Enum: e, Name: v.Name.Name, Index: len(e.Variants), Decl: v.Name.Loc}
 			for _, f := range v.Fields {
 				t := c.resolveType(f)
 				if t == Unit {
@@ -571,6 +601,28 @@ func (c *checker) collectImpls(prog *ast.Program) {
 			c.out.Functions = append(c.out.Functions, fn)
 		}
 	}
+}
+
+// collectTests creates a Unit function without parameters for every test
+// block of the current module (ADR-0015). Names must be unique in a file.
+func (c *checker) collectTests(prog *ast.Program) []*Function {
+	var out []*Function
+	seen := map[string]*ast.TestDecl{}
+	for _, td := range prog.Tests {
+		if td == nil || td.Name == nil || td.Body == nil {
+			continue
+		}
+		if prev := seen[td.Name.Value]; prev != nil {
+			c.diags = append(c.diags, diagnostic.Errorf(diagnostic.DuplicateDeclaration, td.Name.Loc,
+				"test %q is already declared in this file", td.Name.Value).
+				WithRelated(prev.Name.Loc, "previous declaration is here"))
+			continue
+		}
+		seen[td.Name.Value] = td
+		decl := &ast.FuncDecl{Name: &ast.Ident{Name: td.Name.Value, Loc: td.Name.Loc}, Body: td.Body, Loc: td.Loc}
+		out = append(out, &Function{Name: td.Name.Value, Decl: decl, Result: Unit, Module: c.cur.name, Test: true, mod: c.cur})
+	}
+	return out
 }
 
 // validateMain enforces ADR-0004 item 8.

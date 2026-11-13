@@ -1,0 +1,16 @@
+ok    adds small numbers
+ok    compares structs
+FAIL  wrong expectation
+      about to compare
+      error[TR-R009]: assertEqual failed: 4 != 5 (in function 'test "wrong expectation"')
+         --> tests.tr:31:5
+          |
+       31 |     assertEqual(add(2, 2), 5)
+          |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+FAIL  fails in a callee
+      error[TR-R001]: division by zero (in function 'test "fails in a callee"')
+         --> tests.tr:35:17
+          |
+       35 |     assert(half(10 / 0) == 0)
+          |                 ^^^^^^
+4 tests: 2 passed, 2 failed

@@ -42,6 +42,7 @@ const (
 	Impl
 	Pub
 	Import
+	Test // ADR-0015
 	keywordEnd
 
 	Plus    // +
@@ -83,7 +84,7 @@ var names = map[Kind]string{
 	True: "true", False: "false", Return: "return",
 	While: "while", For: "for", In: "in", Break: "break", Continue: "continue",
 	Enum: "enum", Match: "match",
-	Struct: "struct", Impl: "impl", Pub: "pub", Import: "import",
+	Struct: "struct", Impl: "impl", Pub: "pub", Import: "import", Test: "test",
 	Plus: "+", Minus: "-", Star: "*", Slash: "/", Percent: "%",
 	Eq: "==", Ne: "!=", Lt: "<", Le: "<=", Gt: ">", Ge: ">=",
 	AndAnd: "&&", OrOr: "||", Not: "!", Assign: "=", Arrow: "->",
@@ -109,6 +110,7 @@ var keywords = map[string]Kind{
 	"while": While, "for": For, "in": In, "break": Break, "continue": Continue,
 	"enum": Enum, "match": Match,
 	"struct": Struct, "impl": Impl, "pub": Pub, "import": Import,
+	"test": Test,
 }
 
 var reserved = map[string]bool{

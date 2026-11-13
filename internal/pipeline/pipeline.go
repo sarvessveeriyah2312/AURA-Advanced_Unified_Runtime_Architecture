@@ -16,6 +16,7 @@ import (
 	"github.com/sarvessveeriyah2312/Tread/internal/checker"
 	"github.com/sarvessveeriyah2312/Tread/internal/compiler"
 	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
+	"github.com/sarvessveeriyah2312/Tread/internal/format"
 	"github.com/sarvessveeriyah2312/Tread/internal/lexer"
 	"github.com/sarvessveeriyah2312/Tread/internal/parser"
 	"github.com/sarvessveeriyah2312/Tread/internal/source"
@@ -50,9 +51,33 @@ func (c Compiler) Compile(file *source.File) (*bytecode.Module, source.Set, []di
 	return m, files, diags
 }
 
+// CompileTests compiles a program for `tread test` (ADR-0015): main is
+// not required, and the module lists the root file's tests. A program
+// with no tests and no main returns a nil module and no diagnostics.
+func (c Compiler) CompileTests(file *source.File) (*bytecode.Module, source.Set, []diagnostic.Diagnostic) {
+	checked, files, diags := c.analyze(file, checker.Options{Tests: true})
+	if len(diags) > 0 {
+		return nil, files, diags
+	}
+	if len(checked.Tests) == 0 {
+		return nil, files, nil
+	}
+	m, diags := compiler.CompileTests(checked)
+	return m, files, diags
+}
+
+// Format formats one file (ADR-0015). See format.File.
+func (Compiler) Format(file *source.File) ([]byte, []diagnostic.Diagnostic, error) {
+	return format.File(file)
+}
+
 // Analyze loads, lexes, parses and checks the program whose root file is
 // file. Syntax and loading errors stop it before checking.
 func (c Compiler) Analyze(file *source.File) (*checker.CheckedProgram, source.Set, []diagnostic.Diagnostic) {
+	return c.analyze(file, checker.Options{})
+}
+
+func (c Compiler) analyze(file *source.File, opts checker.Options) (*checker.CheckedProgram, source.Set, []diagnostic.Diagnostic) {
 	l := &loader{load: c.Load, root: file, index: map[string]int{"": 0}}
 	if l.load == nil {
 		l.load = diskLoader(file.Name())
@@ -63,11 +88,42 @@ func (c Compiler) Analyze(file *source.File) (*checker.CheckedProgram, source.Se
 		sortDiags(l.diags)
 		return nil, l.files, l.diags
 	}
-	checked, diags := checker.CheckModules(l.mods)
+	checked, diags := checker.CheckModulesWith(l.mods, opts)
 	if len(diags) > 0 {
 		return nil, l.files, diags
 	}
 	return checked, l.files, nil
+}
+
+// Inspect analyzes a program for the language server (ADR-0015): it
+// returns the checked program even when the checker reported errors
+// (nil only for syntax or loading errors), every loaded file, and the
+// diagnostics.
+func (c Compiler) Inspect(file *source.File) (*checker.CheckedProgram, source.Set, []diagnostic.Diagnostic) {
+	l := &loader{load: c.Load, root: file, index: map[string]int{"": 0}}
+	if l.load == nil {
+		l.load = diskLoader(file.Name())
+	}
+	l.add(file, "")
+	l.visit(0)
+	if len(l.diags) > 0 {
+		sortDiags(l.diags)
+		return nil, l.files, l.diags
+	}
+	checked, diags := checker.CheckModulesWith(l.mods, checker.Options{Tests: !hasMain(l.mods[0].Program)})
+	return checked, l.files, diags
+}
+
+// hasMain reports whether a file declares a function named main. A file
+// without one is checked as a library of tests, so the editor does not
+// report a missing main in every imported file.
+func hasMain(prog *ast.Program) bool {
+	for _, f := range prog.Funcs {
+		if f != nil && f.Name != nil && f.Name.Name == "main" {
+			return true
+		}
+	}
+	return false
 }
 
 // Analyze checks a single-file program with the default loader.

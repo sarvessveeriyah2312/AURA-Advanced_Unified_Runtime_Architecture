@@ -173,7 +173,7 @@ func isStatementKeyword(k token.Kind) bool {
 // (ADR-0014): struct, impl, import or pub.
 func isDeclKeyword(k token.Kind) bool {
 	switch k {
-	case token.Struct, token.Impl, token.Import, token.Pub:
+	case token.Struct, token.Impl, token.Import, token.Pub, token.Test:
 		return true
 	}
 	return false
@@ -212,7 +212,7 @@ func (p *parser) syncTop() {
 	for {
 		switch p.toks[p.pos].Kind {
 		case token.EOF, token.Fn, token.Module, token.Enum,
-			token.Struct, token.Impl, token.Import, token.Pub:
+			token.Struct, token.Impl, token.Import, token.Pub, token.Test:
 			return
 		}
 		p.pos++
@@ -249,7 +249,7 @@ func (p *parser) syncStatement() {
 			braces--
 		case token.Let, token.Fn, token.If, token.Return, token.Module,
 			token.While, token.For, token.Break, token.Continue, token.Match, token.Enum,
-			token.Struct, token.Impl, token.Import, token.Pub:
+			token.Struct, token.Impl, token.Import, token.Pub, token.Test:
 			if depth > 0 {
 				return
 			}
@@ -328,6 +328,11 @@ func (p *parser) parseProgram() *ast.Program {
 			sawFn = true
 			if id := p.parseImpl(); id != nil {
 				prog.Impls = append(prog.Impls, id)
+			}
+		case token.Test:
+			sawFn = true
+			if td := p.parseTest(); td != nil {
+				prog.Tests = append(prog.Tests, td)
 			}
 		default:
 			p.errorf(diagnostic.UnexpectedToken, t.Span,
@@ -547,6 +552,30 @@ func (p *parser) parseEnum() *ast.EnumDecl {
 	}
 }
 
+// parseTest parses `test "name" { body }` (ADR-0015). The name is a
+// plain string literal.
+func (p *parser) parseTest() *ast.TestDecl {
+	kw := p.next()
+	t := p.cur()
+	if t.Kind != token.String {
+		if t.Kind == token.TemplateHead {
+			p.errorf(diagnostic.UnexpectedToken, t.Span, "a test name must be a plain string, without ${...}")
+		} else {
+			p.errorf(diagnostic.UnexpectedToken, t.Span, "expected the test's name as a string after 'test', found %s", describe(t))
+		}
+		return nil
+	}
+	p.next()
+	td := &ast.TestDecl{Name: &ast.StringLit{Value: t.Value, Loc: t.Span}, Loc: source.Join(kw.Span, t.Span)}
+	body := p.expectBlock("test name")
+	if body == nil {
+		return nil
+	}
+	td.Body = body
+	td.Loc = source.Join(kw.Span, body.Loc)
+	return td
+}
+
 // parseImport parses `import a.b.c` (ADR-0014).
 func (p *parser) parseImport() *ast.ImportDecl {
 	kw := p.next()
@@ -715,7 +744,7 @@ func (p *parser) syncImpl() {
 	depth := 0
 	for {
 		switch p.toks[p.pos].Kind {
-		case token.EOF, token.Struct, token.Impl, token.Enum, token.Import, token.Module:
+		case token.EOF, token.Struct, token.Impl, token.Enum, token.Import, token.Module, token.Test:
 			return
 		case token.Fn, token.Pub:
 			if depth == 0 {
@@ -1024,7 +1053,7 @@ func (p *parser) parseStatement() ast.Stmt {
 			return s
 		}
 		return nil
-	case token.Fn, token.Module, token.Enum, token.Struct, token.Impl, token.Import, token.Pub:
+	case token.Fn, token.Module, token.Enum, token.Struct, token.Impl, token.Import, token.Pub, token.Test:
 		p.errorf(diagnostic.UnexpectedToken, t.Span, "'%s' declarations are only allowed at top level", t.Lexeme)
 		return nil
 	}
@@ -1259,7 +1288,7 @@ func (p *parser) scanToBrace() bool {
 			return true
 		case token.RBrace, token.EOF, token.Let, token.Fn, token.If, token.Return, token.Module, token.Else,
 			token.While, token.For, token.Break, token.Continue, token.Match, token.Enum,
-			token.Struct, token.Impl, token.Import, token.Pub:
+			token.Struct, token.Impl, token.Import, token.Pub, token.Test:
 			return false
 		}
 		p.pos++
@@ -1516,7 +1545,7 @@ func (p *parser) skipToBrace() {
 				return
 			}
 			depth--
-		case token.Fn, token.Struct, token.Impl, token.Enum, token.Import, token.Pub:
+		case token.Fn, token.Struct, token.Impl, token.Enum, token.Import, token.Pub, token.Test:
 			return
 		}
 		p.pos++

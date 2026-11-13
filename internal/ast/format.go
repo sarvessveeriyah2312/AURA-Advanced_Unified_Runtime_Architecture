@@ -44,6 +44,16 @@ func format(b *strings.Builder, n Node) {
 			b.WriteByte(' ')
 			format(b, f)
 		}
+		for _, t := range n.Tests {
+			b.WriteByte(' ')
+			format(b, t)
+		}
+		b.WriteByte(')')
+	case *TestDecl:
+		b.WriteString("(test ")
+		format(b, n.Name)
+		b.WriteByte(' ')
+		formatBlock(b, n.Body)
 		b.WriteByte(')')
 	case *ModuleDecl:
 		fmt.Fprintf(b, "(module %s)", identName(n.Name))

@@ -20,6 +20,7 @@ func TestManifest(t *testing.T) {
 		"tread-sdk-1.2.3-macos-arm64.pkg":     "c",
 		"tread-sdk-1.2.3-linux-arm64.deb":     "d",
 		"install.sh":                          "e",
+		"tread-vscode-1.2.3.vsix":             "f",
 		"BUILD-INFO.txt":                      "ignored",
 	}
 	for n, c := range files {
@@ -36,7 +37,7 @@ func TestManifest(t *testing.T) {
 	if err := json.Unmarshal(data, &m); err != nil {
 		t.Fatal(err)
 	}
-	if m.Version != "1.2.3" || m.BytecodeFormat != bytecode.FormatVersion || len(m.Artifacts) != 5 || m.ReleaseURL != Repository+"/releases/tag/v1.2.3" {
+	if m.Version != "1.2.3" || m.BytecodeFormat != bytecode.FormatVersion || len(m.Artifacts) != 6 || m.ReleaseURL != Repository+"/releases/tag/v1.2.3" {
 		t.Fatalf("manifest %+v", m)
 	}
 	sum := sha256.Sum256([]byte("a"))
@@ -52,7 +53,7 @@ func TestManifest(t *testing.T) {
 	}
 	sums, _ := os.ReadFile(filepath.Join(dir, "SHA256SUMS"))
 	lines := strings.Split(strings.TrimSpace(string(sums)), "\n")
-	if len(lines) != 5 || !strings.HasSuffix(lines[0], "  install.sh") {
+	if len(lines) != 6 || !strings.HasSuffix(lines[0], "  install.sh") {
 		t.Errorf("SHA256SUMS:\n%s", sums)
 	}
 	// Re-running (with the generated files present) is stable.
@@ -66,7 +67,7 @@ func TestManifest(t *testing.T) {
 }
 
 func TestManifestRejectsStrayFiles(t *testing.T) {
-	for _, name := range []string{"notes.txt", "tread-sdk-9.9.9-linux-x64.tar.gz", "tread-sdk-1.2.3-plan9-x64.tar.gz", "tread-sdk-1.2.3-linux-x64.zip", "tread-sdk-1.2.3-windows-x64.tar.gz"} {
+	for _, name := range []string{"notes.txt", "tread-vscode-9.9.9.vsix", "tread-sdk-9.9.9-linux-x64.tar.gz", "tread-sdk-1.2.3-plan9-x64.tar.gz", "tread-sdk-1.2.3-linux-x64.zip", "tread-sdk-1.2.3-windows-x64.tar.gz"} {
 		dir := t.TempDir()
 		os.WriteFile(filepath.Join(dir, name), []byte("x"), 0o644)
 		if err := run([]string{"-version", "1.2.3", dir}); err == nil {

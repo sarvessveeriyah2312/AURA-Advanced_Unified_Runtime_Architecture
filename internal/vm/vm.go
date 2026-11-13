@@ -22,6 +22,7 @@ const (
 	CodeIntegerOverflow  = "TR-R005"
 	CodeIndexOutOfRange  = "TR-R007" // ADR-0013
 	CodeKeyNotFound      = "TR-R008" // ADR-0013
+	CodeAssertion        = "TR-R009" // ADR-0015
 )
 
 // Error is a structured runtime error. HasSpan is false for errors found

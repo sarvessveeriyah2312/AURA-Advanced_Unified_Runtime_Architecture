@@ -20,3 +20,6 @@ CLAUDE.md
 .claude/
 .agents/
 skills-lock.json
+
+# VS Code extension dependencies (ADR-0015)
+/editors/vscode/node_modules/

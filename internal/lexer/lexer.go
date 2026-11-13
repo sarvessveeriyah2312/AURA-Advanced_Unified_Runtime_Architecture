@@ -14,12 +14,27 @@ import (
 // EOF token. Lexical errors are returned as diagnostics; Lex never panics
 // on user input and always makes progress (docs/03 §3.3).
 func Lex(file *source.File) ([]token.Token, []diagnostic.Diagnostic) {
+	toks, _, diags := LexComments(file)
+	return toks, diags
+}
+
+// Comment is a comment in the source (ADR-0015). Comments are not tokens;
+// the formatter and the language server read them separately.
+type Comment struct {
+	Span  source.Span
+	Text  string // the comment exactly as written, with // or /* */
+	Block bool   // a /* */ comment
+}
+
+// LexComments is Lex that also returns every comment, in source order.
+// The tokens and diagnostics are exactly those of Lex.
+func LexComments(file *source.File) ([]token.Token, []Comment, []diagnostic.Diagnostic) {
 	l := &lexer{file: file, src: file.Content()}
 	if file.HasBOM() {
 		l.pos = 3 // ADR-0003 L1: one leading BOM is stripped.
 	}
 	l.run()
-	return l.toks, l.diags
+	return l.toks, l.comments, l.diags
 }
 
 // frame is one open string literal on the mode stack.
@@ -30,11 +45,12 @@ type frame struct {
 }
 
 type lexer struct {
-	file  *source.File
-	src   []byte
-	pos   int
-	toks  []token.Token
-	diags []diagnostic.Diagnostic
+	file     *source.File
+	src      []byte
+	pos      int
+	toks     []token.Token
+	comments []Comment
+	diags    []diagnostic.Diagnostic
 	// stack holds open string literals. Whenever control is in run(), the
 	// top frame (if any) is inside an interpolation.
 	stack []frame
@@ -132,10 +148,12 @@ func (l *lexer) abandonInterpolation() {
 }
 
 func (l *lexer) lineComment() {
+	start := l.pos
 	reported := false
 	for l.pos < len(l.src) && l.src[l.pos] != '\n' && l.src[l.pos] != '\r' {
 		reported = l.skipCommentRune(reported)
 	}
+	l.comments = append(l.comments, Comment{Span: l.span(start, l.pos), Text: string(l.src[start:l.pos])})
 }
 
 func (l *lexer) blockComment() {
@@ -152,6 +170,7 @@ func (l *lexer) blockComment() {
 		switch {
 		case c == '*' && l.peekByte(1) == '/':
 			l.pos += 2
+			l.comments = append(l.comments, Comment{Span: l.span(start, l.pos), Text: string(l.src[start:l.pos]), Block: true})
 			return
 		case c == '\n' || c == '\r':
 			// ADR-0003 L3: one NEWLINE per terminator inside the comment.

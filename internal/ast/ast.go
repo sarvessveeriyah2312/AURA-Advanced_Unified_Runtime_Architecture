@@ -39,6 +39,7 @@ type Program struct {
 	Enums   []*EnumDecl   // ADR-0013
 	Structs []*StructDecl // ADR-0014
 	Impls   []*ImplDecl   // ADR-0014
+	Tests   []*TestDecl   // ADR-0015
 	Loc     source.Span
 }
 
@@ -89,6 +90,13 @@ type FieldDecl struct {
 	Pub  bool
 	Name *Ident
 	Type *TypeName
+	Loc  source.Span
+}
+
+// TestDecl is `test "name" { body }` (ADR-0015).
+type TestDecl struct {
+	Name *StringLit
+	Body *Block
 	Loc  source.Span
 }
 
@@ -439,6 +447,7 @@ func (n *StructDecl) Span() source.Span   { return n.Loc }
 func (n *FieldDecl) Span() source.Span    { return n.Loc }
 func (n *ImplDecl) Span() source.Span     { return n.Loc }
 func (n *StructLit) Span() source.Span    { return n.Loc }
+func (n *TestDecl) Span() source.Span     { return n.Loc }
 
 func (*StructLit) exprNode() {}
 

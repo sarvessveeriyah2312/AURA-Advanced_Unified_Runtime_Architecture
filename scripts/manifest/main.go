@@ -73,6 +73,8 @@ func classify(name, version string) (Artifact, error) {
 		return Artifact{File: name, Platform: "unix", Kind: "script"}, nil
 	case "install.ps1":
 		return Artifact{File: name, Platform: "windows", Kind: "script"}, nil
+	case "tread-vscode-" + version + ".vsix": // ADR-0015
+		return Artifact{File: name, Platform: "any", Kind: "vscode-extension"}, nil
 	}
 	re := regexp.MustCompile(`^tread-(sdk|runtime)-` + regexp.QuoteMeta(version) + `-([a-z]+-[a-z0-9]+)\.(tar\.gz|zip|deb|rpm|pkg|msi)$`)
 	m := re.FindStringSubmatch(name)

@@ -16,6 +16,17 @@ import (
 // side tables. A violated checked-program invariant is reported as
 // TR-C001 and no module is returned; Compile never panics.
 func Compile(cp *checker.CheckedProgram) (*bytecode.Module, []diagnostic.Diagnostic) {
+	return compile(cp, false)
+}
+
+// CompileTests compiles a program for `tread test` (ADR-0015): the module
+// also holds the root file's tests, listed in Module.Tests. The program
+// needs a main or at least one test.
+func CompileTests(cp *checker.CheckedProgram) (*bytecode.Module, []diagnostic.Diagnostic) {
+	return compile(cp, true)
+}
+
+func compile(cp *checker.CheckedProgram, tests bool) (*bytecode.Module, []diagnostic.Diagnostic) {
 	c := &compiler{
 		cp:        cp,
 		mod:       &bytecode.Module{},
@@ -26,11 +37,15 @@ func Compile(cp *checker.CheckedProgram) (*bytecode.Module, []diagnostic.Diagnos
 		c.internal(source.Span{}, "no checked program")
 		return nil, c.diags
 	}
-	if cp.Main == nil {
+	if cp.Main == nil && (!tests || len(cp.Tests) == 0) {
 		c.internal(cp.Program.Loc, "checked program has no valid main function")
 		return nil, c.diags
 	}
-	for i, fn := range cp.Functions {
+	funcs := cp.Functions
+	if tests {
+		funcs = append(append([]*checker.Function(nil), funcs...), cp.Tests...)
+	}
+	for i, fn := range funcs {
 		c.funcIndex[fn] = i
 	}
 	for _, s := range cp.Structs {
@@ -47,10 +62,19 @@ func Compile(cp *checker.CheckedProgram) (*bytecode.Module, []diagnostic.Diagnos
 		}
 		c.mod.Enums = append(c.mod.Enums, info)
 	}
-	for _, fn := range cp.Functions {
+	for _, fn := range funcs {
 		c.mod.Functions = append(c.mod.Functions, c.function(fn))
 	}
-	c.mod.Main = c.funcIndex[cp.Main]
+	if tests {
+		for _, fn := range cp.Tests {
+			c.mod.Tests = append(c.mod.Tests, bytecode.TestInfo{Name: fn.Name, Func: c.funcIndex[fn]})
+		}
+	}
+	if cp.Main != nil {
+		c.mod.Main = c.funcIndex[cp.Main]
+	} else {
+		c.mod.Main = c.mod.Tests[0].Func
+	}
 	if len(c.diags) > 0 {
 		return nil, c.diags
 	}
@@ -641,8 +665,21 @@ func (c *compiler) call(e *ast.CallExpr) {
 	c.emit(bytecode.OpCall, idx, e.Loc)
 }
 
-// builtin compiles print and toString (ADR-0004 items 10 and 13).
+// builtin compiles print and toString (ADR-0004 items 10 and 13), and
+// assert and assertEqual (ADR-0015).
 func (c *compiler) builtin(e *ast.CallExpr, name string) {
+	switch name {
+	case "assert", "assertEqual":
+		for _, a := range e.Args {
+			c.expr(a)
+		}
+		if name == "assert" {
+			c.emit(bytecode.OpAssert, 0, e.Loc)
+		} else {
+			c.emit(bytecode.OpAssertEq, 0, e.Loc)
+		}
+		return
+	}
 	if len(e.Args) != 1 {
 		c.internal(e.Loc, "built-in %s with %d arguments", name, len(e.Args))
 		return

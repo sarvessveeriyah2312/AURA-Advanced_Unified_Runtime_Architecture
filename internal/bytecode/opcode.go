@@ -97,6 +97,10 @@ const (
 	OpTakePath   // A = slot, B = depth: unshare the path and push its value, unmarked
 	OpPutPath    // A = slot, B = depth >= 0: store a value at the path, unmarked
 
+	// Tests (ADR-0015).
+	OpAssert   // Bool -> Unit; false is runtime error TR-R009
+	OpAssertEq // actual, expected -> Unit; unequal is TR-R009
+
 	opCount
 )
 
@@ -151,6 +155,7 @@ var opTable = [opCount]opInfo{
 	OpPrintValue: {"PRINT_VALUE", NoOperand}, OpToStringValue: {"TO_STRING_VALUE", NoOperand},
 	OpMakeStruct: {"MAKE_STRUCT", StructOperand}, OpGetField: {"GET_FIELD", FieldOperand},
 	OpTakePath: {"TAKE_PATH", PathOperand}, OpPutPath: {"PUT_PATH", PathOperand},
+	OpAssert: {"ASSERT", NoOperand}, OpAssertEq: {"ASSERT_EQ", NoOperand},
 }
 
 // Valid reports whether o is a defined opcode.

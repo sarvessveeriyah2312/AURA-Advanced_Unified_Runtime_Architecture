@@ -114,6 +114,10 @@ var e2eCases = []e2eCase{
 	{name: "module_errors", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{
 		"error[TR-T034]: function 'secret' is private to module 'lib.geometry'", "error[TR-T002]", "error[TR-T003]: module 'lib.geometry' has no type 'Square'"}},
 	{name: "import_missing", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{"error[TR-T036]: cannot import 'lib.nowhere': lib/nowhere.tr:", "import_missing.tr:1:1"}},
+	// ADR-0015: tests.
+	{name: "tests", cmd: "test", exit: 1, stdout: nil},
+	{name: "tests", cmd: "run", exit: 0, stdout: str("5\n")},
+	{name: "structs", cmd: "test", exit: 0, stdout: str("no tests in structs.tr\n")},
 	{name: "import_cycle", cmd: "run", exit: 1, stdout: str(""), stderrs: []string{"error[TR-T035]: import cycle: lib.cycle_a imports lib.cycle_b imports lib.cycle_a", "--> lib/cycle_b.tr:1:1"}},
 }
 
@@ -122,6 +126,7 @@ func TestEndToEnd(t *testing.T) {
 		t.Run(tc.name+"/"+tc.cmd, func(t *testing.T) {
 			path := filepath.Join(fixtures, tc.name+".tr")
 			stdout, stderr, code := invoke(tc.cmd, path)
+			stdout = strings.ReplaceAll(stdout, path, tc.name+".tr") // test failures render errors
 			stderr = strings.ReplaceAll(stderr, path, tc.name+".tr")
 			// Imported modules are named relative to the fixtures (ADR-0014).
 			stderr = strings.ReplaceAll(stderr, filepath.Join(fixtures, "lib")+string(filepath.Separator), "lib/")

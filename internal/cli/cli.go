@@ -46,6 +46,18 @@ type Compiler interface {
 	Check(file *source.File) (source.Set, []diagnostic.Diagnostic)
 	// Compile checks a program and compiles it to a validated module.
 	Compile(file *source.File) (*bytecode.Module, source.Set, []diagnostic.Diagnostic)
+	// CompileTests compiles a program with its tests (ADR-0015). The
+	// module is nil, without diagnostics, when the file has no tests.
+	CompileTests(file *source.File) (*bytecode.Module, source.Set, []diagnostic.Diagnostic)
+	// Format formats one file: the formatted text, its syntax errors, or
+	// an error when it cannot be formatted safely (ADR-0015).
+	Format(file *source.File) ([]byte, []diagnostic.Diagnostic, error)
+}
+
+// LanguageServer is implemented by an SDK compiler that can serve the
+// Language Server Protocol (ADR-0015).
+type LanguageServer interface {
+	ServeLSP(in io.Reader, out io.Writer) error
 }
 
 const sdkUsage = `Usage: tread <command> [arguments]
@@ -53,6 +65,9 @@ const sdkUsage = `Usage: tread <command> [arguments]
 Commands:
   new <name>                       Create a new project in the directory <name>
   check <file.tr>                  Check a program for errors without running it
+  fmt [--check] <file.tr>...       Format files in place (--check: list unformatted files)
+  test <file.tr>...                Run the tests in files
+  lsp                              Start the language server (used by editors)
   build <file.tr> [-o <file.tbc>]  Compile a program to a bytecode file
   run <file.tr|file.tbc>           Run a program from source or bytecode
   doctor                           Diagnose the Tread installation
@@ -173,6 +188,20 @@ func Run(compiler Compiler, args []string, stdout, stderr io.Writer) int {
 			return t.needSDK(cmd)
 		}
 		return t.build(rest)
+	case "fmt", "test", "lsp":
+		if !t.sdk() {
+			return t.needSDK(cmd)
+		}
+		switch cmd {
+		case "fmt":
+			return t.format(rest)
+		case "test":
+			return t.test(rest)
+		}
+		if len(rest) > 0 {
+			return t.usageError("lsp takes no arguments")
+		}
+		return t.lsp()
 	case "run":
 		if len(rest) != 1 {
 			return t.usageError("%s requires exactly one file argument", cmd)

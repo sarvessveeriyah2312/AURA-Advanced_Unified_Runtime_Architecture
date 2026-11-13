@@ -64,7 +64,7 @@ func (m *Module) stackEffect(in Instr) (pop, push int) {
 	// ADR-0014.
 	case OpMakeStruct:
 		return len(m.Structs[in.A].Fields), 1
-	case OpGetField:
+	case OpGetField, OpAssert:
 		return 1, 1
 	case OpTakePath:
 		return in.B, 1

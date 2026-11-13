@@ -2,6 +2,8 @@ package checker
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -231,6 +233,7 @@ type Variant struct {
 	Name   string
 	Index  int
 	Fields []Type
+	Decl   source.Span // the variant's name; zero for Option's variants
 }
 
 // Lookup returns the variant named name, or nil.
@@ -370,12 +373,17 @@ type Function struct {
 	Struct  *Struct // the struct of an impl function; nil otherwise
 	HasSelf bool    // a method: Params[0] is the receiver
 	SelfMut bool    // the receiver is `mut self`
-	mod     *moduleInfo
+	// Test is set for a `test` block (ADR-0015); Name is its name.
+	Test bool
+	mod  *moduleInfo
 }
 
 // FullName is the function's name in bytecode and stack traces, such as
 // "dist", "Point.shift" or "geometry.Point.shift".
 func (f *Function) FullName() string {
+	if f.Test {
+		return "test " + strconvQuote(f.Name)
+	}
 	name := f.Name
 	if f.Struct != nil {
 		name = f.Struct.Name + "." + name
@@ -457,4 +465,61 @@ type CheckedProgram struct {
 	Calls map[*ast.CallExpr]*Function
 	// Fields maps field accesses to their field.
 	Fields map[*ast.MemberExpr]*Field
+	// Tests are the test blocks of the root file, in source order
+	// (ADR-0015). Tests of imported files are checked but not listed.
+	Tests []*Function
+	// TypeNames holds the type of every resolved type annotation, for the
+	// language server (ADR-0015).
+	TypeNames map[*ast.TypeName]Type
 }
+
+// ModulePath returns the import path of a ModuleSymbol, or "".
+func (s *Symbol) ModulePath() string {
+	if s.mod == nil {
+		return ""
+	}
+	return s.mod.path
+}
+
+// ModuleProgram returns the syntax tree of a ModuleSymbol's file, or nil.
+func (s *Symbol) ModuleProgram() *ast.Program {
+	if s.mod == nil {
+		return nil
+	}
+	return s.mod.prog
+}
+
+// Exports lists the pub functions, structs and enums of a ModuleSymbol's
+// module, sorted by name.
+func (s *Symbol) Exports() (funcs []*Function, structs []*Struct, enums []*Enum) {
+	if s.mod == nil {
+		return nil, nil, nil
+	}
+	for _, sym := range s.mod.scope.names {
+		if sym.Kind == FuncSymbol && sym.Func.Pub {
+			funcs = append(funcs, sym.Func)
+		}
+	}
+	for _, st := range s.mod.structs {
+		if st.Pub {
+			structs = append(structs, st)
+		}
+	}
+	for _, e := range s.mod.enums {
+		if e.Pub && e.Decl != nil {
+			enums = append(enums, e)
+		}
+	}
+	sort.Slice(funcs, func(i, j int) bool { return funcs[i].Name < funcs[j].Name })
+	sort.Slice(structs, func(i, j int) bool { return structs[i].Name < structs[j].Name })
+	sort.Slice(enums, func(i, j int) bool { return enums[i].Name < enums[j].Name })
+	return funcs, structs, enums
+}
+
+// Options changes what CheckModules requires.
+type Options struct {
+	// Tests checks the program for `tread test`: main is not required.
+	Tests bool
+}
+
+func strconvQuote(s string) string { return strconv.Quote(s) }

@@ -23,9 +23,10 @@ const (
 	// and writes. It changes whenever the encoding, the opcode numbering,
 	// an opcode's semantics, or the value kinds change (ADR-0011).
 	// Version 2 adds collections, enums and generics (ADR-0013); version
-	// 3 adds structs, methods and multi-file programs (ADR-0014).
+	// 3 adds structs, methods and multi-file programs (ADR-0014); version
+	// 4 adds ASSERT and ASSERT_EQ (ADR-0015).
 	// scripts/build-release.sh reads the next line; keep it bare.
-	FormatVersion = 3
+	FormatVersion = 4
 
 	headerLen   = len(Magic) + 2 + 2
 	checksumLen = 4

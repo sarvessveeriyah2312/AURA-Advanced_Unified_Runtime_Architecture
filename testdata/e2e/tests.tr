@@ -1,0 +1,36 @@
+// Tests (ADR-0015). `tread run` runs main and ignores the tests.
+struct Point {
+    x: Int
+    y: Int
+}
+
+fn add(a: Int, b: Int) -> Int {
+    return a + b
+}
+
+fn half(n: Int) -> Int {
+    return n / 2
+}
+
+fn main() -> Unit {
+    print(add(2, 3))
+}
+
+test "adds small numbers" {
+    assertEqual(add(1, 2), 3)
+    assert(add(0, 7) == 7)
+}
+
+test "compares structs" {
+    assertEqual(Point { x: 1, y: 2 }, Point { x: 1, y: 2 })
+    assertEqual([Option.Some(1)], [Option.Some(1)])
+}
+
+test "wrong expectation" {
+    print("about to compare")
+    assertEqual(add(2, 2), 5)
+}
+
+test "fails in a callee" {
+    assert(half(10 / 0) == 0)
+}

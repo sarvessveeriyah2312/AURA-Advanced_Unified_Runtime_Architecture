@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/sarvessveeriyah2312/Tread/internal/source"
@@ -40,5 +41,22 @@ func TestFormat(t *testing.T) {
 		if got := Format(tt.node); got != tt.want {
 			t.Errorf("Format = %s, want %s", got, tt.want)
 		}
+	}
+}
+
+// TestInspectVisitsEveryNode walks a tree with every kind of node and
+// a missing block.
+func TestInspectVisitsEveryNode(t *testing.T) {
+	body := &Block{Stmts: []Stmt{&ExprStmt{Call: &CallExpr{Callee: &Ident{Name: "f"}, Args: []Expr{&IntLit{Digits: "1"}}}}}}
+	prog := &Program{Funcs: []*FuncDecl{{Name: &Ident{Name: "main"}, Body: body}, {Name: &Ident{Name: "g"}}}}
+	var names []string
+	Inspect(prog, func(n Node) bool {
+		if id, ok := n.(*Ident); ok {
+			names = append(names, id.Name)
+		}
+		return true
+	})
+	if strings.Join(names, ",") != "main,f,g" {
+		t.Errorf("names = %v", names)
 	}
 }

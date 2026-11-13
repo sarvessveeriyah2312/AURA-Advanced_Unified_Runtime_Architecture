@@ -12,7 +12,7 @@ func TestLookup(t *testing.T) {
 		"class": Reserved, "interface": Reserved,
 		"async": Reserved, "await": Reserved,
 		// ADR-0014.
-		"struct": Struct, "impl": Impl, "pub": Pub, "import": Import,
+		"struct": Struct, "impl": Impl, "pub": Pub, "import": Import, "test": Test,
 		// Built-in type names are identifiers (ADR-0004 item 3).
 		"Int": Ident, "Float": Ident, "Bool": Ident, "String": Ident, "Unit": Ident,
 		"letter": Ident, "_": Ident, "Let": Ident,
@@ -25,7 +25,7 @@ func TestLookup(t *testing.T) {
 }
 
 func TestIsKeyword(t *testing.T) {
-	for _, k := range []Kind{Module, Fn, Let, Mut, If, Else, True, False, Return, While, For, In, Break, Continue, Enum, Match, Struct, Impl, Pub, Import} {
+	for _, k := range []Kind{Module, Fn, Let, Mut, If, Else, True, False, Return, While, For, In, Break, Continue, Enum, Match, Struct, Impl, Pub, Import, Test} {
 		if !k.IsKeyword() {
 			t.Errorf("%v should be a keyword", k)
 		}

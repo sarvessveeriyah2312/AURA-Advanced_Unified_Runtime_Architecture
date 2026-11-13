@@ -221,6 +221,9 @@ var parseCases = []parseCase{
 	{id: "S145", mode: stmts, src: "match s {\n    shapes.Shape.Circle(r) => { }\n}", want: "(match s (=> (shapes.Shape.Circle r) (block)))"},
 	{id: "S146", mode: program, src: "pub let x = 1\nfn main() { }", want: "(program (fn main () (block)))", diags: []string{"P012@1:5"}},
 	{id: "S147", mode: program, src: "impl P {\n    let x = 1\n    fn f(self) { }\n}", want: "(program (impl P (fn f (self) (block))))", diags: []string{"P012@2:5"}},
+	// Test blocks (ADR-0015).
+	{id: "S149", mode: program, src: "test \"adds\" {\n    assert(true)\n}\nfn main() { }", want: "(program (fn main () (block)) (test \"adds\" (block (call assert true))))"},
+	{id: "S150", mode: program, src: "test name { }\ntest \"a${x}\" { }", want: "(program)", diags: []string{"P012@1:6", "P012@2:6"}},
 	{id: "S148", mode: stmts, src: "let p = Point { x: 1 y: 2 }", want: "(let p (struct Point x:1))", diags: []string{"P004@1:22"}},
 
 	// Nesting limit (ADR-0006). n nested constructs plus the innermost
