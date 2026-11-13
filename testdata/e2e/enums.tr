@@ -1,0 +1,78 @@
+// Enums, pattern matching and generics (ADR-0013).
+enum Shape {
+    Circle(Float)
+    Rect(Float, Float)
+    Empty
+}
+
+enum Tree<T> {
+    Leaf
+    Node(Tree<T>, T, Tree<T>)
+}
+
+fn area(s: Shape) -> Float {
+    match s {
+        Shape.Circle(r) => { return 3.0 * r * r }
+        Shape.Rect(w, h) => { return w * h }
+        Shape.Empty => { return 0.0 }
+    }
+}
+
+fn insert(t: Tree<Int>, v: Int) -> Tree<Int> {
+    match t {
+        Tree.Leaf => { return Tree.Node(Tree.Leaf, v, Tree.Leaf) }
+        Tree.Node(l, x, r) => {
+            if v < x {
+                return Tree.Node(insert(l, v), x, r)
+            }
+            return Tree.Node(l, x, insert(r, v))
+        }
+    }
+}
+
+fn inOrder<T>(t: Tree<T>, out: Array<T>) -> Array<T> {
+    match t {
+        Tree.Leaf => { return out }
+        Tree.Node(l, x, r) => {
+            let mut acc = inOrder(l, out)
+            acc.push(x)
+            return inOrder(r, acc)
+        }
+    }
+}
+
+fn first<T>(xs: Array<T>) -> Option<T> {
+    if xs.len() == 0 {
+        return Option.None
+    }
+    return Option.Some(xs[0])
+}
+
+fn describe(n: Int) -> String {
+    match n {
+        0 => { return "zero" }
+        1 => { return "one" }
+        _ => { return "many" }
+    }
+}
+
+fn main() -> Unit {
+    let shapes = [Shape.Circle(1.0), Shape.Rect(2.0, 3.0), Shape.Empty]
+    for s in shapes {
+        print("${s} has area ${area(s)}")
+    }
+
+    let mut t: Tree<Int> = Tree.Leaf
+    for v in [5, 2, 8, 1, 9] {
+        t = insert(t, v)
+    }
+    print(inOrder(t, []))
+
+    print(first(["x", "y"]))
+    let none: Array<Int> = []
+    match first(none) {
+        Option.Some(v) => { print("found ${v}") }
+        Option.None => { print("empty") }
+    }
+    print("${describe(0)} ${describe(1)} ${describe(7)}")
+}

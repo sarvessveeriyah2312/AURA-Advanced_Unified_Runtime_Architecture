@@ -20,6 +20,8 @@ const (
 	CodeCallDepth        = "TR-R003"
 	CodeInstructionLimit = "TR-R004"
 	CodeIntegerOverflow  = "TR-R005"
+	CodeIndexOutOfRange  = "TR-R007" // ADR-0013
+	CodeKeyNotFound      = "TR-R008" // ADR-0013
 )
 
 // Error is a structured runtime error. HasSpan is false for errors found
@@ -202,10 +204,13 @@ func (m *machine) step(fr *frame, in bytecode.Instr) (done bool, err error) {
 	case bytecode.OpPop:
 		_, e = m.pop()
 	case bytecode.OpLoadLocal:
+		// The value now has a second owner (copy-on-write, ADR-0013).
+		bytecode.MarkShared(fr.locals[in.A])
 		m.push(fr.locals[in.A])
 	case bytecode.OpStoreLocal:
 		var v bytecode.Value
 		if v, e = m.pop(); e == nil {
+			bytecode.MarkShared(v)
 			fr.locals[in.A] = v
 		}
 
@@ -287,7 +292,13 @@ func (m *machine) step(fr *frame, in bytecode.Instr) (done bool, err error) {
 		}
 
 	default:
-		e = m.invalid("unknown opcode %d", in.Op)
+		handled, err := m.collectionOp(fr, in)
+		if err != nil {
+			return false, err
+		}
+		if !handled {
+			e = m.invalid("unknown opcode %d", in.Op)
+		}
 	}
 	if e != nil {
 		return false, e

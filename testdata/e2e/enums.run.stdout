@@ -1,0 +1,7 @@
+Shape.Circle(1.0) has area 3.0
+Shape.Rect(2.0, 3.0) has area 6.0
+Shape.Empty has area 0.0
+[1, 2, 5, 8, 9]
+Option.Some("x")
+empty
+zero one many

@@ -1,0 +1,14 @@
+[75, 95, 64, 88]
+count 4, total 322
+snapshot [75, 95, 64, 88], scores [75, 0, 64, 88]
+[[1, 2, 5], [30, 4]]
+sam is 32
+ana is 28
+bob is 40
+Option.Some(28)
+Option.None
+Option.Some(40)
+["sam": 32, "ana": 28]
+false
+Option.Some("b")
+["a"]

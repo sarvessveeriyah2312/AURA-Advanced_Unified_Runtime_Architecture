@@ -365,6 +365,9 @@ func TestEveryOpcodeIsEmitted(t *testing.T) {
 		mainOf("let i = 1\nlet f = 1.0\nlet s = \"\"\nlet b = true\nlet r = i == i && f == f && s == s && b == b && i != i && f != f && s != s && b != b\nlet q = i < i && f < f && i <= i && f <= f && i > i && f > f && i >= i && f >= f"),
 		mainOf("print(1)\nprint(1.5)\nprint(\"s\")\nprint(true)\nlet t = toString(1) + toString(1.5) + toString(false)"),
 		"fn f() -> Int {\n    return 1\n}\n" + mainOf("let x = f()\nf()"),
+		// ADR-0013 instructions.
+		mainOf("let mut xs = [1]\nlet mut m = [\"a\": 1]\nxs[0] = xs[0]\nxs.push(2)\nprint(xs.pop())\nprint(m.remove(\"a\"))\nprint(m.get(\"a\"))\nprint(m.keys())\n" +
+			"print(xs.len() + [1][0])\nprint(xs.contains(1))\nprint(xs == xs)\nprint(xs != xs)\nlet t = toString(xs)\nmatch Option.Some(1) {\nOption.Some(v) => { }\nOption.None => { }\n}"),
 	}
 	seen := map[bytecode.Opcode]bool{}
 	for _, src := range programs {
@@ -380,8 +383,8 @@ func TestEveryOpcodeIsEmitted(t *testing.T) {
 			t.Errorf("opcode %s is never emitted", op)
 		}
 	}
-	if len(bytecode.AllOpcodes()) != 46 {
-		t.Errorf("instruction set has %d opcodes, docs/05 §5.3 specifies 46", len(bytecode.AllOpcodes()))
+	if len(bytecode.AllOpcodes()) != 66 {
+		t.Errorf("instruction set has %d opcodes, docs/05 §5.3 specifies 66", len(bytecode.AllOpcodes()))
 	}
 }
 

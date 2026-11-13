@@ -24,15 +24,15 @@ func tbcModule() *Module {
 		return s
 	}
 	add := Function{Name: "add", NumParams: 2, NumLocals: 2, Result: KindInt, Code: []Instr{
-		{OpLoadLocal, 0}, {OpLoadLocal, 1}, {OpAddInt, 0}, {OpReturn, 0},
+		{OpLoadLocal, 0, 0}, {OpLoadLocal, 1, 0}, {OpAddInt, 0, 0}, {OpReturn, 0, 0},
 	}}
 	// The if-statement shape: both paths reach pc 15 with an empty stack.
 	main := Function{Name: "main", NumLocals: 1, Result: KindUnit, Code: []Instr{
-		{OpConst, 0}, {OpConst, 1}, {OpCall, 0}, {OpPrintInt, 0}, {OpPop, 0},
-		{OpConst, 2}, {OpPrintFloat, 0}, {OpPop, 0},
-		{OpConst, 3}, {OpStoreLocal, 0},
-		{OpLoadLocal, 0}, {OpJumpIfFalse, 15}, {OpConst, 4}, {OpPrintString, 0}, {OpPop, 0},
-		{OpUnit, 0}, {OpReturn, 0},
+		{OpConst, 0, 0}, {OpConst, 1, 0}, {OpCall, 0, 0}, {OpPrintInt, 0, 0}, {OpPop, 0, 0},
+		{OpConst, 2, 0}, {OpPrintFloat, 0, 0}, {OpPop, 0, 0},
+		{OpConst, 3, 0}, {OpStoreLocal, 0, 0},
+		{OpLoadLocal, 0, 0}, {OpJumpIfFalse, 15, 0}, {OpConst, 4, 0}, {OpPrintString, 0, 0}, {OpPop, 0, 0},
+		{OpUnit, 0, 0}, {OpReturn, 0, 0},
 	}}
 	add.Spans, main.Spans = spans(len(add.Code)), spans(len(main.Code))
 	return &Module{
@@ -126,7 +126,8 @@ func TestDecodeRejects(t *testing.T) {
 		{"bad magic", edit(func(b []byte) []byte { b[0] = 'X'; return b }), "not a Tread bytecode file"},
 		{"source file", []byte("fn main() -> Unit {}\n"), "not a Tread bytecode file"},
 		{"header only", good[:8], "truncated"},
-		{"future version", edit(func(b []byte) []byte { b[4] = 2; return b }), "unsupported bytecode format version 2: this runtime supports version 1"},
+		{"future version", edit(func(b []byte) []byte { b[4] = 3; return b }), "unsupported bytecode format version 3: this runtime supports version 2"},
+		{"0.4 format", edit(func(b []byte) []byte { b[4] = 1; return b }), "unsupported bytecode format version 1: this runtime supports version 2; rebuild"},
 		{"version zero", edit(func(b []byte) []byte { b[4] = 0; return b }), "unsupported bytecode format version 0"},
 		{"flags", edit(func(b []byte) []byte { b[6] = 1; return b }), "unsupported bytecode flags"},
 		{"checksum", edit(func(b []byte) []byte { b[len(b)-1] ^= 0xFF; return b }), "checksum mismatch"},
@@ -166,7 +167,7 @@ func TestDecodeTruncatedEverywhere(t *testing.T) {
 // produce files whose content is invalid but well formed.
 func encodeRaw(t *testing.T, src string, m *Module) []byte {
 	t.Helper()
-	valid := &Module{Functions: []Function{{Name: "main", NumLocals: 0, Code: []Instr{{OpUnit, 0}, {OpReturn, 0}}, Spans: make([]source.Span, 2)}}}
+	valid := &Module{Functions: []Function{{Name: "main", NumLocals: 0, Code: []Instr{{OpUnit, 0, 0}, {OpReturn, 0, 0}}, Spans: make([]source.Span, 2)}}}
 	data := mustEncode(t, &File{Source: []byte(src), Module: valid})
 	// Rebuild the body from scratch with the raw module.
 	b := append([]byte(nil), data[:headerLen]...)
@@ -195,6 +196,7 @@ func encodeRaw(t *testing.T, src string, m *Module) []byte {
 		for pc, in := range fn.Code {
 			b = append(b, byte(in.Op))
 			b = binary.AppendUvarint(b, uint64(in.A))
+			b = binary.AppendUvarint(b, uint64(in.B))
 			var s source.Span
 			if pc < len(fn.Spans) {
 				s = fn.Spans[pc]
@@ -204,6 +206,7 @@ func encodeRaw(t *testing.T, src string, m *Module) []byte {
 		}
 	}
 	b = binary.AppendUvarint(b, uint64(m.Main))
+	b = binary.AppendUvarint(b, 0) // no enums
 	return binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
 }
 
@@ -212,26 +215,26 @@ func fn(name string, params, locals int, code ...Instr) Function {
 }
 
 func TestDecodeRejectsInvalidContent(t *testing.T) {
-	ret := []Instr{{OpUnit, 0}, {OpReturn, 0}}
+	ret := []Instr{{OpUnit, 0, 0}, {OpReturn, 0, 0}}
 	tests := []struct {
 		name string
 		src  string
 		m    *Module
 		want string
 	}{
-		{"constant index", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpConst, 3}, Instr{OpReturn, 0})}}, "CONST operand 3 out of range"},
-		{"unknown opcode", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{Opcode(250), 0}, Instr{OpReturn, 0})}}, "unknown opcode 250"},
-		{"jump target", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpJump, 9}, ret[1])}}, "JUMP operand 9 out of range"},
-		{"slot", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpLoadLocal, 0}, ret[1])}}, "LOAD_LOCAL operand 0 out of range"},
-		{"call index", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpCall, 1}, ret[1])}}, "CALL operand 1 out of range"},
+		{"constant index", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpConst, 3, 0}, Instr{OpReturn, 0, 0})}}, "CONST operand 3 out of range"},
+		{"unknown opcode", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{Opcode(250), 0, 0}, Instr{OpReturn, 0, 0})}}, "unknown opcode 250"},
+		{"jump target", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpJump, 9, 0}, ret[1])}}, "JUMP operand 9 out of range"},
+		{"slot", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpLoadLocal, 0, 0}, ret[1])}}, "LOAD_LOCAL operand 0 out of range"},
+		{"call index", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpCall, 1, 0}, ret[1])}}, "CALL operand 1 out of range"},
 		{"main index", "", &Module{Functions: []Function{fn("main", 0, 0, ret...)}, Main: 4}, "main index 4 out of range"},
 		{"main params", "", &Module{Functions: []Function{fn("main", 1, 1, ret...)}}, "main must have no parameters"},
-		{"stack underflow", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpAddInt, 0}, ret[0], ret[1])}}, "ADD_INT needs 2 stack values, has 0"},
-		{"return on empty stack", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpReturn, 0})}}, "RETURN needs 1 stack values, has 0"},
-		{"call arguments", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpCall, 1}, Instr{OpReturn, 0}), fn("f", 2, 2, ret...)}}, "CALL needs 2 stack values, has 0"},
-		{"falls off the end", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpUnit, 0}, Instr{OpPop, 0})}}, "past the end of the code"},
+		{"stack underflow", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpAddInt, 0, 0}, ret[0], ret[1])}}, "ADD_INT needs 2 stack values, has 0"},
+		{"return on empty stack", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpReturn, 0, 0})}}, "RETURN needs 1 stack values, has 0"},
+		{"call arguments", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpCall, 1, 0}, Instr{OpReturn, 0, 0}), fn("f", 2, 2, ret...)}}, "CALL needs 2 stack values, has 0"},
+		{"falls off the end", "", &Module{Functions: []Function{fn("main", 0, 0, Instr{OpUnit, 0, 0}, Instr{OpPop, 0, 0})}}, "past the end of the code"},
 		{"inconsistent depth", "", &Module{Functions: []Function{fn("main", 0, 0,
-			Instr{OpConst, 0}, Instr{OpJumpIfFalse, 3}, Instr{OpUnit, 0}, Instr{OpUnit, 0}, Instr{OpReturn, 0})}, Constants: []Value{BoolValue(true)}}, "reached with stack depth"},
+			Instr{OpConst, 0, 0}, Instr{OpJumpIfFalse, 3, 0}, Instr{OpUnit, 0, 0}, Instr{OpUnit, 0, 0}, Instr{OpReturn, 0, 0})}, Constants: []Value{BoolValue(true)}}, "reached with stack depth"},
 		{"span outside source", "ab", &Module{Functions: []Function{{Name: "main", Code: ret, Spans: []source.Span{{Start: 0, End: 3}, {}}}}}, "outside the 2-byte source"},
 		{"unknown kind", "", &Module{Constants: []Value{{Kind: 9}}, Functions: []Function{fn("main", 0, 0, ret...)}}, "unknown value kind 9"},
 		{"bad bool", "", &Module{Constants: []Value{{Kind: KindBool, Int: 2}}, Functions: []Function{fn("main", 0, 0, ret...)}}, "invalid Bool constant 0"},
@@ -266,7 +269,7 @@ func TestVerifyAcceptsLoops(t *testing.T) {
 	// A backward jump at a consistent depth (as a future while loop would
 	// compile) verifies.
 	m := &Module{Constants: []Value{BoolValue(false)}, Functions: []Function{fn("main", 0, 0,
-		Instr{OpConst, 0}, Instr{OpJumpIfFalse, 3}, Instr{OpJump, 0}, Instr{OpUnit, 0}, Instr{OpReturn, 0})}}
+		Instr{OpConst, 0, 0}, Instr{OpJumpIfFalse, 3, 0}, Instr{OpJump, 0, 0}, Instr{OpUnit, 0, 0}, Instr{OpReturn, 0, 0})}}
 	m.Functions[0].Spans = make([]source.Span, 5)
 	if err := m.Verify(); err != nil {
 		t.Fatal(err)

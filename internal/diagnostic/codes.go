@@ -59,6 +59,19 @@ const (
 	// LoopControlOutsideLoop: `break` or `continue` outside a loop
 	// (ADR-0012).
 	LoopControlOutsideLoop Code = "TR-T019"
+
+	// Collections, enums, pattern matching and generics (ADR-0013).
+	CannotInfer         Code = "TR-T020" // add a type annotation
+	WrongTypeArguments  Code = "TR-T021" // wrong number of type arguments
+	InvalidMapKey       Code = "TR-T022" // map keys must be Int, String or Bool
+	NotIndexable        Code = "TR-T023" // cannot index or iterate this type
+	UnknownMethod       Code = "TR-T024" // no such method, or a method not called
+	EnumAsValue         Code = "TR-T025" // an enum type used as a value
+	UnknownVariant      Code = "TR-T026" // no such enum or variant
+	NonExhaustiveMatch  Code = "TR-T027" // match misses a case
+	UnreachablePattern  Code = "TR-T028" // match arm can never run
+	InvalidPattern      Code = "TR-T029" // Float pattern, wrong field count
+	UnitInCompositeType Code = "TR-T030" // Unit inside a collection, payload or type argument
 )
 
 // Compiler and runtime codes (Phase 3). The VM cannot import this
@@ -73,6 +86,9 @@ const (
 	// BytecodeLoadError: a .tbc file is malformed, corrupted, or uses an
 	// unsupported format version (ADR-0011).
 	BytecodeLoadError Code = "TR-R006"
+	// ADR-0013.
+	IndexOutOfRange Code = "TR-R007"
+	KeyNotFound     Code = "TR-R008"
 )
 
 // Registry returns every registered code in registry order. The result is
@@ -92,9 +108,12 @@ func Registry() []Code {
 		NotCallable, MissingMain, InvalidMainSignature, MissingReturnType,
 		BuiltinRedeclared, FloatLiteralRange, FunctionAsValue,
 		LoopControlOutsideLoop,
+		CannotInfer, WrongTypeArguments, InvalidMapKey, NotIndexable, UnknownMethod,
+		EnumAsValue, UnknownVariant, NonExhaustiveMatch, UnreachablePattern,
+		InvalidPattern, UnitInCompositeType,
 		InternalCompilerError,
 		DivisionByZero, InvalidBytecode, CallDepthExceeded, InstructionLimit,
-		IntegerOverflow, BytecodeLoadError,
+		IntegerOverflow, BytecodeLoadError, IndexOutOfRange, KeyNotFound,
 	}
 }
 

@@ -407,9 +407,17 @@ func (l *lexer) operator() {
 		} else {
 			one(token.Minus)
 		}
+	case '[':
+		one(token.LBracket)
+	case ']':
+		one(token.RBracket)
+	case '.':
+		one(token.Dot) // ".." and ".5" are handled before operator (ADR-0013)
 	case '=':
 		if next == '=' {
 			two(token.Eq)
+		} else if next == '>' {
+			two(token.FatArrow)
 		} else {
 			one(token.Assign)
 		}

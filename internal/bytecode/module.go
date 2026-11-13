@@ -17,6 +17,13 @@ const (
 	KindFloat
 	KindBool
 	KindString
+	// Heap values (ADR-0013). Constants are never heap values.
+	KindArray
+	KindMap
+	KindEnum
+	// KindAny is the result kind of a function returning a type
+	// parameter. Values never have this kind.
+	KindAny
 )
 
 func (k Kind) String() string {
@@ -31,6 +38,14 @@ func (k Kind) String() string {
 		return "Bool"
 	case KindString:
 		return "String"
+	case KindArray:
+		return "Array"
+	case KindMap:
+		return "Map"
+	case KindEnum:
+		return "Enum"
+	case KindAny:
+		return "Any"
 	}
 	return "Kind(?)"
 }
@@ -43,6 +58,8 @@ type Value struct {
 	Float float64
 	Bool  bool
 	Str   string
+	// Ref is the payload of a heap value: *Array, *Map or *EnumValue.
+	Ref any
 }
 
 // Constructors.
@@ -67,10 +84,12 @@ func (v Value) String() string {
 	return "unit"
 }
 
-// Instr is one instruction: an opcode and its operand A (0 when unused).
+// Instr is one instruction: an opcode and its operands A and B (0 when
+// unused). B is used only by path and variant instructions (ADR-0013).
 type Instr struct {
 	Op Opcode
 	A  int
+	B  int
 }
 
 // Function is a compiled function record (docs/05 §5.4).
@@ -90,7 +109,13 @@ type Module struct {
 	Constants []Value
 	Functions []Function
 	Main      int
+	// Enums describes every enum type; Option is always enum 0
+	// (ADR-0013).
+	Enums []EnumInfo
 }
+
+// MaxPathDepth bounds the B operand of path instructions.
+const MaxPathDepth = 1 << 16
 
 // ValidationError describes why a module was rejected (docs/05 §5.5).
 type ValidationError struct {
@@ -137,10 +162,31 @@ func (m *Module) Validate() error {
 				return bad(pc, "unknown opcode %d", in.Op)
 			}
 			var limit int
+			if k := in.Op.Operand(); k != PathOperand && k != VariantOperand && in.B != 0 {
+				return bad(pc, "%s takes no second operand, has %d", in.Op, in.B)
+			}
 			switch in.Op.Operand() {
 			case NoOperand:
 				if in.A != 0 {
 					return bad(pc, "%s takes no operand, has %d", in.Op, in.A)
+				}
+				continue
+			case SizeOperand, FieldOperand:
+				if in.A < 0 || in.A > maxCount {
+					return bad(pc, "%s operand %d out of range", in.Op, in.A)
+				}
+				continue
+			case PathOperand:
+				if in.B < 0 || in.B > MaxPathDepth || (in.Op == OpStorePath && in.B < 1) {
+					return bad(pc, "%s path depth %d out of range", in.Op, in.B)
+				}
+				limit = fn.NumLocals
+			case VariantOperand:
+				if in.A < 0 || in.A >= len(m.Enums) {
+					return bad(pc, "%s enum %d out of range [0,%d)", in.Op, in.A, len(m.Enums))
+				}
+				if in.B < 0 || in.B >= len(m.Enums[in.A].Variants) {
+					return bad(pc, "%s variant %d out of range for enum %s", in.Op, in.B, m.Enums[in.A].Name)
 				}
 				continue
 			case ConstOperand:
@@ -170,15 +216,25 @@ func (m *Module) Validate() error {
 func (m *Module) Disassemble() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "main=%d\n", m.Main)
+	for i, e := range m.Enums {
+		fmt.Fprintf(&b, "enum %d %s", i, e.Name)
+		for _, v := range e.Variants {
+			fmt.Fprintf(&b, " %s/%d", v.Name, v.Fields)
+		}
+		b.WriteByte('\n')
+	}
 	for i, c := range m.Constants {
 		fmt.Fprintf(&b, "const %d %s %s\n", i, c.Kind, c)
 	}
 	for fi, fn := range m.Functions {
 		fmt.Fprintf(&b, "fn %d %s params=%d locals=%d result=%s\n", fi, fn.Name, fn.NumParams, fn.NumLocals, fn.Result)
 		for pc, in := range fn.Code {
-			if in.Op.Operand() == NoOperand {
+			switch in.Op.Operand() {
+			case NoOperand:
 				fmt.Fprintf(&b, "  %3d %s\n", pc, in.Op)
-			} else {
+			case PathOperand, VariantOperand:
+				fmt.Fprintf(&b, "  %3d %s %d %d\n", pc, in.Op, in.A, in.B)
+			default:
 				fmt.Fprintf(&b, "  %3d %s %d\n", pc, in.Op, in.A)
 			}
 		}

@@ -1,0 +1,8 @@
+fn third(xs: Array<Int>) -> Int {
+    return xs[2]
+}
+
+fn main() -> Unit {
+    print(third([1, 2, 3]))
+    print(third([1, 2]))
+}

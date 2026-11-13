@@ -69,6 +69,28 @@ const (
 	OpToStringFloat
 	OpToStringBool
 
+	// Collections, enums and generic values (ADR-0013).
+	OpMakeArray     // A = element count
+	OpMakeMap       // A = entry count
+	OpMakeEnum      // A = enum, B = variant
+	OpLoadPath      // A = slot, B = depth: read local[k1]...[kB]
+	OpPeekPath      // like LOAD_PATH, but the value is only read
+	OpStorePath     // A = slot, B = depth >= 1: local[k1]...[kB] = value
+	OpIndex         // container, key -> element
+	OpLen           // array or map -> Int
+	OpContains      // container, value -> Bool
+	OpMapGet        // map, key -> Option
+	OpMapKeys       // map -> Array of keys
+	OpPushPath      // A = slot, B = depth: push onto the array at the path
+	OpPopPath       // A = slot, B = depth: pop from the array -> Option
+	OpRemovePath    // A = slot, B = depth: remove a key -> Option
+	OpIsVariant     // A = enum, B = variant: value -> Bool
+	OpEnumField     // A = field: enum value -> field value
+	OpEqValue       // structural ==
+	OpNeValue       // structural !=
+	OpPrintValue    // print any value
+	OpToStringValue // text of any value
+
 	opCount
 )
 
@@ -82,6 +104,11 @@ const (
 	TargetOperand
 	FuncOperand
 	CountOperand
+	// ADR-0013.
+	SizeOperand    // A >= 0: an element or entry count
+	PathOperand    // A = local slot, B = path depth
+	VariantOperand // A = enum index, B = variant index
+	FieldOperand   // A >= 0: a field index, checked at run time
 )
 
 type opInfo struct {
@@ -107,6 +134,14 @@ var opTable = [opCount]opInfo{
 	OpPrintString: {"PRINT_STRING", NoOperand}, OpPrintBool: {"PRINT_BOOL", NoOperand},
 	OpToStringInt: {"TO_STRING_INT", NoOperand}, OpToStringFloat: {"TO_STRING_FLOAT", NoOperand},
 	OpToStringBool: {"TO_STRING_BOOL", NoOperand},
+	OpMakeArray:    {"MAKE_ARRAY", SizeOperand}, OpMakeMap: {"MAKE_MAP", SizeOperand}, OpMakeEnum: {"MAKE_ENUM", VariantOperand},
+	OpLoadPath: {"LOAD_PATH", PathOperand}, OpPeekPath: {"PEEK_PATH", PathOperand}, OpStorePath: {"STORE_PATH", PathOperand},
+	OpIndex: {"INDEX", NoOperand}, OpLen: {"LEN", NoOperand}, OpContains: {"CONTAINS", NoOperand},
+	OpMapGet: {"MAP_GET", NoOperand}, OpMapKeys: {"MAP_KEYS", NoOperand},
+	OpPushPath: {"PUSH_PATH", PathOperand}, OpPopPath: {"POP_PATH", PathOperand}, OpRemovePath: {"REMOVE_PATH", PathOperand},
+	OpIsVariant: {"IS_VARIANT", VariantOperand}, OpEnumField: {"ENUM_FIELD", FieldOperand},
+	OpEqValue: {"EQ_VALUE", NoOperand}, OpNeValue: {"NE_VALUE", NoOperand},
+	OpPrintValue: {"PRINT_VALUE", NoOperand}, OpToStringValue: {"TO_STRING_VALUE", NoOperand},
 }
 
 // Valid reports whether o is a defined opcode.

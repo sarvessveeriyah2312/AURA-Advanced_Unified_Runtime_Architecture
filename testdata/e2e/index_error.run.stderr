@@ -1,0 +1,9 @@
+error[TR-R007]: index 2 is out of range for an array of length 2 (in function 'third')
+  --> index_error.tr:2:12
+   |
+ 2 |     return xs[2]
+   |            ^^^^^
+
+stack trace:
+  0: third  index_error.tr:2:12  return xs[2]
+  1: main   index_error.tr:7:11  print(third([1, 2]))

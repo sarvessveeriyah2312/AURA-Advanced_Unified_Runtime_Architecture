@@ -89,6 +89,16 @@ var e2eCases = []e2eCase{
 		"error[TR-T008]", "loop_errors.tr:13:4"}},
 	{name: "loop_trace", cmd: "run", exit: 1, stdout: str("5\n10\n"), stderrs: []string{"error[TR-R001]: division by zero (in function 'average')",
 		"\n\nstack trace:\n", "  0: average  loop_trace.tr:8:12  return total / count\n", "  1: main     loop_trace.tr:3:15  print(average(10, 2 - i))\n"}},
+
+	// ADR-0013: collections, enums, pattern matching and generics.
+	{name: "collections", cmd: "run", exit: 0, stdout: str("[75, 95, 64, 88]\ncount 4, total 322\nsnapshot [75, 95, 64, 88], scores [75, 0, 64, 88]\n[[1, 2, 5], [30, 4]]\n" +
+		"sam is 32\nana is 28\nbob is 40\nOption.Some(28)\nOption.None\nOption.Some(40)\n[\"sam\": 32, \"ana\": 28]\nfalse\nOption.Some(\"b\")\n[\"a\"]\n")},
+	{name: "enums", cmd: "run", exit: 0, stdout: str("Shape.Circle(1.0) has area 3.0\nShape.Rect(2.0, 3.0) has area 6.0\nShape.Empty has area 0.0\n[1, 2, 5, 8, 9]\nOption.Some(\"x\")\nempty\nzero one many\n")},
+	{name: "collection_errors", cmd: "check", exit: 1, stdout: str(""), stderrs: []string{
+		"error[TR-T004]: cannot change immutable variable 'xs'", "error[TR-T020]", "error[TR-T001]", "error[TR-T024]: Int has no method 'len'",
+		"error[TR-T027]: this match does not cover every Light value: Light.Amber is not matched", "error[TR-T022]"}},
+	{name: "index_error", cmd: "run", exit: 1, stdout: str("3\n"), stderrs: []string{"error[TR-R007]: index 2 is out of range for an array of length 2 (in function 'third')",
+		"stack trace:\n", "  0: third  index_error.tr:2:12  return xs[2]\n", "  1: main   index_error.tr:7:11  print(third([1, 2]))\n"}},
 }
 
 func TestEndToEnd(t *testing.T) {

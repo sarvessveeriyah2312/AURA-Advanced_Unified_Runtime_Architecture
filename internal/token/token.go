@@ -35,6 +35,8 @@ const (
 	In
 	Break
 	Continue
+	Enum
+	Match
 	keywordEnd
 
 	Plus    // +
@@ -60,6 +62,11 @@ const (
 	Comma   // ,
 	Colon   // :
 	DotDot  // ..
+	// Collections, enums and pattern matching (ADR-0013).
+	LBracket // [
+	RBracket // ]
+	Dot      // .
+	FatArrow // =>
 )
 
 var names = map[Kind]string{
@@ -70,11 +77,12 @@ var names = map[Kind]string{
 	Module:   "module", Fn: "fn", Let: "let", Mut: "mut", If: "if", Else: "else",
 	True: "true", False: "false", Return: "return",
 	While: "while", For: "for", In: "in", Break: "break", Continue: "continue",
+	Enum: "enum", Match: "match",
 	Plus: "+", Minus: "-", Star: "*", Slash: "/", Percent: "%",
 	Eq: "==", Ne: "!=", Lt: "<", Le: "<=", Gt: ">", Ge: ">=",
 	AndAnd: "&&", OrOr: "||", Not: "!", Assign: "=", Arrow: "->",
 	LParen: "(", RParen: ")", LBrace: "{", RBrace: "}", Comma: ",", Colon: ":",
-	DotDot: "..",
+	DotDot: "..", LBracket: "[", RBracket: "]", Dot: ".", FatArrow: "=>",
 }
 
 // String returns the keyword or operator spelling, or an upper-case name
@@ -93,10 +101,11 @@ var keywords = map[string]Kind{
 	"module": Module, "fn": Fn, "let": Let, "mut": Mut, "if": If,
 	"else": Else, "true": True, "false": False, "return": Return,
 	"while": While, "for": For, "in": In, "break": Break, "continue": Continue,
+	"enum": Enum, "match": Match,
 }
 
 var reserved = map[string]bool{
-	"class": true, "interface": true, "enum": true, "match": true,
+	"class": true, "interface": true,
 	"async": true, "await": true, "import": true, "pub": true,
 }
 

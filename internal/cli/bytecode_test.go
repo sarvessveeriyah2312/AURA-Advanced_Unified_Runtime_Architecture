@@ -157,7 +157,7 @@ func TestRunBytecodeRejects(t *testing.T) {
 		name, path, want string
 	}{
 		{"source renamed", write("source.tbc", []byte("fn main() -> Unit {}\n")), "error[TR-R006]: cannot load %s: not a Tread bytecode file"},
-		{"future version", write("future.tbc", future), "error[TR-R006]: cannot load %s: unsupported bytecode format version 2: this runtime supports version 1; rebuild the program with `tread build` from the same Tread release\n"},
+		{"future version", write("future.tbc", future), "error[TR-R006]: cannot load %s: unsupported bytecode format version 3: this runtime supports version 2; rebuild the program with `tread build` from the same Tread release\n"},
 		{"corrupted", write("corrupt.tbc", corrupt), "error[TR-R006]: cannot load %s: bytecode file is corrupted or truncated (checksum mismatch)\n"},
 		{"truncated", write("short.tbc", good[:len(good)-10]), "error[TR-R006]: cannot load %s: bytecode file is corrupted or truncated"},
 	}
@@ -191,7 +191,7 @@ func TestRuntimeEdition(t *testing.T) {
 		{[]string{"version"}, ExitOK, "tread " + Version + " (runtime)\n", ""},
 		{[]string{"help"}, ExitOK, runtimeUsage, ""},
 		{nil, ExitUsage, "", runtimeUsage},
-		{[]string{"runtime", "--version"}, ExitOK, "Tread Runtime " + Version + " (bytecode format 1)\n", ""},
+		{[]string{"runtime", "--version"}, ExitOK, "Tread Runtime " + Version + " (bytecode format 2)\n", ""},
 		{[]string{"sdk", "--version"}, ExitFailure, "", "error: the Tread SDK is not installed: this is the Tread Runtime " + Version + "\n"},
 		{[]string{"check", "a.tr"}, ExitUsage, "", needSDK("check")},
 		{[]string{"build", "a.tr"}, ExitUsage, "", needSDK("build")},
@@ -219,7 +219,7 @@ func TestEditionVersions(t *testing.T) {
 		stderr string
 	}{
 		{[]string{"sdk", "--version"}, ExitOK, "Tread SDK " + Version + "\n", ""},
-		{[]string{"runtime", "--version"}, ExitOK, "Tread Runtime " + Version + " (bytecode format 1)\n", ""},
+		{[]string{"runtime", "--version"}, ExitOK, "Tread Runtime " + Version + " (bytecode format 2)\n", ""},
 		{[]string{"sdk"}, ExitUsage, "", "error: usage: tread sdk --version\n\n" + sdkUsage},
 		{[]string{"runtime", "-v"}, ExitUsage, "", "error: usage: tread runtime --version\n\n" + sdkUsage},
 		{[]string{"doctor", "x"}, ExitUsage, "", "error: doctor takes no arguments\n\n" + sdkUsage},

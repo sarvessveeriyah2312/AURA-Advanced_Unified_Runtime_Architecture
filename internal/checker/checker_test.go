@@ -184,6 +184,82 @@ var checkCases = []checkCase{
 	{id: "K95", decls: "fn f(b: Bool) -> Int {\nwhile b { return 1 }\n}\nfn g() -> Int {\nfor i in 0..1 { return i }\n}\n", body: "print(f(true) + g())",
 		want: []string{`T008 "f"`, `T008 "g"`}},
 	{id: "K96", decls: "fn f() -> Int {\nwhile !false { }\n}\n", body: "print(f())", want: []string{`T008 "f"`}},
+
+	// Arrays (ADR-0013).
+	{id: "K97", body: "let a = [1, 2]\nlet b: Array<String> = []\nlet c = [[1], []]\nlet d = a[0]\nlet e = c[1]",
+		types: map[string]string{"a": "Array<Int>", "b": "Array<String>", "c": "Array<Array<Int>>", "d": "Int", "e": "Array<Int>"}},
+	{id: "K98", body: "let a = []\nlet b = [[], [1]]\nlet c = [[], []]", types: map[string]string{"b": "Array<Array<Int>>"}, want: []string{`T020 "[]"`, `T020 "[]"`}},
+	{id: "K99", body: "let a = [1, \"x\"]\nlet b: Array<Int> = [true]", want: []string{`T001 "\"x\""`, `T001 "true"`}},
+	{id: "K100", body: "let a = [1]\nlet b = a[\"0\"]\nlet c = 5[0]", want: []string{`T001 "\"0\""`, `T023 "5"`}},
+	{id: "K101", body: "let a = [1]\na[0] = 2\na.push(3)\nlet mut b = [1]\nb[0] = \"x\"",
+		want: []string{`T004 "a[0] = 2"`, `T004 "a.push(3)"`, `T001 "\"x\""`}},
+	{id: "K102", decls: "fn f(xs: Array<Int>) -> Unit {\nxs.push(1)\n}\n", body: "let mut g = [[1]]\ng[0][0] = 2\ng[0].push(3)\nf(g[0])\nfor x in g[0] {\nprint(x)\n}",
+		want: []string{`T004 "xs.push(1)"`}},
+	{id: "K103", body: "let mut a = [1]\nlet n: Int = a.len()\nlet b: Bool = a.contains(1)\nlet c: Option<Int> = a.pop()\na.push(\"s\")\na.size()\nlet d = a.len",
+		want: []string{`T001 "\"s\""`, `T024 "size"`, `T024 "a.len"`}},
+	{id: "K104", body: "let a = [u()]\nlet b: Array<Unit> = []", want: []string{`T030 "u()"`, `T030 "Unit"`}},
+	{id: "K105", body: "for x in 5 {\n}", want: []string{`T023 "5"`}},
+	{id: "K106", body: "let a = [1] == [1]\nlet b = [1] == [\"a\"]\nprint([1, 2])\nlet s = \"${[1]}\"", types: map[string]string{"a": "Bool"},
+		want: []string{`T001 "\"a\""`}}, // the right side is checked against the left's type
+
+	// Maps.
+	{id: "K107", body: "let m = [\"a\": 1]\nlet n: Map<Int, String> = [:]\nlet v = m[\"a\"]\nlet k = m.keys()\nlet g = m.get(\"a\")",
+		types: map[string]string{"m": "Map<String, Int>", "n": "Map<Int, String>", "v": "Int", "k": "Array<String>", "g": "Option<Int>"}},
+	{id: "K108", body: "let m = [:]\nlet f: Map<Float, Int> = [:]\nlet g = [1.5: 1]", want: []string{`T020 "[:]"`, `T022 "Float"`, `T022 "1.5"`}},
+	{id: "K109", body: "let mut m = [\"a\": 1]\nm[\"b\"] = 2\nm[1] = 2\nlet r: Option<Int> = m.remove(\"a\")\nlet x = [\"a\": 1]\nx.remove(\"a\")",
+		want: []string{`T001 "1"`, `T004 "x.remove(\"a\")"`}},
+	{id: "K110", body: "let m = [\"a\": [1]]\nfor k in m {\nlet s: String = k\n}", types: map[string]string{"m": "Map<String, Array<Int>>"}},
+
+	// Enums and variants.
+	{id: "K111", decls: "enum Shape {\nCircle(Float)\nRect(Float, Float)\nEmpty\n}\n", body: "let a = Shape.Circle(1.0)\nlet b = Shape.Empty\nlet c: Shape = Shape.Rect(1.0, 2.0)",
+		types: map[string]string{"a": "Shape", "b": "Shape"}},
+	{id: "K112", decls: "enum Shape {\nCircle(Float)\nEmpty\n}\n", body: "let a = Shape.Square\nlet b = Shape.Circle\nlet c = Shape.Empty()\nlet d = Shape.Circle(1)\nlet e = Shape.Circle(1.0, 2.0)\nlet f = Shape",
+		want: []string{`T026 "Square"`, `T006 "Shape.Circle"`, `T006 "Shape.Empty()"`, `T001 "1"`, `T006 "Shape.Circle(1.0, 2.0)"`, `T025 "Shape"`}},
+	{id: "K113", body: "let a = Option.Some(5)\nlet b: Option<String> = Option.None\nlet c = Option.None\nlet d: Option<Int> = Option.Some(\"x\")\nlet e = Option.Some(u())",
+		types: map[string]string{"a": "Option<Int>", "b": "Option<String>"},
+		want:  []string{`T020 "Option.None"`, `T001 "\"x\""`, `T030 "Option.Some(u())"`}},
+	{id: "K114", decls: "enum Int { A }\nenum E { A\nA }\nenum E { B }\nenum Option { X }\nenum G<T, T> { V(T) }\nenum H { V(Unit) }\nenum K<Int> { V }\n", body: "",
+		want: []string{`T005 "Int"`, `T005 "A"`, `T005 "E"`, `T005 "Option"`, `T005 "T"`, `T030 "Unit"`, `T005 "Int"`}},
+	{id: "K115", decls: "enum Tree {\nLeaf\nNode(Tree, Int, Tree)\n}\n", body: "let t = Tree.Node(Tree.Leaf, 1, Tree.Leaf)", types: map[string]string{"t": "Tree"}},
+	{id: "K116", body: "let a: Array<Int, Int> = []\nlet b: Int<String> = 1\nlet c: Option = Option.None\nlet d: Array<Nope> = []",
+		want: []string{`T021 "Array<Int, Int>"`, `T021 "Int<String>"`, `T021 "Option"`, `T003 "Nope"`}},
+
+	// Generic functions.
+	{id: "K117", decls: "fn first<T>(xs: Array<T>) -> Option<T> {\nif xs.len() == 0 {\nreturn Option.None\n}\nreturn Option.Some(xs[0])\n}\nfn id<T>(x: T) -> T {\nreturn x\n}\n",
+		body:  "let a = first([1, 2])\nlet b = id(\"s\")\nlet c: Option<String> = first([])\nlet d = id([Option.Some(1)])",
+		types: map[string]string{"a": "Option<Int>", "b": "String", "c": "Option<String>", "d": "Array<Option<Int>>"}},
+	{id: "K118", decls: "fn empty<T>() -> Array<T> {\nreturn []\n}\nfn pair<A>(x: A, y: A) -> Unit { }\n",
+		body: "let a = empty()\nlet b: Array<Int> = empty()\npair(1, \"s\")\npair(u(), u())",
+		want: []string{`T020 "empty()"`, `T001 "\"s\""`, `T030 "pair(u(), u())"`}},
+	{id: "K119", decls: "fn bad<T>(x: T) -> Int {\nreturn x + 1\n}\nfn show<T>(x: T) -> String {\nprint(x)\nlet same = x == x\nreturn \"${x}\"\n}\nfn twice<T, T>(x: T) -> Unit { }\nfn hide<Int>(x: Int) -> Unit { }\n", body: "",
+		want: []string{`T007 "x + 1"`, `T005 "T"`, `T005 "Int"`}},
+	{id: "K120", decls: "enum Pair<A, B> { Of(A, B) }\nfn swap<A, B>(p: Pair<A, B>) -> Pair<B, A> {\nmatch p {\nPair.Of(a, b) => { return Pair.Of(b, a) }\n}\n}\n",
+		body: "let s = swap(Pair.Of(1, \"x\"))", types: map[string]string{"s": "Pair<String, Int>"}},
+
+	// Match: patterns, exhaustiveness, unreachable arms.
+	{id: "K121", decls: "enum Shape {\nCircle(Float)\nRect(Float, Float)\nEmpty\n}\nfn area(s: Shape) -> Float {\nmatch s {\nShape.Circle(r) => { return r * r }\nShape.Rect(w, h) => { return w * h }\nShape.Empty => { return 0.0 }\n}\n}\n",
+		body: "print(area(Shape.Empty))"},
+	{id: "K122", decls: "enum Shape {\nCircle(Float)\nEmpty\n}\n", body: "let s = Shape.Empty\nmatch s {\nShape.Circle(_) => { }\n}",
+		want: []string{`T027 "s"`}},
+	{id: "K123", body: "let o = Option.Some(Option.Some(1))\nmatch o {\nOption.Some(Option.Some(_)) => { }\nOption.None => { }\n}",
+		want: []string{`T027 "o"`}},
+	{id: "K124", body: "let n = 3\nmatch n {\n0 => { }\n-1 => { }\n}\nmatch n {\n0 => { }\nother => { print(other) }\n}\nlet b = true\nmatch b {\ntrue => { }\nfalse => { }\n}",
+		want: []string{`T027 "n"`}},
+	{id: "K125", body: "let n = 3\nmatch n {\n_ => { }\n1 => { }\n}\nmatch Option.Some(1) {\nOption.Some(_) => { }\nOption.None => { }\nOption.Some(2) => { }\n}",
+		want: []string{`T028 "1"`, `T028 "Option.Some(2)"`}},
+	{id: "K126", decls: "enum Shape {\nCircle(Float)\nEmpty\n}\n", body: "let s = Shape.Empty\nmatch s {\nShape.Circle => { }\nShape.Empty(x) => { }\nShape.Circle(1.5) => { }\nShape.Circle(1, 2) => { }\nShape.Square => { }\nNope.A => { }\n\"x\" => { }\nOption.None => { }\n_ => { }\n}",
+		want: []string{`T029 "Shape.Circle"`, `T029 "Shape.Empty(x)"`, `T029 "1.5"`, `T029 "Shape.Circle(1, 2)"`, `T026 "Square"`, `T026 "Nope"`, `T001 "\"x\""`, `T001 "Option.None"`}},
+	{id: "K127", body: "let o = Option.Some(1)\nmatch o {\nOption.Some(x) => { x = 2 }\nOption.None => { }\n}\nmatch o {\nOption.Some(v) => { }\nv => { }\n}",
+		want: []string{`T004 "x = 2"`}},
+	{id: "K128", decls: "fn f(o: Option<Int>) -> Int {\nmatch o {\nOption.Some(n) => { return n }\nOption.None => { }\n}\n}\nfn g(o: Option<Int>) -> Int {\nmatch o {\nOption.Some(n) => { return n }\n_ => { return 0 }\n}\n}\n",
+		body: "print(f(Option.None) + g(Option.None))", want: []string{`T008 "f"`}},
+	{id: "K129", body: "let s = \"a\"\nmatch s {\n\"a\" => { }\n\"b\" => { }\n_ => { }\n}\nlet xs = [1]\nmatch xs {\nall => { print(all) }\n}"},
+	{id: "K130", body: "let o = Option.Some(1)\nmatch o {\nOption.Some(a) => { }\nOption.None => { }\n}\nmatch o {\nOption.Some(x) => { let x = 1 }\n_ => { }\n}\nmatch [1] {\nprint => { }\n}",
+		want: []string{`T016 "print"`}},
+	// Arguments that need an expected type are checked after the others.
+	{id: "K131", decls: "enum Tree<T> {\nLeaf\nNode(Tree<T>, T, Tree<T>)\n}\nfn pick<T>(a: Array<T>, b: Array<T>) -> T {\nreturn b[0]\n}\n",
+		body:  "let t = Tree.Node(Tree.Leaf, 1, Tree.Leaf)\nlet p = pick([], [\"s\"])\nlet q = Option.Some([Option.None, Option.Some(2)])",
+		types: map[string]string{"t": "Tree<Int>", "p": "String", "q": "Option<Array<Option<Int>>>"}},
 }
 
 // runCheck lexes, parses and checks src. It fails the test on unexpected
@@ -350,7 +426,7 @@ func TestResolutionTables(t *testing.T) {
 		t.Errorf("let x def = %+v", def)
 	}
 	assign := out.Main.Decl.Body.Stmts[1].(*ast.AssignStmt)
-	if out.Uses[assign.Target] != out.Defs[let.Name] {
+	if out.Uses[assign.Target.(*ast.Ident)] != out.Defs[let.Name] {
 		t.Error("assignment target not resolved to the let symbol")
 	}
 	printCall := out.Main.Decl.Body.Stmts[2].(*ast.ExprStmt).Call

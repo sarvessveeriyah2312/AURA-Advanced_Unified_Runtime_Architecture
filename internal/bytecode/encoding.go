@@ -22,7 +22,9 @@ const (
 	// FormatVersion is the only bytecode format version this build reads
 	// and writes. It changes whenever the encoding, the opcode numbering,
 	// an opcode's semantics, or the value kinds change (ADR-0011).
-	FormatVersion = 1
+	// Version 2 adds collections, enums and generics (ADR-0013).
+	// scripts/build-release.sh reads the next line; keep it bare.
+	FormatVersion = 2
 
 	headerLen   = len(Magic) + 2 + 2
 	checksumLen = 4
@@ -112,11 +114,21 @@ func Encode(f *File) ([]byte, error) {
 		for pc, in := range fn.Code {
 			b = append(b, byte(in.Op))
 			b = binary.AppendUvarint(b, uint64(in.A)) // non-negative after Validate
+			b = binary.AppendUvarint(b, uint64(in.B))
 			b = binary.AppendUvarint(b, uint64(fn.Spans[pc].Start))
 			b = binary.AppendUvarint(b, uint64(fn.Spans[pc].End))
 		}
 	}
 	b = binary.AppendUvarint(b, uint64(m.Main))
+	b = binary.AppendUvarint(b, uint64(len(m.Enums)))
+	for _, e := range m.Enums {
+		b = appendString(b, e.Name)
+		b = binary.AppendUvarint(b, uint64(len(e.Variants)))
+		for _, v := range e.Variants {
+			b = appendString(b, v.Name)
+			b = binary.AppendUvarint(b, uint64(v.Fields))
+		}
+	}
 	b = binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
 	return b, nil
 }
@@ -179,22 +191,39 @@ func Decode(data []byte) (*File, error) {
 		fn.Name = r.str("function name")
 		fn.NumParams = r.int("parameter count")
 		fn.NumLocals = r.int("local count")
-		fn.Result = r.kind()
-		// An instruction needs at least 4 bytes.
-		n := r.count("instruction", 4)
+		fn.Result = r.resultKind()
+		// An instruction needs at least 5 bytes.
+		n := r.count("instruction", 5)
 		if r.err != nil {
 			break
 		}
 		fn.Code = make([]Instr, n)
 		fn.Spans = make([]source.Span, n)
 		for pc := 0; pc < n && r.err == nil; pc++ {
-			fn.Code[pc] = Instr{Op: Opcode(r.u8()), A: r.int("operand")}
+			fn.Code[pc] = Instr{Op: Opcode(r.u8()), A: r.int("operand"), B: r.int("second operand")}
 			start := r.int("span start")
 			end := r.int("span end")
 			fn.Spans[pc] = source.Span{File: SourceFileID, Start: start, End: end}
 		}
 	}
 	m.Main = r.int("main index")
+	// An enum needs at least 2 bytes: name length and variant count.
+	nEnum := r.count("enum", 2)
+	if r.err == nil {
+		m.Enums = make([]EnumInfo, nEnum)
+	}
+	for i := 0; i < nEnum && r.err == nil; i++ {
+		e := &m.Enums[i]
+		e.Name = r.str("enum name")
+		nv := r.count("variant", 2)
+		if r.err != nil {
+			break
+		}
+		e.Variants = make([]VariantInfo, nv)
+		for j := 0; j < nv && r.err == nil; j++ {
+			e.Variants[j] = VariantInfo{Name: r.str("variant name"), Fields: r.int("field count")}
+		}
+	}
 	if r.err != nil {
 		return nil, r.err
 	}
@@ -309,10 +338,20 @@ func (r *reader) str(what string) string {
 	return string(p)
 }
 
+// kind reads a constant's kind: constants are never heap values.
 func (r *reader) kind() Kind {
 	k := Kind(r.u8())
 	if r.err == nil && k > KindString {
 		r.fail("unknown value kind %d", k)
+	}
+	return k
+}
+
+// resultKind reads a function's result kind.
+func (r *reader) resultKind() Kind {
+	k := Kind(r.u8())
+	if r.err == nil && k > KindAny {
+		r.fail("unknown result kind %d", k)
 	}
 	return k
 }

@@ -21,6 +21,7 @@ abspath() { printf '%s/%s\n' "$(cd "$(dirname "$1")" && pwd)" "$(basename "$1")"
 bin=$(abspath "$bin")
 rt=$(abspath "$rt")
 version=${3:-$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/cli/version.go)}
+format=$(sed -n 's/^	FormatVersion = \([0-9][0-9]*\)$/\1/p' internal/bytecode/encoding.go)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 failures=0
@@ -76,7 +77,7 @@ printf 'TRBC' >"$tmp/garbage.tbc"
 expect "help"                 0 "*"              ""                 -- "$bin" help
 expect "version"              0 "tread $version" ""                 -- "$bin" version
 expect "sdk --version"        0 "Tread SDK $version" ""             -- "$bin" sdk --version
-expect "runtime --version"    0 "Tread Runtime $version (bytecode format 1)" "" -- "$bin" runtime --version
+expect "runtime --version"    0 "Tread Runtime $version (bytecode format $format)" "" -- "$bin" runtime --version
 expect "check hello"          0 ""               ""                 -- "$bin" check examples/hello.tr
 expect "run hello"            0 "Hello, Tread!"  ""                 -- "$bin" run examples/hello.tr
 expect "check type error"     1 ""               'error\[TR-T001\]' -- "$bin" check "$tmp/type_error.tr"
@@ -96,7 +97,7 @@ expect "doctor"               0 "*"              ""                 -- "$bin" do
 
 # Runtime edition, running what the SDK built.
 expect "rt version"           0 "tread $version (runtime)" ""       -- "$rt" version
-expect "rt runtime --version" 0 "Tread Runtime $version (bytecode format 1)" "" -- "$rt" runtime --version
+expect "rt runtime --version" 0 "Tread Runtime $version (bytecode format $format)" "" -- "$rt" runtime --version
 expect "rt sdk --version"     1 ""               'SDK is not installed' -- "$rt" sdk --version
 expect "rt run hello.tbc"     0 "Hello, Tread!"  ""                 -- "$rt" run "$tmp/hello.tbc"
 expect "rt runtime error"     1 "start"          'rterr\.tr:4:' -- "$rt" run "$tmp/rterr.tbc"

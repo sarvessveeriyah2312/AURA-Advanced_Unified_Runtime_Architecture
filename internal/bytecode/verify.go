@@ -43,6 +43,21 @@ func (m *Module) stackEffect(in Instr) (pop, push int) {
 		return in.A, 1
 	case OpCall:
 		return m.Functions[in.A].NumParams, 1
+	// ADR-0013.
+	case OpMakeArray:
+		return in.A, 1
+	case OpMakeMap:
+		return 2 * in.A, 1
+	case OpMakeEnum:
+		return m.Enums[in.A].Variants[in.B].Fields, 1
+	case OpLoadPath, OpPeekPath, OpPopPath:
+		return in.B, 1
+	case OpStorePath:
+		return in.B + 1, 0
+	case OpPushPath, OpRemovePath:
+		return in.B + 1, 1
+	case OpLen, OpMapKeys, OpIsVariant, OpEnumField, OpPrintValue, OpToStringValue:
+		return 1, 1
 	}
 	return 2, 1 // binary arithmetic, concatenation and comparisons
 }

@@ -8,7 +8,8 @@ func TestLookup(t *testing.T) {
 		"true": True, "false": False, "return": Return,
 		// Loop keywords (ADR-0012).
 		"while": While, "for": For, "in": In, "break": Break, "continue": Continue,
-		"class": Reserved, "interface": Reserved, "enum": Reserved, "match": Reserved,
+		"enum": Enum, "match": Match, // ADR-0013
+		"class": Reserved, "interface": Reserved,
 		"async": Reserved, "await": Reserved,
 		"import": Reserved, "pub": Reserved,
 		// Built-in type names are identifiers (ADR-0004 item 3).
@@ -23,7 +24,7 @@ func TestLookup(t *testing.T) {
 }
 
 func TestIsKeyword(t *testing.T) {
-	for _, k := range []Kind{Module, Fn, Let, Mut, If, Else, True, False, Return, While, For, In, Break, Continue} {
+	for _, k := range []Kind{Module, Fn, Let, Mut, If, Else, True, False, Return, While, For, In, Break, Continue, Enum, Match} {
 		if !k.IsKeyword() {
 			t.Errorf("%v should be a keyword", k)
 		}
@@ -36,7 +37,7 @@ func TestIsKeyword(t *testing.T) {
 }
 
 func TestEveryKindHasName(t *testing.T) {
-	for k := EOF; k <= DotDot; k++ {
+	for k := EOF; k <= FatArrow; k++ {
 		if k == keywordStart || k == keywordEnd {
 			continue
 		}

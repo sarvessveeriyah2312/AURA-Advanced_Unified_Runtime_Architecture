@@ -9,8 +9,8 @@ import (
 
 func TestOpcodeTable(t *testing.T) {
 	ops := AllOpcodes()
-	if len(ops) != 46 {
-		t.Fatalf("%d opcodes, docs/05 §5.3 specifies 46", len(ops))
+	if len(ops) != 66 {
+		t.Fatalf("%d opcodes, docs/05 §5.3 specifies 66 (46, plus 20 from ADR-0013)", len(ops))
 	}
 	seen := map[string]bool{}
 	for _, op := range ops {
@@ -26,6 +26,9 @@ func TestOpcodeTable(t *testing.T) {
 	operands := map[Opcode]OperandKind{
 		OpConst: ConstOperand, OpLoadLocal: SlotOperand, OpStoreLocal: SlotOperand,
 		OpJump: TargetOperand, OpJumpIfFalse: TargetOperand, OpCall: FuncOperand, OpBuildString: CountOperand,
+		OpMakeArray: SizeOperand, OpMakeMap: SizeOperand, OpMakeEnum: VariantOperand, OpIsVariant: VariantOperand,
+		OpLoadPath: PathOperand, OpPeekPath: PathOperand, OpStorePath: PathOperand,
+		OpPushPath: PathOperand, OpPopPath: PathOperand, OpRemovePath: PathOperand, OpEnumField: FieldOperand,
 	}
 	for _, op := range ops {
 		want, ok := operands[op]

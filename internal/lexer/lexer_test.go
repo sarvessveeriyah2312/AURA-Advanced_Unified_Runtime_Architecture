@@ -41,7 +41,7 @@ var lexCases = []lexCase{
 	{id: "L4", src: "Foo foo FOO", tokens: "IDENT(Foo) IDENT(foo) IDENT(FOO)"},
 	{id: "L5", src: "let café = 1", tokens: "let IDENT(caf) = INT(1)", diags: []string{"L001@1:8"}},
 	{id: "L6", src: "let 日本 = 1", tokens: "let = INT(1)", diags: []string{"L001@1:5", "L001@1:6"}},
-	{id: "L7", src: "class match pub", tokens: "RESERVED(class) RESERVED(match) RESERVED(pub)"},
+	{id: "L7", src: "class interface pub", tokens: "RESERVED(class) RESERVED(interface) RESERVED(pub)"},
 	{id: "L8", src: "a\nb", tokens: "IDENT(a) NEWLINE IDENT(b)", checks: []tokCheck{{idx: 2, pos: "2:1"}}},
 	{id: "L9", src: "a\r\nb", tokens: "IDENT(a) NEWLINE IDENT(b)", checks: []tokCheck{{idx: 1, span: "[1,3)"}, {idx: 2, pos: "2:1"}}},
 	{id: "L10", src: "a\rb", tokens: "IDENT(a) NEWLINE IDENT(b)", checks: []tokCheck{{idx: 1, span: "[1,2)"}, {idx: 2, pos: "2:1"}}},
@@ -90,7 +90,7 @@ var lexCases = []lexCase{
 	{id: "L49", src: "// \xff\xfe\nx", tokens: "NEWLINE IDENT(x)", diags: []string{"L002@1:4"}},
 	{id: "L50", src: ";", tokens: "", diags: []string{"L001@1:1"}},
 	{id: "L51", src: "@ # & |", tokens: "", diags: []string{"L001@1:1", "L001@1:3", "L001@1:5", "L001@1:7"}},
-	{id: "L52", src: "x.y", tokens: "IDENT(x) IDENT(y)", diags: []string{"L001@1:2"}},
+	{id: "L52", src: "x.y", tokens: "IDENT(x) . IDENT(y)"}, // ADR-0013: '.' is a token
 	{id: "L53", src: "", tokens: "", checks: []tokCheck{{idx: -1, span: "[0,0)", pos: "1:1"}}},
 
 	// Operators.
@@ -122,8 +122,15 @@ var lexCases = []lexCase{
 	{id: "L71", src: "0..n a..b", tokens: "INT(0) .. IDENT(n) IDENT(a) .. IDENT(b)"},
 	{id: "L72", src: "1.5..2 0 .. 10", tokens: "FLOAT(1.5) .. INT(2) INT(0) .. INT(10)"},
 	{id: "L73", src: "1...2", tokens: "INT(1) .. INVALID", diags: []string{"L008@1:4[3,5)"}},
-	{id: "L74", src: "...", tokens: "..", diags: []string{"L001@1:3"}},
+	{id: "L74", src: "...", tokens: ".. ."},
 	{id: "L75", src: "007..1", tokens: "INVALID .. INT(1)", diags: []string{"L009@1:1[0,3)"}},
+
+	// Collections, enums and pattern matching (ADR-0013).
+	{id: "L76", src: "enum match", tokens: "enum match"},
+	{id: "L77", src: "[1, 2] a[0] [:]", tokens: "[ INT(1) , INT(2) ] IDENT(a) [ INT(0) ] [ : ]"},
+	{id: "L78", src: "xs.len() Shape.Circle", tokens: "IDENT(xs) . IDENT(len) ( ) IDENT(Shape) . IDENT(Circle)"},
+	{id: "L79", src: "=> = == =>=", tokens: "=> = == => ="},
+	{id: "L80", src: "a.5 0..n.len", tokens: "IDENT(a) INVALID INT(0) .. IDENT(n) . IDENT(len)", diags: []string{"L008@1:2"}},
 }
 
 func describeTokens(toks []token.Token) string {

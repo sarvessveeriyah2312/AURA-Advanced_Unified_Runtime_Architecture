@@ -24,6 +24,10 @@ func format(b *strings.Builder, n Node) {
 			b.WriteByte(' ')
 			format(b, n.Module)
 		}
+		for _, e := range n.Enums {
+			b.WriteByte(' ')
+			format(b, e)
+		}
 		for _, f := range n.Funcs {
 			b.WriteByte(' ')
 			format(b, f)
@@ -32,19 +36,19 @@ func format(b *strings.Builder, n Node) {
 	case *ModuleDecl:
 		fmt.Fprintf(b, "(module %s)", identName(n.Name))
 	case *FuncDecl:
-		fmt.Fprintf(b, "(fn %s (", identName(n.Name))
+		fmt.Fprintf(b, "(fn %s%s (", identName(n.Name), typeParams(n.TypeParams))
 		for i, p := range n.Params {
 			if i > 0 {
 				b.WriteByte(' ')
 			}
 			b.WriteString(identName(p.Name))
 			if p.Type != nil {
-				b.WriteString(":" + p.Type.Name)
+				b.WriteString(":" + TypeString(p.Type))
 			}
 		}
 		b.WriteByte(')')
 		if n.Result != nil {
-			b.WriteString(" -> " + n.Result.Name)
+			b.WriteString(" -> " + TypeString(n.Result))
 		}
 		if n.Body != nil {
 			b.WriteByte(' ')
@@ -65,13 +69,15 @@ func format(b *strings.Builder, n Node) {
 		}
 		b.WriteString(identName(n.Name))
 		if n.Type != nil {
-			b.WriteString(":" + n.Type.Name)
+			b.WriteString(":" + TypeString(n.Type))
 		}
 		b.WriteByte(' ')
 		format(b, n.Value)
 		b.WriteByte(')')
 	case *AssignStmt:
-		fmt.Fprintf(b, "(assign %s ", identName(n.Target))
+		b.WriteString("(assign ")
+		format(b, n.Target)
+		b.WriteByte(' ')
 		format(b, n.Value)
 		b.WriteByte(')')
 	case *IfStmt:
@@ -96,9 +102,14 @@ func format(b *strings.Builder, n Node) {
 		b.WriteByte(')')
 	case *ForStmt:
 		fmt.Fprintf(b, "(for %s ", identName(n.Var))
-		format(b, n.Start)
-		b.WriteString(" .. ")
-		format(b, n.End)
+		if n.Iter != nil {
+			b.WriteString("in ")
+			format(b, n.Iter)
+		} else {
+			format(b, n.Start)
+			b.WriteString(" .. ")
+			format(b, n.End)
+		}
 		b.WriteByte(' ')
 		formatBlock(b, n.Body)
 		b.WriteByte(')')
@@ -161,6 +172,81 @@ func format(b *strings.Builder, n Node) {
 		b.WriteByte(')')
 	case *ErrorExpr:
 		b.WriteString("<error>")
+	case *EnumDecl:
+		fmt.Fprintf(b, "(enum %s%s", identName(n.Name), typeParams(n.TypeParams))
+		for _, v := range n.Variants {
+			b.WriteByte(' ')
+			format(b, v)
+		}
+		b.WriteByte(')')
+	case *Variant:
+		if len(n.Fields) == 0 {
+			b.WriteString(identName(n.Name))
+			return
+		}
+		b.WriteString("(" + identName(n.Name))
+		for _, f := range n.Fields {
+			b.WriteString(" " + TypeString(f))
+		}
+		b.WriteByte(')')
+	case *MatchStmt:
+		b.WriteString("(match ")
+		format(b, n.Subject)
+		for _, a := range n.Arms {
+			b.WriteByte(' ')
+			format(b, a)
+		}
+		b.WriteByte(')')
+	case *MatchArm:
+		b.WriteString("(=> ")
+		format(b, n.Pattern)
+		b.WriteByte(' ')
+		formatBlock(b, n.Body)
+		b.WriteByte(')')
+	case *WildcardPat:
+		b.WriteString("_")
+	case *BindPat:
+		b.WriteString(identName(n.Name))
+	case *LitPat:
+		format(b, n.Value)
+	case *VariantPat:
+		name := identName(n.Enum) + "." + identName(n.Variant)
+		if n.Args == nil {
+			b.WriteString(name)
+			return
+		}
+		b.WriteString("(" + name)
+		for _, a := range n.Args {
+			b.WriteByte(' ')
+			format(b, a)
+		}
+		b.WriteByte(')')
+	case *ArrayLit:
+		b.WriteString("(array")
+		for _, e := range n.Elems {
+			b.WriteByte(' ')
+			format(b, e)
+		}
+		b.WriteByte(')')
+	case *MapLit:
+		b.WriteString("(map")
+		for i := range n.Keys {
+			b.WriteByte(' ')
+			format(b, n.Keys[i])
+			b.WriteByte(':')
+			format(b, n.Values[i])
+		}
+		b.WriteByte(')')
+	case *IndexExpr:
+		b.WriteString("(index ")
+		format(b, n.X)
+		b.WriteByte(' ')
+		format(b, n.Index)
+		b.WriteByte(')')
+	case *MemberExpr:
+		b.WriteString("(. ")
+		format(b, n.X)
+		b.WriteString(" " + identName(n.Name) + ")")
 	default:
 		fmt.Fprintf(b, "<unknown %T>", n)
 	}
@@ -181,4 +267,30 @@ func identName(id *Ident) string {
 		return "<nil>"
 	}
 	return id.Name
+}
+
+// TypeString renders a type annotation, e.g. Map<String, Array<Int>>.
+func TypeString(t *TypeName) string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.Args) == 0 {
+		return t.Name
+	}
+	parts := make([]string, len(t.Args))
+	for i, a := range t.Args {
+		parts[i] = TypeString(a)
+	}
+	return t.Name + "<" + strings.Join(parts, ", ") + ">"
+}
+
+func typeParams(ps []*Ident) string {
+	if len(ps) == 0 {
+		return ""
+	}
+	names := make([]string, len(ps))
+	for i, p := range ps {
+		names[i] = identName(p)
+	}
+	return "<" + strings.Join(names, ", ") + ">"
 }

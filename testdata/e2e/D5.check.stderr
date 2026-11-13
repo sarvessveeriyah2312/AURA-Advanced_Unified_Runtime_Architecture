@@ -1,4 +1,4 @@
-error[TR-T011]: 'print' cannot take a value of type Unit; it accepts Int, Float, Bool or String
+error[TR-T011]: 'print' cannot take a value of type Unit; it accepts any other value
   --> D5.tr:5:11
    |
  5 |     print(u())

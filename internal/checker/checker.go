@@ -1,11 +1,7 @@
 package checker
 
 import (
-	"errors"
-	"math"
 	"sort"
-	"strconv"
-	"strings"
 
 	"github.com/sarvessveeriyah2312/Tread/internal/ast"
 	"github.com/sarvessveeriyah2312/Tread/internal/diagnostic"
@@ -28,8 +24,12 @@ func Check(prog *ast.Program) (*CheckedProgram, []diagnostic.Diagnostic) {
 			Defs:        map[*ast.Ident]*Symbol{},
 			IntValues:   map[ast.Expr]int64{},
 			FloatValues: map[*ast.FloatLit]float64{},
+			Variants:    map[ast.Node]*Variant{},
+			Methods:     map[*ast.CallExpr]Method{},
+			Exhaustive:  map[*ast.MatchStmt]bool{},
 		},
-		file: prog.Loc.File,
+		file:  prog.Loc.File,
+		enums: map[string]*Enum{},
 	}
 	c.universe = newScope(nil)
 	for _, b := range []*Function{{Name: "print", Result: Unit}, {Name: "toString", Result: String}} {
@@ -37,6 +37,11 @@ func Check(prog *ast.Program) (*CheckedProgram, []diagnostic.Diagnostic) {
 	}
 	c.module = newScope(c.universe)
 
+	option := newOption()
+	c.enums[option.Name] = option
+	c.out.Enums = append(c.out.Enums, option)
+
+	c.collectEnums(prog)
 	c.collectSignatures(prog)
 	c.validateMain()
 	for _, fn := range c.out.Functions {
@@ -54,6 +59,11 @@ type checker struct {
 	file     source.FileID
 	universe *scope
 	module   *scope
+	// enums is the type namespace's enums, including Option.
+	enums map[string]*Enum
+	// typeParams are the type parameters in scope (of the current
+	// function or enum declaration).
+	typeParams map[string]*TypeParam
 	// current function and scope while checking bodies
 	fn    *Function
 	scope *scope
@@ -87,16 +97,157 @@ func (c *checker) declare(s *scope, sym *Symbol, what string) bool {
 	return true
 }
 
-// resolveType resolves a type annotation in the type namespace.
+// declareTypeParams creates the type parameters of a function or enum.
+// Duplicates and names that hide a type are T005.
+func (c *checker) declareTypeParams(ids []*ast.Ident) ([]*TypeParam, map[string]*TypeParam) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	params := make([]*TypeParam, 0, len(ids))
+	byName := map[string]*TypeParam{}
+	for _, id := range ids {
+		if id == nil {
+			continue
+		}
+		p := newTypeParam(id.Name, id.Loc)
+		switch {
+		case byName[id.Name] != nil:
+			c.errorf(diagnostic.DuplicateDeclaration, id.Loc, "type parameter '%s' is already declared", id.Name)
+		case c.isTypeName(id.Name):
+			c.errorf(diagnostic.DuplicateDeclaration, id.Loc, "type parameter '%s' would hide the type '%s'", id.Name, id.Name)
+		default:
+			byName[id.Name] = p
+		}
+		params = append(params, p)
+	}
+	return params, byName
+}
+
+// isTypeName reports whether name is a built-in type or a declared enum.
+func (c *checker) isTypeName(name string) bool {
+	switch name {
+	case "Array", "Map":
+		return true
+	}
+	return builtinTypes[name] != nil || c.enums[name] != nil
+}
+
+// resolveType resolves a type annotation in the type namespace: the
+// primitives, Array<T>, Map<K, V>, enums (with type arguments when
+// generic), and the type parameters in scope.
 func (c *checker) resolveType(tn *ast.TypeName) Type {
 	if tn == nil {
 		return Invalid // parser already reported
 	}
+	args := make([]Type, len(tn.Args))
+	for i, a := range tn.Args {
+		args[i] = c.resolveType(a)
+		if args[i] == Unit {
+			c.errorf(diagnostic.UnitInCompositeType, a.Loc, "Unit cannot be used inside another type")
+			args[i] = Invalid
+		}
+	}
+	arity := func(want int) bool {
+		if len(args) == want {
+			return true
+		}
+		if want == 0 {
+			c.errorf(diagnostic.WrongTypeArguments, tn.Loc, "type '%s' takes no type arguments", tn.Name)
+		} else {
+			c.errorf(diagnostic.WrongTypeArguments, tn.Loc, "type '%s' takes %d type argument(s) but %d were given", tn.Name, want, len(args))
+		}
+		return false
+	}
+	if p := c.typeParams[tn.Name]; p != nil {
+		if !arity(0) {
+			return Invalid
+		}
+		return ParamType(p)
+	}
 	if t, ok := builtinTypes[tn.Name]; ok {
+		if !arity(0) {
+			return Invalid
+		}
 		return t
+	}
+	switch tn.Name {
+	case "Array":
+		if !arity(1) {
+			return Invalid
+		}
+		return ArrayOf(args[0])
+	case "Map":
+		if !arity(2) {
+			return Invalid
+		}
+		if !args[0].isMapKey() {
+			c.errorf(diagnostic.InvalidMapKey, tn.Args[0].Loc, "map keys must be Int, String or Bool, not %s", args[0])
+			return Invalid
+		}
+		return MapOf(args[0], args[1])
+	}
+	if e := c.enums[tn.Name]; e != nil {
+		if !arity(len(e.Params)) {
+			return Invalid
+		}
+		return EnumOf(e, args)
 	}
 	c.errorf(diagnostic.UnknownType, tn.Loc, "unknown type '%s'", tn.Name)
 	return Invalid
+}
+
+// collectEnums declares every enum, then resolves variant fields, so
+// enums may refer to each other (and to themselves) in any order.
+func (c *checker) collectEnums(prog *ast.Program) {
+	var decls []*Enum
+	for _, decl := range prog.Enums {
+		if decl == nil || decl.Name == nil {
+			continue
+		}
+		e := &Enum{Name: decl.Name.Name, Decl: decl, Index: len(c.out.Enums), id: nextID.Add(1)}
+		switch {
+		case c.enums[e.Name] != nil && c.enums[e.Name].Decl != nil:
+			c.diags = append(c.diags, diagnostic.Errorf(diagnostic.DuplicateDeclaration, decl.Name.Loc,
+				"enum '%s' is already declared", e.Name).
+				WithRelated(c.enums[e.Name].Decl.Name.Loc, "previous declaration is here"))
+			continue
+		case c.isTypeName(e.Name):
+			c.errorf(diagnostic.DuplicateDeclaration, decl.Name.Loc, "cannot declare enum '%s': '%s' is a built-in type", e.Name, e.Name)
+			continue
+		}
+		c.enums[e.Name] = e
+		c.out.Enums = append(c.out.Enums, e)
+		decls = append(decls, e)
+	}
+	for _, e := range decls {
+		var byName map[string]*TypeParam
+		e.Params, byName = c.declareTypeParams(e.Decl.TypeParams)
+		c.typeParams = byName
+		seen := map[string]*ast.Variant{}
+		for _, v := range e.Decl.Variants {
+			if v == nil || v.Name == nil {
+				continue
+			}
+			if prev := seen[v.Name.Name]; prev != nil {
+				c.diags = append(c.diags, diagnostic.Errorf(diagnostic.DuplicateDeclaration, v.Name.Loc,
+					"variant '%s' is already declared in enum '%s'", v.Name.Name, e.Name).
+					WithRelated(prev.Name.Loc, "previous declaration is here"))
+				continue
+			}
+			seen[v.Name.Name] = v
+			variant := &Variant{Enum: e, Name: v.Name.Name, Index: len(e.Variants)}
+			for _, f := range v.Fields {
+				t := c.resolveType(f)
+				if t == Unit {
+					c.errorf(diagnostic.UnitInCompositeType, f.Loc, "a variant cannot carry a Unit value")
+					t = Invalid
+				}
+				variant.Fields = append(variant.Fields, t)
+			}
+			e.Variants = append(e.Variants, variant)
+		}
+		c.typeParams = nil
+	}
 }
 
 func (c *checker) collectSignatures(prog *ast.Program) {
@@ -105,6 +256,9 @@ func (c *checker) collectSignatures(prog *ast.Program) {
 			continue
 		}
 		fn := &Function{Name: decl.Name.Name, Decl: decl}
+		var byName map[string]*TypeParam
+		fn.TypeParams, byName = c.declareTypeParams(decl.TypeParams)
+		c.typeParams = byName
 		params := newScope(nil) // only for duplicate-parameter detection
 		for _, p := range decl.Params {
 			if p == nil || p.Name == nil {
@@ -126,6 +280,7 @@ func (c *checker) collectSignatures(prog *ast.Program) {
 				"function '%s' must declare its return type (for example '-> Unit')", fn.Name)
 			fn.Result = Invalid
 		}
+		c.typeParams = nil
 		sym := &Symbol{Name: fn.Name, Kind: FuncSymbol, Func: fn, Decl: decl.Name.Loc}
 		if c.declare(c.module, sym, "function") {
 			c.out.Defs[decl.Name] = sym
@@ -146,6 +301,10 @@ func (c *checker) validateMain() {
 	fn := sym.Func
 	decl := fn.Decl
 	valid := true
+	if len(decl.TypeParams) > 0 {
+		c.errorf(diagnostic.InvalidMainSignature, decl.Name.Loc, "'main' cannot have type parameters")
+		valid = false
+	}
 	if len(decl.Params) > 0 {
 		first, last := decl.Params[0], decl.Params[len(decl.Params)-1]
 		c.errorf(diagnostic.InvalidMainSignature, source.Join(first.Loc, last.Loc),
@@ -157,9 +316,9 @@ func (c *checker) validateMain() {
 		c.errorf(diagnostic.InvalidMainSignature, decl.Name.Loc,
 			"'main' must declare its return type: 'fn main() -> Unit'")
 		valid = false
-	case decl.Result.Name != "Unit":
+	case decl.Result.Name != "Unit" || len(decl.Result.Args) > 0:
 		c.errorf(diagnostic.InvalidMainSignature, decl.Result.Loc,
-			"'main' must return Unit, not '%s'", decl.Result.Name)
+			"'main' must return Unit, not '%s'", ast.TypeString(decl.Result))
 		valid = false
 	}
 	if valid {
@@ -176,6 +335,12 @@ func (c *checker) checkFunction(fn *Function) {
 		return
 	}
 	c.fn = fn
+	c.typeParams = map[string]*TypeParam{}
+	for _, p := range fn.TypeParams {
+		if c.typeParams[p.Name] == nil {
+			c.typeParams[p.Name] = p
+		}
+	}
 	params := newScope(c.module)
 	for _, p := range fn.Params {
 		if c.universe.names[p.Name] == nil {
@@ -186,11 +351,11 @@ func (c *checker) checkFunction(fn *Function) {
 	}
 	c.scope = params
 	c.checkBlock(decl.Body)
-	if fn.Result != Unit && fn.Result != Invalid && !alwaysReturns(decl.Body) {
+	if fn.Result != Unit && fn.Result != Invalid && !c.alwaysReturns(decl.Body) {
 		c.errorf(diagnostic.MissingReturn, decl.Name.Loc,
 			"function '%s' does not return a value on every path; expected %s", fn.Name, fn.Result)
 	}
-	c.fn, c.scope, c.loops = nil, nil, 0
+	c.fn, c.scope, c.loops, c.typeParams = nil, nil, 0, nil
 }
 
 func (c *checker) checkBlock(b *ast.Block) {
@@ -225,6 +390,8 @@ func (c *checker) checkStmt(s ast.Stmt) {
 		c.checkLoopControl("break", s.Loc)
 	case *ast.ContinueStmt:
 		c.checkLoopControl("continue", s.Loc)
+	case *ast.MatchStmt:
+		c.checkMatch(s)
 	case *ast.ExprStmt:
 		if s.Call != nil {
 			c.expr(s.Call)
@@ -233,16 +400,16 @@ func (c *checker) checkStmt(s ast.Stmt) {
 }
 
 func (c *checker) checkLet(s *ast.LetStmt) {
-	valueType := Invalid
-	if s.Value != nil {
-		valueType = c.expr(s.Value)
-	}
-	varType := valueType
+	var varType Type
 	if s.Type != nil {
 		varType = c.resolveType(s.Type)
-		if !compatible(varType, valueType) {
-			c.errorf(diagnostic.TypeMismatch, s.Value.Span(),
-				"expected %s but found %s", varType, valueType)
+		if s.Value != nil {
+			c.exprAs(s.Value, varType)
+		}
+	} else {
+		varType = Invalid
+		if s.Value != nil {
+			varType = c.expr(s.Value)
 		}
 	}
 	if s.Name == nil {
@@ -256,44 +423,106 @@ func (c *checker) checkLet(s *ast.LetStmt) {
 	}
 }
 
+// exprAs checks e where a value of type want is required, reporting T001
+// on a mismatch, and returns e's type.
+func (c *checker) exprAs(e ast.Expr, want Type) Type {
+	got := c.exprWant(e, want)
+	if !compatible(want, got) {
+		c.errorf(diagnostic.TypeMismatch, e.Span(), "expected %s but found %s", want, got)
+	}
+	return got
+}
+
+// rootIdent returns the variable at the root of an index path, or nil.
+func rootIdent(e ast.Expr) *ast.Ident {
+	for {
+		switch x := e.(type) {
+		case *ast.Ident:
+			return x
+		case *ast.IndexExpr:
+			e = x.X
+		default:
+			return nil
+		}
+	}
+}
+
+// checkMutable reports T004 unless the variable at the root of target is
+// a `let mut` variable. whole is true for `x = v`, false for changes to
+// an element or through a method.
+func (c *checker) checkMutable(target ast.Expr, span source.Span, whole bool) bool {
+	id := rootIdent(target)
+	if id == nil {
+		c.errorf(diagnostic.AssignToImmutable, span, "only a variable, or an element of one, can be changed")
+		return false
+	}
+	sym := c.scope.lookup(id.Name)
+	if sym == nil {
+		return false // reported when the target is checked
+	}
+	verb := "change"
+	if whole {
+		verb = "assign to"
+	}
+	switch sym.Kind {
+	case FuncSymbol, BuiltinSymbol:
+		c.errorf(diagnostic.AssignToImmutable, span, "cannot %s function '%s'", verb, sym.Name)
+		return false
+	case ParamSymbol:
+		c.errorf(diagnostic.AssignToImmutable, span, "cannot %s parameter '%s'", verb, sym.Name)
+		return false
+	case LoopVarSymbol:
+		c.diags = append(c.diags, diagnostic.Errorf(diagnostic.AssignToImmutable, span,
+			"cannot %s loop variable '%s'", verb, sym.Name).
+			WithRelated(sym.Decl, "loop variable declared here"))
+		return false
+	case MatchVarSymbol:
+		c.diags = append(c.diags, diagnostic.Errorf(diagnostic.AssignToImmutable, span,
+			"cannot %s '%s': names bound by a pattern are immutable", verb, sym.Name).
+			WithRelated(sym.Decl, "bound here"))
+		return false
+	}
+	if !sym.Mutable {
+		msg := "cannot assign twice to immutable variable '%s'"
+		if !whole {
+			msg = "cannot change immutable variable '%s'"
+		}
+		c.diags = append(c.diags, diagnostic.Errorf(diagnostic.AssignToImmutable, span, msg, sym.Name).
+			WithHelp("declare it with 'let mut' to allow changes").
+			WithRelated(sym.Decl, "variable declared here"))
+		return false
+	}
+	return true
+}
+
 func (c *checker) checkAssign(s *ast.AssignStmt) {
-	valueType := c.expr(s.Value)
 	if s.Target == nil {
 		return
 	}
-	sym := c.scope.lookup(s.Target.Name)
-	if sym == nil {
-		c.errorf(diagnostic.UndefinedName, s.Target.Loc, "undefined name '%s'", s.Target.Name)
+	if id, ok := s.Target.(*ast.Ident); ok {
+		sym := c.scope.lookup(id.Name)
+		if sym == nil {
+			c.expr(s.Value)
+			c.errorf(diagnostic.UndefinedName, id.Loc, "undefined name '%s'", id.Name)
+			return
+		}
+		c.out.Uses[id] = sym
+		if !c.checkMutable(id, s.Loc, true) {
+			c.expr(s.Value)
+			return
+		}
+		c.exprAs(s.Value, sym.Type)
 		return
 	}
-	c.out.Uses[s.Target] = sym
-	switch {
-	case sym.Kind == FuncSymbol || sym.Kind == BuiltinSymbol:
-		c.errorf(diagnostic.AssignToImmutable, s.Loc, "cannot assign to function '%s'", sym.Name)
-		return
-	case sym.Kind == ParamSymbol:
-		c.errorf(diagnostic.AssignToImmutable, s.Loc, "cannot assign to parameter '%s'", sym.Name)
-		return
-	case sym.Kind == LoopVarSymbol:
-		c.diags = append(c.diags, diagnostic.Errorf(diagnostic.AssignToImmutable, s.Loc,
-			"cannot assign to loop variable '%s'", sym.Name).
-			WithRelated(sym.Decl, "loop variable declared here"))
-		return
-	case !sym.Mutable:
-		c.diags = append(c.diags, diagnostic.Errorf(diagnostic.AssignToImmutable, s.Loc,
-			"cannot assign twice to immutable variable '%s'", sym.Name).
-			WithHelp("declare it with 'let mut' to allow assignment").
-			WithRelated(sym.Decl, "variable declared here"))
-		return
-	}
-	if !compatible(sym.Type, valueType) {
-		c.errorf(diagnostic.TypeMismatch, s.Value.Span(), "expected %s but found %s", sym.Type, valueType)
-	}
+	// An element: a[i] = v, grid[r][c] = v, m["k"] = v.
+	target := c.expr(s.Target)
+	c.exprAs(s.Value, target)
+	c.checkMutable(s.Target, s.Loc, false)
 }
 
 func (c *checker) checkIf(s *ast.IfStmt) {
 	if s.Cond != nil {
-		if t := c.expr(s.Cond); !compatible(Bool, t) {
+		if t := c.exprWant(s.Cond, Bool); !compatible(Bool, t) {
 			c.errorf(diagnostic.TypeMismatch, s.Cond.Span(), "condition must be Bool, found %s", t)
 		}
 	}
@@ -309,7 +538,7 @@ func (c *checker) checkIf(s *ast.IfStmt) {
 // checkWhile checks `while cond { }` (ADR-0012).
 func (c *checker) checkWhile(s *ast.WhileStmt) {
 	if s.Cond != nil {
-		if t := c.expr(s.Cond); !compatible(Bool, t) {
+		if t := c.exprWant(s.Cond, Bool); !compatible(Bool, t) {
 			c.errorf(diagnostic.TypeMismatch, s.Cond.Span(), "condition must be Bool, found %s", t)
 		}
 	}
@@ -318,23 +547,39 @@ func (c *checker) checkWhile(s *ast.WhileStmt) {
 	c.loops--
 }
 
-// checkFor checks `for name in start..end { }` (ADR-0012). The bounds
-// are checked in the enclosing scope, before the loop variable exists.
-// The loop variable lives in its own scope around the body, so the body
-// may shadow it like a parameter.
+// checkFor checks `for name in start..end { }` (ADR-0012) and
+// `for name in collection { }` (ADR-0013). The range or collection is
+// checked in the enclosing scope, before the loop variable exists. The
+// loop variable lives in its own scope around the body, so the body may
+// shadow it like a parameter.
 func (c *checker) checkFor(s *ast.ForStmt) {
-	for _, bound := range []ast.Expr{s.Start, s.End} {
-		if bound == nil {
-			continue // parser already reported
+	varType := Int
+	if s.Iter != nil {
+		switch t := c.expr(s.Iter); t.Kind {
+		case KArray, KMap:
+			varType = t.Args[0] // an array's elements, a map's keys
+		case KInvalid:
+			varType = Invalid
+		default:
+			c.diags = append(c.diags, diagnostic.Errorf(diagnostic.NotIndexable, s.Iter.Span(),
+				"cannot iterate over a value of type %s", t).
+				WithHelp("loop over a range such as 0..n, or over an array or a map"))
+			varType = Invalid
 		}
-		if t := c.expr(bound); !compatible(Int, t) {
-			c.errorf(diagnostic.TypeMismatch, bound.Span(), "range bound must be Int, found %s", t)
+	} else {
+		for _, bound := range []ast.Expr{s.Start, s.End} {
+			if bound == nil {
+				continue // parser already reported
+			}
+			if t := c.exprWant(bound, Int); !compatible(Int, t) {
+				c.errorf(diagnostic.TypeMismatch, bound.Span(), "range bound must be Int, found %s", t)
+			}
 		}
 	}
 	saved := c.scope
 	c.scope = newScope(saved)
 	if s.Var != nil {
-		sym := &Symbol{Name: s.Var.Name, Kind: LoopVarSymbol, Type: Int, Decl: s.Var.Loc}
+		sym := &Symbol{Name: s.Var.Name, Kind: LoopVarSymbol, Type: varType, Decl: s.Var.Loc}
 		if c.declare(c.scope, sym, "loop variable") {
 			c.out.Defs[s.Var] = sym
 		}
@@ -360,17 +605,16 @@ func (c *checker) checkReturn(s *ast.ReturnStmt) {
 		}
 		return
 	}
-	got := c.expr(s.Value)
-	switch {
-	case want == Unit:
+	if want == Unit {
+		c.expr(s.Value)
 		c.errorf(diagnostic.InvalidReturn, s.Loc, "cannot return a value from a function returning Unit")
-	case !compatible(want, got):
-		c.errorf(diagnostic.TypeMismatch, s.Value.Span(), "expected %s but found %s", want, got)
+		return
 	}
+	c.exprAs(s.Value, want)
 }
 
 // alwaysReturns implements docs/12 §12.7.
-func alwaysReturns(s ast.Stmt) bool {
+func (c *checker) alwaysReturns(s ast.Stmt) bool {
 	switch s := s.(type) {
 	case *ast.ReturnStmt:
 		return true
@@ -379,7 +623,7 @@ func alwaysReturns(s ast.Stmt) bool {
 			return false
 		}
 		for _, st := range s.Stmts {
-			if alwaysReturns(st) {
+			if c.alwaysReturns(st) {
 				return true
 			}
 		}
@@ -387,253 +631,46 @@ func alwaysReturns(s ast.Stmt) bool {
 		if s.Then == nil || s.Else == nil {
 			return false
 		}
-		return alwaysReturns(s.Then) && alwaysReturns(s.Else)
+		return c.alwaysReturns(s.Then) && c.alwaysReturns(s.Else)
 	case *ast.WhileStmt:
 		// ADR-0012: `while true` with no `break` of its own never
 		// completes, so control cannot fall off the end after it. No
 		// other loop counts: its body may run zero times.
 		return isTrueLiteral(s.Cond) && !breaks(s.Body)
+	case *ast.MatchStmt:
+		// ADR-0013: an exhaustive match whose every arm returns.
+		if !c.out.Exhaustive[s] || len(s.Arms) == 0 {
+			return false
+		}
+		for _, a := range s.Arms {
+			if a == nil || !c.alwaysReturns(a.Body) {
+				return false
+			}
+		}
+		return true
 	}
 	return false
 }
 
 // compatible reports whether a value of type got may be used where want
-// is required. Invalid is compatible with everything (error recovery).
+// is required: the types are identical, ignoring Invalid anywhere inside
+// them (error recovery).
 func compatible(want, got Type) bool {
-	return want == Invalid || got == Invalid || want == got
-}
-
-// ---------------------------------------------------------------------------
-// Expressions
-
-// expr type-checks e, records its type, and returns it.
-func (c *checker) expr(e ast.Expr) Type {
-	t := c.exprType(e)
-	if e != nil {
-		c.out.Types[e] = t
+	if want == got || want == Invalid || got == Invalid {
+		return true
 	}
-	return t
-}
-
-func (c *checker) exprType(e ast.Expr) Type {
-	switch e := e.(type) {
-	case nil, *ast.ErrorExpr:
-		return Invalid
-	case *ast.IntLit:
-		return c.intLit(e)
-	case *ast.FloatLit:
-		return c.floatLit(e)
-	case *ast.StringLit:
-		return String
-	case *ast.BoolLit:
-		return Bool
-	case *ast.InterpString:
-		for _, seg := range e.Segments {
-			if seg.Expr == nil {
-				continue
-			}
-			if t := c.expr(seg.Expr); t == Unit {
-				c.errorf(diagnostic.NotDisplayable, seg.Expr.Span(), "a value of type Unit cannot be interpolated")
-			}
-		}
-		return String
-	case *ast.Ident:
-		return c.ident(e)
-	case *ast.ParenExpr:
-		return c.expr(e.Inner)
-	case *ast.UnaryExpr:
-		return c.unary(e)
-	case *ast.BinaryExpr:
-		return c.binary(e)
-	case *ast.CallExpr:
-		return c.call(e)
+	if want.Kind != got.Kind || want.Enum != got.Enum || want.Param != got.Param || len(want.Args) != len(got.Args) {
+		return false
 	}
-	return Invalid
-}
-
-func (c *checker) intLit(e *ast.IntLit) Type {
-	v, err := strconv.ParseInt(e.Digits, 10, 64)
-	if err != nil {
-		c.errorf(diagnostic.IntLiteralOutOfRange, e.Loc,
-			"integer literal %s is out of range for Int (maximum 9223372036854775807)", e.Digits)
-		return Invalid
+	if !want.containsInvalid() && !got.containsInvalid() {
+		return false // interned and different
 	}
-	c.out.IntValues[e] = v
-	return Int
-}
-
-func (c *checker) floatLit(e *ast.FloatLit) Type {
-	v, err := strconv.ParseFloat(e.Lexeme, 64)
-	switch {
-	case math.IsInf(v, 0) || (err != nil && !errors.Is(err, strconv.ErrRange)):
-		c.errorf(diagnostic.FloatLiteralRange, e.Loc,
-			"float literal %s is too large for Float", truncateLexeme(e.Lexeme))
-		return Invalid
-	case v == 0 && strings.ContainsAny(e.Lexeme, "123456789"):
-		c.errorf(diagnostic.FloatLiteralRange, e.Loc,
-			"float literal %s is too small for Float and would round to zero", truncateLexeme(e.Lexeme))
-		return Invalid
-	}
-	c.out.FloatValues[e] = v
-	return Float
-}
-
-// truncateLexeme shortens very long literals in messages; the span still
-// covers the whole lexeme.
-func truncateLexeme(s string) string {
-	if len(s) <= 40 {
-		return s
-	}
-	return s[:20] + "..." + s[len(s)-10:]
-}
-
-func (c *checker) ident(e *ast.Ident) Type {
-	sym := c.scope.lookup(e.Name)
-	if sym == nil {
-		c.errorf(diagnostic.UndefinedName, e.Loc, "undefined name '%s'", e.Name)
-		return Invalid
-	}
-	c.out.Uses[e] = sym
-	if sym.Kind == FuncSymbol || sym.Kind == BuiltinSymbol {
-		c.errorf(diagnostic.FunctionAsValue, e.Loc,
-			"function '%s' cannot be used as a value; functions can only be called", e.Name)
-		return Invalid
-	}
-	return sym.Type
-}
-
-func (c *checker) unary(e *ast.UnaryExpr) Type {
-	op := e.Op.String()
-	if lit, ok := e.Operand.(*ast.IntLit); ok && op == "-" && lit.Digits == minIntMagnitude {
-		// The minimum Int: valid only as the direct operand of unary
-		// minus. Recorded on the unary node; the literal has no value.
-		c.out.Types[lit] = Int
-		c.out.IntValues[e] = math.MinInt64
-		return Int
-	}
-	t := c.expr(e.Operand)
-	if t == Invalid {
-		return Invalid
-	}
-	switch {
-	case op == "-" && t.isNumeric():
-		return t
-	case op == "!" && t == Bool:
-		return Bool
-	}
-	c.errorf(diagnostic.InvalidOperandTypes, e.Loc, "operator '%s' cannot be applied to %s", op, t)
-	return Invalid
-}
-
-// binary implements the operator table of ADR-0004 item 6.
-func (c *checker) binary(e *ast.BinaryExpr) Type {
-	l := c.expr(e.Left)
-	r := c.expr(e.Right)
-	if l == Invalid || r == Invalid {
-		return Invalid
-	}
-	op := e.Op.String()
-	same := l == r
-	switch op {
-	case "+":
-		if same && (l.isNumeric() || l == String) {
-			return l
-		}
-	case "-", "*", "/":
-		if same && l.isNumeric() {
-			return l
-		}
-	case "%":
-		if same && l == Int {
-			return Int
-		}
-	case "==", "!=":
-		if same && l != Unit {
-			return Bool
-		}
-	case "<", "<=", ">", ">=":
-		if same && l.isNumeric() {
-			return Bool
-		}
-	case "&&", "||":
-		if same && l == Bool {
-			return Bool
+	for i := range want.Args {
+		if !compatible(want.Args[i], got.Args[i]) {
+			return false
 		}
 	}
-	c.errorf(diagnostic.InvalidOperandTypes, e.Loc, "operator '%s' cannot be applied to %s and %s", op, l, r)
-	return Invalid
-}
-
-func (c *checker) call(e *ast.CallExpr) Type {
-	id, ok := e.Callee.(*ast.Ident)
-	if !ok {
-		// Not a name: e.g. f()() or (f)(1). The MVP has no function values.
-		if t := c.expr(e.Callee); t != Invalid {
-			c.errorf(diagnostic.NotCallable, e.Callee.Span(), "expression of type %s is not callable", t)
-		}
-		c.checkArgs(e, nil)
-		return Invalid
-	}
-	sym := c.scope.lookup(id.Name)
-	if sym == nil {
-		c.errorf(diagnostic.UndefinedName, id.Loc, "undefined function '%s'", id.Name)
-		c.checkArgs(e, nil)
-		return Invalid
-	}
-	c.out.Uses[id] = sym
-	c.out.Types[id] = Invalid // a callee name has no value type
-	switch sym.Kind {
-	case BuiltinSymbol:
-		return c.callBuiltin(e, sym.Func)
-	case FuncSymbol:
-		c.checkArgs(e, sym.Func)
-		return sym.Func.Result
-	default:
-		c.errorf(diagnostic.NotCallable, id.Loc, "'%s' is a %s, not a function", id.Name, sym.Type)
-		c.checkArgs(e, nil)
-		return Invalid
-	}
-}
-
-// checkArgs checks every argument; with fn non-nil it also checks arity
-// (T006) and argument types (T001).
-func (c *checker) checkArgs(e *ast.CallExpr, fn *Function) {
-	types := make([]Type, len(e.Args))
-	for i, a := range e.Args {
-		types[i] = c.expr(a)
-	}
-	if fn == nil {
-		return
-	}
-	if len(e.Args) != len(fn.Params) {
-		c.errorf(diagnostic.WrongArgumentCount, e.Loc,
-			"function '%s' expects %d argument(s) but %d were given", fn.Name, len(fn.Params), len(e.Args))
-		return
-	}
-	for i, p := range fn.Params {
-		if !compatible(p.Type, types[i]) {
-			c.errorf(diagnostic.TypeMismatch, e.Args[i].Span(),
-				"argument %d of '%s': expected %s but found %s", i+1, fn.Name, p.Type, types[i])
-		}
-	}
-}
-
-// callBuiltin checks print and toString (docs/02 §2.14, ADR-0004 items 7
-// and 13). Both take exactly one displayable argument.
-func (c *checker) callBuiltin(e *ast.CallExpr, fn *Function) Type {
-	types := make([]Type, len(e.Args))
-	for i, a := range e.Args {
-		types[i] = c.expr(a)
-	}
-	if len(e.Args) != 1 {
-		c.errorf(diagnostic.WrongArgumentCount, e.Loc, "'%s' expects exactly 1 argument but %d were given", fn.Name, len(e.Args))
-		return fn.Result
-	}
-	if types[0] == Unit {
-		c.errorf(diagnostic.NotDisplayable, e.Args[0].Span(),
-			"'%s' cannot take a value of type Unit; it accepts Int, Float, Bool or String", fn.Name)
-	}
-	return fn.Result
+	return true
 }
 
 // isTrueLiteral reports whether e is the literal `true`, possibly in
@@ -668,6 +705,12 @@ func breaks(s ast.Stmt) bool {
 		}
 	case *ast.IfStmt:
 		return (s.Then != nil && breaks(s.Then)) || (s.Else != nil && breaks(s.Else))
+	case *ast.MatchStmt:
+		for _, a := range s.Arms {
+			if a != nil && breaks(a.Body) {
+				return true
+			}
+		}
 	}
 	return false
 }

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/sarvessveeriyah2312/Tread/internal/bytecode"
 )
 
 func TestManifest(t *testing.T) {
@@ -34,7 +36,7 @@ func TestManifest(t *testing.T) {
 	if err := json.Unmarshal(data, &m); err != nil {
 		t.Fatal(err)
 	}
-	if m.Version != "1.2.3" || m.BytecodeFormat != 1 || len(m.Artifacts) != 5 || m.ReleaseURL != Repository+"/releases/tag/v1.2.3" {
+	if m.Version != "1.2.3" || m.BytecodeFormat != bytecode.FormatVersion || len(m.Artifacts) != 5 || m.ReleaseURL != Repository+"/releases/tag/v1.2.3" {
 		t.Fatalf("manifest %+v", m)
 	}
 	sum := sha256.Sum256([]byte("a"))

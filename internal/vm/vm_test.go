@@ -24,6 +24,9 @@ func in(op bytecode.Opcode, a ...int) bytecode.Instr {
 	if len(a) > 0 {
 		i.A = a[0]
 	}
+	if len(a) > 1 {
+		i.B = a[1]
+	}
 	return i
 }
 
@@ -169,10 +172,52 @@ var opCases = []opCase{
 	unCase(bytecode.OpToStringBool, pString, bv(true), "true\n"),
 }
 
+// ADR-0013 instructions. Constants: 0 = 1, 1 = 2, 2 = "a", 3 = 0, 4 = 9.
+var (
+	collConsts = []bytecode.Value{iv(1), iv(2), sv("a"), iv(0), iv(9)}
+	pValue     = bytecode.OpPrintValue
+	// local 0 = [1, 2]
+	setArray = []bytecode.Instr{in(bytecode.OpConst, 0), in(bytecode.OpConst, 1), in(bytecode.OpMakeArray, 2), in(bytecode.OpStoreLocal, 0)}
+	// local 0 = ["a": 1]
+	setMap = []bytecode.Instr{in(bytecode.OpConst, 2), in(bytecode.OpConst, 0), in(bytecode.OpMakeMap, 1), in(bytecode.OpStoreLocal, 0)}
+)
+
+func collCase(name string, setup, code []bytecode.Instr, want string) opCase {
+	return opCase{name: name, consts: collConsts, locals: 1, code: append(append([]bytecode.Instr(nil), setup...), code...), want: want}
+}
+
+func init() {
+	ld := in(bytecode.OpLoadLocal, 0)
+	pop := in(bytecode.OpPop)
+	opCases = append(opCases,
+		collCase("MAKE_ARRAY+PRINT_VALUE", setArray, []bytecode.Instr{ld, in(pValue), pop}, "[1, 2]\n"),
+		collCase("MAKE_MAP", setMap, []bytecode.Instr{ld, in(pValue), pop}, `["a": 1]`+"\n"),
+		collCase("MAKE_ENUM", nil, []bytecode.Instr{in(bytecode.OpConst, 0), in(bytecode.OpMakeEnum, 0, 0), in(pValue), pop}, "Option.Some(1)\n"),
+		collCase("LOAD_PATH", setArray, []bytecode.Instr{in(bytecode.OpConst, 0), in(bytecode.OpLoadPath, 0, 1), in(pInt), pop}, "2\n"),
+		collCase("PEEK_PATH+LEN", setArray, []bytecode.Instr{in(bytecode.OpPeekPath, 0, 0), in(bytecode.OpLen), in(pInt), pop}, "2\n"),
+		collCase("STORE_PATH", setArray, []bytecode.Instr{in(bytecode.OpConst, 3), in(bytecode.OpConst, 4), in(bytecode.OpStorePath, 0, 1), ld, in(pValue), pop}, "[9, 2]\n"),
+		collCase("INDEX", setArray, []bytecode.Instr{ld, in(bytecode.OpConst, 3), in(bytecode.OpIndex), in(pInt), pop}, "1\n"),
+		collCase("CONTAINS", setArray, []bytecode.Instr{ld, in(bytecode.OpConst, 1), in(bytecode.OpContains), in(pBool), pop}, "true\n"),
+		collCase("MAP_GET", setMap, []bytecode.Instr{ld, in(bytecode.OpConst, 2), in(bytecode.OpMapGet), in(pValue), pop}, "Option.Some(1)\n"),
+		collCase("MAP_KEYS", setMap, []bytecode.Instr{ld, in(bytecode.OpMapKeys), in(pValue), pop}, `["a"]`+"\n"),
+		collCase("PUSH_PATH", setArray, []bytecode.Instr{in(bytecode.OpConst, 4), in(bytecode.OpPushPath, 0, 0), pop, ld, in(pValue), pop}, "[1, 2, 9]\n"),
+		collCase("POP_PATH", setArray, []bytecode.Instr{in(bytecode.OpPopPath, 0, 0), in(pValue), pop, ld, in(pValue), pop}, "Option.Some(2)\n[1]\n"),
+		collCase("REMOVE_PATH", setMap, []bytecode.Instr{in(bytecode.OpConst, 2), in(bytecode.OpRemovePath, 0, 0), in(pValue), pop, ld, in(pValue), pop}, "Option.Some(1)\n[:]\n"),
+		collCase("IS_VARIANT", nil, []bytecode.Instr{in(bytecode.OpMakeEnum, 0, 1), in(bytecode.OpIsVariant, 0, 1), in(pBool), pop}, "true\n"),
+		collCase("ENUM_FIELD", nil, []bytecode.Instr{in(bytecode.OpConst, 4), in(bytecode.OpMakeEnum, 0, 0), in(bytecode.OpEnumField, 0), in(pInt), pop}, "9\n"),
+		collCase("EQ_VALUE", setArray, []bytecode.Instr{ld, ld, in(bytecode.OpEqValue), in(pBool), pop}, "true\n"),
+		collCase("NE_VALUE", setArray, []bytecode.Instr{ld, in(bytecode.OpConst, 0), in(bytecode.OpMakeArray, 1), in(bytecode.OpNeValue), in(pBool), pop}, "true\n"),
+		collCase("TO_STRING_VALUE", setMap, []bytecode.Instr{ld, in(bytecode.OpToStringValue), in(pString), pop}, `["a": 1]`+"\n"),
+	)
+}
+
+// optionInfo is the module enum table every compiled program has.
+var optionInfo = []bytecode.EnumInfo{{Name: "Option", Variants: []bytecode.VariantInfo{{Name: "Some", Fields: 1}, {Name: "None"}}}}
+
 func (c opCase) module() *bytecode.Module {
 	code := append(append([]bytecode.Instr(nil), c.code...), in(bytecode.OpUnit), in(bytecode.OpReturn))
 	fns := append([]bytecode.Function{fn("main", 0, c.locals, code...)}, c.extra...)
-	return &bytecode.Module{Constants: c.consts, Functions: fns}
+	return &bytecode.Module{Constants: c.consts, Functions: fns, Enums: optionInfo}
 }
 
 func TestV20OpcodeStackEffects(t *testing.T) {
@@ -215,6 +260,18 @@ func TestV3UnderflowForEveryOpcode(t *testing.T) {
 			code = []bytecode.Instr{in(op, 0)}
 		case bytecode.FuncOperand:
 			code = []bytecode.Instr{in(op, 1)}
+		case bytecode.SizeOperand:
+			code = []bytecode.Instr{in(op, 1)}
+		case bytecode.PathOperand:
+			code = []bytecode.Instr{in(op, 0, 1)}
+		case bytecode.VariantOperand:
+			if op == bytecode.OpMakeEnum {
+				code = []bytecode.Instr{in(op, 0, 0)} // Option.Some needs a field
+			} else {
+				code = []bytecode.Instr{in(op, 0, 1)}
+			}
+		case bytecode.FieldOperand:
+			code = []bytecode.Instr{in(op, 0)}
 		default:
 			continue
 		}
@@ -222,7 +279,7 @@ func TestV3UnderflowForEveryOpcode(t *testing.T) {
 			continue
 		}
 		code = append(code, in(bytecode.OpUnit), in(bytecode.OpReturn))
-		m := &bytecode.Module{Functions: []bytecode.Function{fn("main", 0, 1, code...), fn("two", 2, 2, in(bytecode.OpUnit), in(bytecode.OpReturn))}}
+		m := &bytecode.Module{Functions: []bytecode.Function{fn("main", 0, 1, code...), fn("two", 2, 2, in(bytecode.OpUnit), in(bytecode.OpReturn))}, Enums: optionInfo}
 		_, err := exec(t, m, vm.Config{})
 		if err == nil || err.Code != vm.CodeInvalidBytecode || !err.HasSpan || err.Span.Start != 0 {
 			t.Errorf("%s with an empty stack: got %+v, want R002 at instruction 0", op, err)

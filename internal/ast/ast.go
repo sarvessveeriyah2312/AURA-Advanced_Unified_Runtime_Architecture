@@ -33,6 +33,7 @@ type Program struct {
 	// is then implicitly named ImplicitModuleName.
 	Module *ModuleDecl
 	Funcs  []*FuncDecl
+	Enums  []*EnumDecl // ADR-0013
 	Loc    source.Span
 }
 
@@ -52,11 +53,12 @@ type ModuleDecl struct {
 
 // FuncDecl is a top-level function declaration.
 type FuncDecl struct {
-	Name   *Ident
-	Params []*Param
-	Result *TypeName // nil when no return type is written
-	Body   *Block
-	Loc    source.Span
+	Name       *Ident
+	TypeParams []*Ident // generic parameters `<T, U>` (ADR-0013)
+	Params     []*Param
+	Result     *TypeName // nil when no return type is written
+	Body       *Block
+	Loc        source.Span
 }
 
 // Param is one function parameter.
@@ -70,7 +72,23 @@ type Param struct {
 // type namespace (ADR-0004 item 3).
 type TypeName struct {
 	Name string
+	Args []*TypeName // type arguments, as in Array<Int> (ADR-0013)
 	Loc  source.Span
+}
+
+// EnumDecl is `enum Name<T> { Variant(Type, ...) ... }` (ADR-0013).
+type EnumDecl struct {
+	Name       *Ident
+	TypeParams []*Ident
+	Variants   []*Variant
+	Loc        source.Span
+}
+
+// Variant is one enum variant and the types of its payload fields.
+type Variant struct {
+	Name   *Ident
+	Fields []*TypeName
+	Loc    source.Span
 }
 
 // Block is `{ statements }`.
@@ -88,9 +106,10 @@ type LetStmt struct {
 	Loc     source.Span
 }
 
-// AssignStmt is `name = value`.
+// AssignStmt is `target = value`. Target is an *Ident or an *IndexExpr
+// path rooted in one, such as grid[r][c] (ADR-0013).
 type AssignStmt struct {
-	Target *Ident
+	Target Expr
 	Value  Expr
 	Loc    source.Span
 }
@@ -124,8 +143,55 @@ type ForStmt struct {
 	Var   *Ident
 	Start Expr
 	End   Expr
-	Body  *Block
-	Loc   source.Span
+	// Iter is the collection of `for name in collection` (ADR-0013);
+	// Start and End are nil then.
+	Iter Expr
+	Body *Block
+	Loc  source.Span
+}
+
+// MatchStmt is `match subject { pattern => { } ... }` (ADR-0013).
+type MatchStmt struct {
+	Subject Expr
+	Arms    []*MatchArm
+	Loc     source.Span
+}
+
+// MatchArm is one `pattern => { body }`.
+type MatchArm struct {
+	Pattern Pattern
+	Body    *Block
+	Loc     source.Span
+}
+
+// Pattern is a match pattern.
+type Pattern interface {
+	Node
+	patNode()
+}
+
+// WildcardPat is `_`.
+type WildcardPat struct {
+	Loc source.Span
+}
+
+// BindPat binds the matched value to a new name.
+type BindPat struct {
+	Name *Ident
+}
+
+// LitPat matches a literal: an IntLit (or a negated one), a StringLit, a
+// BoolLit, or a FloatLit (rejected by the checker).
+type LitPat struct {
+	Value Expr
+}
+
+// VariantPat is `Enum.Variant` or `Enum.Variant(p, ...)`.
+type VariantPat struct {
+	Enum    *Ident
+	Variant *Ident
+	Args    []Pattern
+	Loc     source.Span
 }
 
 // BreakStmt is `break`; it leaves the innermost loop (ADR-0012).
@@ -220,6 +286,34 @@ type CallExpr struct {
 	Loc    source.Span
 }
 
+// ArrayLit is `[a, b, c]` (ADR-0013).
+type ArrayLit struct {
+	Elems []Expr
+	Loc   source.Span
+}
+
+// MapLit is `[k: v, ...]`, or `[:]` when empty (ADR-0013).
+type MapLit struct {
+	Keys   []Expr
+	Values []Expr
+	Loc    source.Span
+}
+
+// IndexExpr is `x[index]`.
+type IndexExpr struct {
+	X     Expr
+	Index Expr
+	Loc   source.Span
+}
+
+// MemberExpr is `x.name`: an enum variant (`Shape.Empty`) or, as the
+// callee of a CallExpr, a method call or variant construction.
+type MemberExpr struct {
+	X    Expr
+	Name *Ident
+	Loc  source.Span
+}
+
 // ErrorExpr stands in for an INVALID token or a failed sub-parse. The
 // error has already been reported; later phases skip it silently.
 type ErrorExpr struct {
@@ -252,6 +346,30 @@ func (n *UnaryExpr) Span() source.Span    { return n.Loc }
 func (n *BinaryExpr) Span() source.Span   { return n.Loc }
 func (n *CallExpr) Span() source.Span     { return n.Loc }
 func (n *ErrorExpr) Span() source.Span    { return n.Loc }
+func (n *EnumDecl) Span() source.Span     { return n.Loc }
+func (n *Variant) Span() source.Span      { return n.Loc }
+func (n *MatchStmt) Span() source.Span    { return n.Loc }
+func (n *MatchArm) Span() source.Span     { return n.Loc }
+func (n *WildcardPat) Span() source.Span  { return n.Loc }
+func (n *BindPat) Span() source.Span      { return n.Name.Loc }
+func (n *LitPat) Span() source.Span       { return n.Value.Span() }
+func (n *VariantPat) Span() source.Span   { return n.Loc }
+func (n *ArrayLit) Span() source.Span     { return n.Loc }
+func (n *MapLit) Span() source.Span       { return n.Loc }
+func (n *IndexExpr) Span() source.Span    { return n.Loc }
+func (n *MemberExpr) Span() source.Span   { return n.Loc }
+
+func (*MatchStmt) stmtNode() {}
+
+func (*WildcardPat) patNode() {}
+func (*BindPat) patNode()     {}
+func (*LitPat) patNode()      {}
+func (*VariantPat) patNode()  {}
+
+func (*ArrayLit) exprNode()   {}
+func (*MapLit) exprNode()     {}
+func (*IndexExpr) exprNode()  {}
+func (*MemberExpr) exprNode() {}
 
 func (*Block) stmtNode()        {}
 func (*LetStmt) stmtNode()      {}

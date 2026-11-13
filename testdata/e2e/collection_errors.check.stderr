@@ -1,0 +1,39 @@
+error[TR-T004]: cannot change immutable variable 'xs'
+  --> collection_errors.tr:9:5
+   |
+ 9 |     xs.push(3)
+   |     ^^^^^^^^^^
+   = help: declare it with 'let mut' to allow changes
+   = note: variable declared here (collection_errors.tr:8:9)
+
+error[TR-T020]: cannot infer the element type of an empty array
+   --> collection_errors.tr:10:17
+    |
+ 10 |     let empty = []
+    |                 ^^
+    = help: add a type annotation, for example 'let xs: Array<Int> = []'
+
+error[TR-T001]: expected Int but found String
+   --> collection_errors.tr:11:19
+    |
+ 11 |     let bad = [1, "two"]
+    |                   ^^^^^
+
+error[TR-T024]: Int has no method 'len'
+   --> collection_errors.tr:12:17
+    |
+ 12 |     print(xs[0].len())
+    |                 ^^^
+
+error[TR-T027]: this match does not cover every Light value: Light.Amber is not matched
+   --> collection_errors.tr:14:11
+    |
+ 14 |     match light {
+    |           ^^^^^
+    = help: add an arm for it, or a '_' arm to match everything else
+
+error[TR-T022]: map keys must be Int, String or Bool, not Float
+   --> collection_errors.tr:18:16
+    |
+ 18 |     let m: Map<Float, Int> = [:]
+    |                ^^^^^

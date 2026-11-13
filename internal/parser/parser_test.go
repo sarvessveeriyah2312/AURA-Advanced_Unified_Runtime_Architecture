@@ -100,7 +100,7 @@ var parseCases = []parseCase{
 	{id: "S44", mode: program, src: "module fn", want: "(program (module fn))", diags: []string{"P002@1:8"}},
 
 	// Identifiers, keywords, and type names (ADR-0004 item 3).
-	{id: "S45", mode: stmts, src: "let match = 1", want: "(let match 1)", diags: []string{"P003@1:5"}},
+	{id: "S45", mode: stmts, src: "let class = 1", want: "(let class 1)", diags: []string{"P003@1:5"}},
 	{id: "S46", mode: stmts, src: "let _ = f()", want: "(let _ (call f))"},
 	{id: "S47", mode: program, src: "fn if() { }", want: "(program (fn if () (block)))", diags: []string{"P002@1:4"}},
 	{id: "S48", mode: stmts, src: "let Int: Int = 1", want: "(let Int:Int 1)"},
@@ -165,7 +165,7 @@ var parseCases = []parseCase{
 	{id: "S101", mode: stmts, src: "while a {\nbreak\ncontinue\n}", want: "(while a (block (break) (continue)))"},
 	{id: "S102", mode: stmts, src: "while a { break x }", want: "(while a (block (break)))", diags: []string{"P004@1:17"}},
 	{id: "S103", mode: stmts, src: "for i 0..n { f() }", want: "(for i <nil> .. <nil> (block (call f)))", diags: []string{"P012@1:7"}},
-	{id: "S104", mode: stmts, src: "for i in 0 { }", want: "(for i 0 .. <nil> (block))", diags: []string{"P012@1:12"}},
+	{id: "S104", mode: stmts, src: "for i in 0 { }", want: "(for i in 0 (block))"}, // ADR-0013: a collection loop; the checker rejects Int
 	{id: "S105", mode: stmts, src: "for in 0..n { }", want: "(for <nil> 0 .. n (block))", diags: []string{"P002@1:5"}},
 	{id: "S106", mode: stmts, src: "for while in 0..n { }", want: "(for while 0 .. n (block))", diags: []string{"P002@1:5"}},
 	{id: "S107", mode: stmts, src: "while a >= { f() }\nk()", want: "(while (>= a <error>) (block (call f))) (call k)", diags: []string{"P001@1:12"}},
@@ -174,6 +174,36 @@ var parseCases = []parseCase{
 	{id: "S110", mode: stmts, src: "in", diags: []string{"P012@1:1"}},
 	{id: "S111", mode: stmts, src: "while a { while b { } }", want: "(while a (block (while b (block))))"},
 	{id: "S112", mode: stmts, src: "while { }", want: "(while <error> (block))", diags: []string{"P001@1:7"}},
+
+	// Collections, enums, generics and match (ADR-0013).
+	{id: "S113", mode: stmts, src: "let xs: Array<Int> = [1, 2, 3]", want: "(let xs:Array<Int> (array 1 2 3))"},
+	{id: "S114", mode: stmts, src: "let m: Map<String, Array<Int>> = [\"a\": [1], \"b\": []]", want: "(let m:Map<String, Array<Int>> (map \"a\":(array 1) \"b\":(array)))"},
+	{id: "S115", mode: stmts, src: "let e = [:]\nlet a = []", want: "(let e (map)) (let a (array))"},
+	{id: "S116", mode: stmts, src: "let xs: Array<Int>= []", want: "(let xs:Array<Int> (array))"},
+	{id: "S117", mode: stmts, src: "x = grid[r][c] + m[\"k\"]", want: "(assign x (+ (index (index grid r) c) (index m \"k\")))"},
+	{id: "S118", mode: stmts, src: "grid[r][c] = 1\nm[\"k\"] = 2", want: "(assign (index (index grid r) c) 1) (assign (index m \"k\") 2)"},
+	{id: "S119", mode: stmts, src: "xs.push(4)\nprint(xs.len())", want: "(call (. xs push) 4) (call print (call (. xs len)))"},
+	{id: "S120", mode: stmts, src: "let s = Shape.Circle(1.5)\nlet e = Shape.Empty", want: "(let s (call (. Shape Circle) 1.5)) (let e (. Shape Empty))"},
+	{id: "S121", mode: stmts, src: "for x in xs { }\nfor k in m.keys() { }", want: "(for x in xs (block)) (for k in (call (. m keys)) (block))"},
+	{id: "S122", mode: stmts, src: "let xs = [\n    1,\n    2\n]", want: "(let xs (array 1 2))"},
+	{id: "S123", mode: stmts, src: "f() = 1", want: "", diags: []string{"P012@1:5"}},
+	{id: "S124", mode: stmts, src: "let a = [1, 2,]", want: "(let a (array 1 2))", diags: []string{"P007@1:14"}},
+	{id: "S125", mode: stmts, src: "let a = [1, 2\nlet b = 3", want: "(let a (array 1 2)) (let b 3)", diags: []string{"P010@1:9"}},
+	{id: "S126", mode: stmts, src: "xs\n[0]", diags: []string{"P006@1:1", "P006@2:1"}},
+	{id: "S127", mode: program, src: "enum Shape {\n    Circle(Float)\n    Rect(Float, Float)\n    Empty\n}", want: "(program (enum Shape (Circle Float) (Rect Float Float) Empty))"},
+	{id: "S128", mode: program, src: "enum Pair<A, B> { Of(A, B) }\nenum Color { Red, Green, Blue }", want: "(program (enum Pair<A, B> (Of A B)) (enum Color Red Green Blue))"},
+	{id: "S129", mode: program, src: "fn first<T>(xs: Array<T>) -> Option<T> { }", want: "(program (fn first<T> (xs:Array<T>) -> Option<T> (block)))"},
+	{id: "S130", mode: stmts, src: "match s {\n    Shape.Circle(r) => { f(r) }\n    Shape.Rect(_, h) => { }\n    _ => { }\n}",
+		want: "(match s (=> (Shape.Circle r) (block (call f r))) (=> (Shape.Rect _ h) (block)) (=> _ (block)))"},
+	{id: "S131", mode: stmts, src: "match n {\n    0 => { }\n    -1 => { }\n    \"x\" => { }\n    true => { }\n    other =>\n    { }\n}",
+		want: "(match n (=> 0 (block)) (=> (- 1) (block)) (=> \"x\" (block)) (=> true (block)) (=> other (block)))"},
+	{id: "S132", mode: stmts, src: "match o {\n    Option.Some(Option.Some(1)) => { }\n    Option.None => { }\n}", want: "(match o (=> (Option.Some (Option.Some 1)) (block)) (=> Option.None (block)))"},
+	{id: "S133", mode: stmts, src: "match x\n{ }", want: "(match x)", diags: []string{"P005@2:1"}},
+	{id: "S134", mode: stmts, src: "match x {\n    1 { }\n    2 => { }\n}", want: "(match x (=> 2 (block)))", diags: []string{"P012@2:7"}},
+	{id: "S135", mode: stmts, src: "match x {\n    1 + 2 => { }\n}", want: "(match x)", diags: []string{"P012@2:7"}},
+	// An enum inside a block ends it, like a nested fn (N10).
+	{id: "S136", mode: program, src: "fn main() {\n    enum E { A }\n}", want: "(program (enum E A) (fn main () (block)))", diags: []string{"P011@1:11", "P012@3:1"}},
+	{id: "S137", mode: program, src: "enum E {\n    A(Int,)\n}", want: "(program (enum E (A Int)))", diags: []string{"P007@2:10"}},
 
 	// Nesting limit (ADR-0006). n nested constructs plus the innermost
 	// operand use n+1 levels; the limit is MaxNestingDepth (10,000).

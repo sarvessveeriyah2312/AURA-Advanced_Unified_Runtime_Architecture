@@ -1,0 +1,19 @@
+enum Light {
+    Red
+    Amber
+    Green
+}
+
+fn main() -> Unit {
+    let xs = [1, 2]
+    xs.push(3)
+    let empty = []
+    let bad = [1, "two"]
+    print(xs[0].len())
+    let light = Light.Red
+    match light {
+        Light.Red => { print("stop") }
+        Light.Green => { print("go") }
+    }
+    let m: Map<Float, Int> = [:]
+}
