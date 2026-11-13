@@ -35,7 +35,8 @@ import {
 import { RELEASED, VERSION, releaseAnchor, readmeSection } from "../data/site";
 import { cn } from "../lib/cn";
 import { Card, IconBadge, Pill } from "../components/ui/Card";
-import { CopyButton } from "../components/ui/CodeBlock";
+import { CopyButton, PromptButton } from "../components/ui/CodeBlock";
+import { commandPrompt } from "../lib/aiPrompt";
 import { Container } from "../components/ui/SectionHeading";
 
 const OS_ICONS: Record<OsId, typeof Laptop> = { macos: Laptop, windows: Monitor, linux: Server };
@@ -61,15 +62,35 @@ const EDITIONS: Record<Edition, { name: string; tagline: string; icon: typeof Bo
   },
 };
 
-function Command({ text, label }: { text: string; label: string }) {
+const SHELLS: Record<OsId, string> = {
+  macos: "a macOS terminal (zsh or bash)",
+  linux: "a Linux terminal (bash or sh)",
+  windows: "Windows PowerShell",
+};
+
+function Command({ text, label, prompt }: { text: string; label: string; prompt: string }) {
   return (
     <div className="flex items-center gap-2 rounded-xl border border-code-line bg-code-bg p-2 pl-4">
       <code className="scrollbar-thin min-w-0 flex-1 overflow-x-auto py-1 font-mono text-[12.5px] whitespace-nowrap text-code-fg">
         {text}
       </code>
+      <PromptButton prompt={prompt} label={label.replace(/^Copy/, "Copy an AI prompt for")} className="shrink-0" />
       <CopyButton text={text} label={label} className="shrink-0" />
     </div>
   );
+}
+
+// installPrompt asks an AI assistant to run one of the install scripts.
+function installPrompt(os: OsDownloads, edition: Edition, command: string): string {
+  const name = edition === "sdk" ? "Tread SDK" : "Tread Runtime";
+  const home = os.id === "windows" ? "%USERPROFILE%\\.tread" : "~/.tread";
+  return commandPrompt({
+    goal: `install the ${name} (the Tread programming language) on ${os.name}, for my user only`,
+    command,
+    shell: SHELLS[os.id],
+    about: `It downloads the latest ${name} release from GitHub, verifies it against the release's SHA256SUMS, installs it into ${home} and adds it to my PATH; it needs no administrator rights.`,
+    check: "open a new terminal so the PATH change applies, run `tread doctor` and `tread version`",
+  });
 }
 
 function ArtifactRow({ a, os }: { a: Artifact; os: OsDownloads }) {
@@ -173,11 +194,19 @@ function OsPanel({ os, hidden }: { os: OsDownloads; hidden: boolean }) {
           </p>
           <div className="mt-4 flex flex-col gap-2">
             <p className="text-xs font-medium text-muted">Tread SDK</p>
-            <Command text={unix ? INSTALL_SH : INSTALL_PS1} label={`Copy the ${os.name} SDK install command`} />
+            <Command
+              text={unix ? INSTALL_SH : INSTALL_PS1}
+              label={`Copy the ${os.name} SDK install command`}
+              prompt={installPrompt(os, "sdk", unix ? INSTALL_SH : INSTALL_PS1)}
+            />
             {unix && (
               <>
                 <p className="mt-2 text-xs font-medium text-muted">Tread Runtime only</p>
-                <Command text={INSTALL_SH_RUNTIME} label={`Copy the ${os.name} Runtime install command`} />
+                <Command
+                  text={INSTALL_SH_RUNTIME}
+                  label={`Copy the ${os.name} Runtime install command`}
+                  prompt={installPrompt(os, "runtime", INSTALL_SH_RUNTIME)}
+                />
               </>
             )}
           </div>

@@ -17,9 +17,26 @@ import {
   type Platform,
 } from "../../data/site";
 import { Card, IconBadge } from "../ui/Card";
-import { CopyButton } from "../ui/CodeBlock";
+import { CopyButton, PromptButton } from "../ui/CodeBlock";
+import { commandPrompt } from "../../lib/aiPrompt";
 import { Reveal } from "../ui/Reveal";
 import { Section, SectionHeading } from "../ui/SectionHeading";
+
+const GO_PROMPT = commandPrompt({
+  goal: "install the Tread programming language with Go",
+  command: GO_INSTALL,
+  shell: "my terminal",
+  about: "It needs Go 1.25 or later (check with `go version` first) and installs the tread binary into $(go env GOPATH)/bin, which must be on my PATH.",
+  check: "run `tread version`",
+});
+
+const BUILD_PROMPT = commandPrompt({
+  goal: "build the Tread programming language from source",
+  command: BUILD_FROM_SOURCE,
+  shell: "my terminal, in a folder where a new Tread folder can be created",
+  about: "It needs Git and Go 1.25 or later (check with `go version` first).",
+  check: "confirm the last command prints `Hello, Tread!`",
+});
 
 const ICONS: Record<Platform["id"], typeof Laptop> = { macos: Laptop, linux: Server, windows: Monitor };
 
@@ -111,6 +128,7 @@ export function Downloads() {
               <pre className="scrollbar-thin min-w-0 flex-1 overflow-x-auto py-1 font-mono text-[12.5px] leading-6 text-code-fg">
                 <code>{BUILD_FROM_SOURCE}</code>
               </pre>
+              <PromptButton prompt={BUILD_PROMPT} label="Copy an AI prompt for the build-from-source commands" className="shrink-0" />
               <CopyButton text={BUILD_FROM_SOURCE} label="Copy the build-from-source commands" className="shrink-0" />
             </div>
           </div>
@@ -215,6 +233,7 @@ export function Downloads() {
             <code className="scrollbar-thin min-w-0 flex-1 overflow-x-auto py-1 font-mono text-[12.5px] whitespace-nowrap text-code-fg">
               {GO_INSTALL}
             </code>
+            <PromptButton prompt={GO_PROMPT} label="Copy an AI prompt for the go install command" className="shrink-0" />
             <CopyButton text={GO_INSTALL} label="Copy the go install command" className="shrink-0" />
           </div>
         </Card>
